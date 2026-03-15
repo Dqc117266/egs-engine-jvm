@@ -4,6 +4,7 @@ import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
+import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -63,6 +64,11 @@ class ModuleScaffolder(
             null
         }
 
+        val baseClassPackages = resolveBaseClassPackages(config)
+        val apiResultClass = config.basePackage?.let { "$it.feature.base.data.retrofit.ApiResult" }
+        val commonResultClass = config.basePackage?.let { "$it.feature.base.data.retrofit.CommonResult" }
+        val toResultPackage = config.basePackage?.let { "$it.feature.base.data.retrofit" }
+
         return ModuleTemplate(
             name = moduleName,
             packageName = featurePackage,
@@ -71,6 +77,32 @@ class ModuleScaffolder(
             hasRes = config.moduleStructure.hasRes,
             namespace = namespace,
             projectType = config.projectType,
+            basePackage = config.basePackage,
+            baseClassPackages = baseClassPackages,
+            apiResultClass = apiResultClass,
+            commonResultClass = commonResultClass,
+            toResultPackage = toResultPackage,
+        )
+    }
+
+    private fun resolveBaseClassPackages(config: EgsConfig): BaseClassPackages {
+        val baseClasses = config.baseClasses
+        val bp = config.basePackage
+
+        fun findBaseClass(name: String): String? =
+            baseClasses.find { it.name == name }?.let { "${it.packageName}.$name" }
+
+        val baseVm = findBaseClass("BaseViewModel")
+        val baseFrag = findBaseClass("BaseFragment")
+
+        val resultClass = if (bp != null) "$bp.feature.base.domain.result.Result" else null
+        val retrofitProvider = if (bp != null) "$bp.feature.common.network.DynamicRetrofitProvider" else null
+
+        return BaseClassPackages(
+            baseViewModel = baseVm,
+            baseFragment = baseFrag,
+            resultClass = resultClass,
+            retrofitProvider = retrofitProvider,
         )
     }
 

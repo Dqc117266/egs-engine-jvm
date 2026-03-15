@@ -10,8 +10,7 @@ include(
     ":feature:analyzer",
     ":feature:init",
     ":feature:scaffold",
-    ":konsist-test",
-)
+    ":konsist-test",)
 
 pluginManagement {
     includeBuild("build-logic")

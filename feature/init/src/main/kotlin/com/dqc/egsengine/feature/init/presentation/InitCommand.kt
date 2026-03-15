@@ -1,6 +1,7 @@
 package com.dqc.egsengine.feature.init.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.github.ajalt.clikt.core.CliktCommand
@@ -8,7 +9,6 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import java.io.File
 
 class InitCommand : CliktCommand(name = "init"), KoinComponent {
 
@@ -18,9 +18,7 @@ class InitCommand : CliktCommand(name = "init"), KoinComponent {
 
     override fun run() {
         try {
-            val dir = File(projectPath).let {
-                if (it.isAbsolute) it else it.absoluteFile
-            }
+            val dir = ProjectRootResolver.resolve(projectPath)
 
             echo("Initializing .egs for project at: ${dir.absolutePath}")
             echo()

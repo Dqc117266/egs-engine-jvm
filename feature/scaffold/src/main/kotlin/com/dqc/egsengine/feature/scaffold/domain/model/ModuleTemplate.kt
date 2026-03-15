@@ -8,4 +8,16 @@ data class ModuleTemplate(
     val hasRes: Boolean,
     val namespace: String?,
     val projectType: String,
+    val basePackage: String?,
+    val baseClassPackages: BaseClassPackages = BaseClassPackages(),
+    val apiResultClass: String? = null,
+    val commonResultClass: String? = null,
+    val toResultPackage: String? = null,
+)
+
+data class BaseClassPackages(
+    val baseViewModel: String? = null,
+    val baseFragment: String? = null,
+    val resultClass: String? = null,
+    val retrofitProvider: String? = null,
 )

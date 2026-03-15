@@ -1,6 +1,10 @@
 package com.dqc.egsengine.feature.scaffold.data
 
+import com.dqc.egsengine.feature.scaffold.data.template.KotlinFileGenerator
+import com.dqc.egsengine.feature.scaffold.data.template.XmlTemplateGenerator
+import com.dqc.egsengine.feature.scaffold.data.template.toFixedString
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
+import com.squareup.kotlinpoet.FileSpec
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -10,20 +14,44 @@ class ModuleGenerator {
     data class GeneratedFile(val path: String, val content: String?)
 
     fun preview(projectRoot: File, template: ModuleTemplate): List<GeneratedFile> {
+        val kotlinGen = KotlinFileGenerator(template)
+        val xmlGen = XmlTemplateGenerator(template)
         val files = mutableListOf<GeneratedFile>()
         val moduleDir = "feature/${template.name}"
-        val packagePath = template.packageName.replace('.', '/')
-        val sourceBase = "$moduleDir/src/main/kotlin/$packagePath"
+        val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
 
         files.add(GeneratedFile("$moduleDir/build.gradle.kts", generateBuildFile(template)))
-        files.add(GeneratedFile("$sourceBase/${toPascalCase(template.name)}KoinModule.kt", generateKoinModule(template)))
 
-        for (layer in template.layers) {
-            files.add(GeneratedFile("$sourceBase/$layer/.gitkeep", null))
-        }
+        files.addKt(moduleDir, kotlinGen.generateRootKoinModule())
+        files.addKt(moduleDir, kotlinGen.generateDataModule())
+        files.addKt(moduleDir, kotlinGen.generateDomainModule())
+        files.addKt(moduleDir, kotlinGen.generatePresentationModule())
+        files.addKt(moduleDir, kotlinGen.generateRepositoryInterface())
+        files.addKt(moduleDir, kotlinGen.generateRepositoryImpl())
+        files.addKt(moduleDir, kotlinGen.generateViewModel())
 
-        if (template.hasRes) {
-            files.add(GeneratedFile("$moduleDir/src/main/res/values/.gitkeep", null))
+        if (isAndroid) {
+            kotlinGen.generateFragment()?.let { files.addKt(moduleDir, it) }
+
+            val camel = toPascalCase(template.name).replaceFirstChar { it.lowercase() }
+            files.add(
+                GeneratedFile(
+                    "$moduleDir/src/main/res/layout/fragment_$camel.xml",
+                    xmlGen.generateLayout(),
+                ),
+            )
+            files.add(
+                GeneratedFile(
+                    "$moduleDir/src/main/res/navigation/${camel}_nav_graph.xml",
+                    xmlGen.generateNavGraph(),
+                ),
+            )
+            files.add(
+                GeneratedFile(
+                    "$moduleDir/src/main/AndroidManifest.xml",
+                    xmlGen.generateAndroidManifest(),
+                ),
+            )
         }
 
         return files
@@ -50,7 +78,15 @@ class ModuleGenerator {
         return created
     }
 
+    private fun MutableList<GeneratedFile>.addKt(moduleDir: String, fileSpec: FileSpec) {
+        val pkgPath = fileSpec.packageName.replace('.', '/')
+        val path = "$moduleDir/src/main/kotlin/$pkgPath/${fileSpec.name}.kt"
+        add(GeneratedFile(path, fileSpec.toFixedString()))
+    }
+
     private fun generateBuildFile(template: ModuleTemplate): String = buildString {
+        val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
+
         appendLine("plugins {")
         if (template.conventionPluginId != null) {
             appendLine("    id(\"${template.conventionPluginId}\")")
@@ -59,7 +95,6 @@ class ModuleGenerator {
         }
         appendLine("}")
 
-        val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
         if (isAndroid && template.namespace != null) {
             appendLine()
             appendLine("android {")
@@ -68,27 +103,8 @@ class ModuleGenerator {
         }
     }
 
-    private fun generateKoinModule(template: ModuleTemplate): String {
-        val className = toPascalCase(template.name)
-        return buildString {
-            appendLine("package ${template.packageName}")
-            appendLine()
-            appendLine("import org.koin.dsl.module")
-            appendLine()
-            appendLine("val ${toCamelCase(template.name)}KoinModule = module {")
-            appendLine("    // TODO: register ${className} dependencies")
-            appendLine("}")
-            appendLine()
-        }
-    }
-
     private fun toPascalCase(name: String): String =
         name.split("-", "_").joinToString("") { part ->
             part.replaceFirstChar { it.uppercase() }
         }
-
-    private fun toCamelCase(name: String): String {
-        val pascal = toPascalCase(name)
-        return pascal.replaceFirstChar { it.lowercase() }
-    }
 }
