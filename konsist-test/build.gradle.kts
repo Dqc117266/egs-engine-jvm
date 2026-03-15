@@ -1,5 +1,5 @@
 plugins {
-    id("com.ajd.egsengine.convention.library")
+    id("com.dqc.egsengine.convention.library")
 }
 
 dependencies {

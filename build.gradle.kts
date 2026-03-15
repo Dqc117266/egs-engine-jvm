@@ -1,7 +1,7 @@
 plugins {
     // Convention plugins
-    id("com.ajd.egsengine.convention.detekt")
-    id("com.ajd.egsengine.convention.spotless")
+    id("com.dqc.egsengine.convention.detekt")
+    id("com.dqc.egsengine.convention.spotless")
 
     // Core Kotlin plugins using version catalog
     alias(libs.plugins.kotlin.jvm) apply false

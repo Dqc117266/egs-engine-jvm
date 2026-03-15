@@ -1,9 +1,9 @@
 plugins {
-    id("com.ajd.egsengine.convention.application")
+    id("com.dqc.egsengine.convention.application")
 }
 
 application {
-    mainClass.set("com.ajd.egsengine.AppKt")
+    mainClass.set("com.dqc.egsengine.AppKt")
 
     applicationDefaultJvmArgs = listOf(
         "-Xmx512m",

@@ -14,6 +14,7 @@ out/
 
 release/
 debug/
+egs/
 
 # Local configuration file
 local.properties

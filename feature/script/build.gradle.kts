@@ -1,3 +1,3 @@
 plugins {
-    id("com.ajd.egsengine.convention.feature")
+    id("com.dqc.egsengine.convention.feature")
 }

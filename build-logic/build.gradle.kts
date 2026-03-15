@@ -4,7 +4,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "com.ajd.egsengine.buildlogic"
+group = "com.dqc.egsengine.buildlogic"
 
 /*
 Configure the build-logic plugins to target JDK from version catalog
@@ -48,38 +48,38 @@ tasks {
 gradlePlugin {
     plugins {
         register("applicationConvention") {
-            id = "com.ajd.egsengine.convention.application"
-            implementationClass = "com.ajd.egsengine.buildlogic.ApplicationConventionPlugin"
+            id = "com.dqc.egsengine.convention.application"
+            implementationClass = "com.dqc.egsengine.buildlogic.ApplicationConventionPlugin"
         }
 
         register("featureConvention") {
-            id = "com.ajd.egsengine.convention.feature"
-            implementationClass = "com.ajd.egsengine.buildlogic.FeatureConventionPlugin"
+            id = "com.dqc.egsengine.convention.feature"
+            implementationClass = "com.dqc.egsengine.buildlogic.FeatureConventionPlugin"
         }
 
         register("libraryConvention") {
-            id = "com.ajd.egsengine.convention.library"
-            implementationClass = "com.ajd.egsengine.buildlogic.LibraryConventionPlugin"
+            id = "com.dqc.egsengine.convention.library"
+            implementationClass = "com.dqc.egsengine.buildlogic.LibraryConventionPlugin"
         }
 
         register("kotlinConvention") {
-            id = "com.ajd.egsengine.convention.kotlin"
-            implementationClass = "com.ajd.egsengine.buildlogic.KotlinConventionPlugin"
+            id = "com.dqc.egsengine.convention.kotlin"
+            implementationClass = "com.dqc.egsengine.buildlogic.KotlinConventionPlugin"
         }
 
         register("testConvention") {
-            id = "com.ajd.egsengine.convention.test"
-            implementationClass = "com.ajd.egsengine.buildlogic.TestConventionPlugin"
+            id = "com.dqc.egsengine.convention.test"
+            implementationClass = "com.dqc.egsengine.buildlogic.TestConventionPlugin"
         }
 
         register("spotlessConvention") {
-            id = "com.ajd.egsengine.convention.spotless"
-            implementationClass = "com.ajd.egsengine.buildlogic.SpotlessConventionPlugin"
+            id = "com.dqc.egsengine.convention.spotless"
+            implementationClass = "com.dqc.egsengine.buildlogic.SpotlessConventionPlugin"
         }
 
         register("detektConvention") {
-            id = "com.ajd.egsengine.convention.detekt"
-            implementationClass = "com.ajd.egsengine.buildlogic.DetektConventionPlugin"
+            id = "com.dqc.egsengine.convention.detekt"
+            implementationClass = "com.dqc.egsengine.buildlogic.DetektConventionPlugin"
         }
     }
 }
