@@ -24,19 +24,33 @@ class SwaggerCodeGenerator {
         val files = mutableListOf<ModuleGenerator.GeneratedFile>()
         val ctx = GeneratorContext(template)
 
-        for (schema in spec.schemas) {
+        val (wrapperSchemas, dataSchemas) = spec.schemas.partition { isCommonResultWrapper(it) }
+        val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
+            schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
+        }
+
+        for (schema in dataSchemas) {
             files.addKt(moduleDir, generateDataModel(schema, ctx))
             files.addKt(moduleDir, generateDomainModel(schema, ctx))
         }
 
-        files.addKt(moduleDir, generateServiceInterface(spec, ctx))
-        files.addKt(moduleDir, generateRepositoryInterface(spec, ctx))
-        files.addKt(moduleDir, generateRepositoryImpl(spec, ctx))
+        val adjustedSpec = spec.copy(
+            operations = spec.operations.map { op ->
+                op.copy(
+                    params = op.params.filter { it.location.lowercase() != "header" },
+                    responseBody = unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
+                )
+            },
+        )
+
+        files.addKt(moduleDir, generateServiceInterface(adjustedSpec, ctx))
+        files.addKt(moduleDir, generateRepositoryInterface(adjustedSpec, ctx))
+        files.addKt(moduleDir, generateRepositoryImpl(adjustedSpec, ctx))
         files.addKt(moduleDir, generateDataModule(ctx))
-        files.addKt(moduleDir, generateDomainModule(spec, ctx))
+        files.addKt(moduleDir, generateDomainModule(adjustedSpec, ctx))
         files.addKt(moduleDir, generateRootKoinModule(ctx))
 
-        spec.operations.forEach { op ->
+        adjustedSpec.operations.forEach { op ->
             files.addKt(moduleDir, generateUseCase(op, ctx))
         }
 
@@ -44,28 +58,50 @@ class SwaggerCodeGenerator {
         return files
     }
 
+    private fun isCommonResultWrapper(schema: SwaggerSchema): Boolean {
+        val originalNames = schema.properties.map { it.originalName }.toSet()
+        return originalNames.contains("code") && originalNames.contains("msg") && originalNames.contains("data")
+    }
+
+    private fun unwrapResponseBody(
+        responseType: SwaggerType?,
+        wrapperMap: Map<String, SwaggerType?>,
+    ): SwaggerType? {
+        if (responseType is SwaggerType.ModelRef && responseType.name in wrapperMap) {
+            return wrapperMap[responseType.name] ?: responseType
+        }
+        return responseType
+    }
+
     private fun generateDataModel(schema: SwaggerSchema, ctx: GeneratorContext): FileSpec {
         val className = schema.name.toSafePascal()
+        val serialNameClass = ClassName("kotlinx.serialization", "SerialName")
         val typeBuilder = TypeSpec.classBuilder(className)
             .addModifiers(KModifier.DATA)
             .addAnnotation(ClassName("kotlinx.serialization", "Serializable"))
             .primaryConstructor(
                 FunSpec.constructorBuilder().apply {
                     schema.properties.forEach { prop ->
-                        addParameter(buildModelParameter(prop, ctx, forDomain = false))
+                        val type = ctx.resolveType(prop.type, forDomain = false)
+                            .copy(nullable = !prop.required)
+                        val paramBuilder = ParameterSpec.builder(prop.name, type)
+                            .addAnnotation(
+                                AnnotationSpec.builder(serialNameClass)
+                                    .addMember("%S", prop.originalName)
+                                    .build(),
+                            )
+                        if (!prop.required) paramBuilder.defaultValue("null")
+                        addParameter(paramBuilder.build())
                     }
                 }.build(),
             )
 
         schema.properties.forEach { prop ->
+            val type = ctx.resolveType(prop.type, forDomain = false)
+                .copy(nullable = !prop.required)
             typeBuilder.addProperty(
-                PropertySpec.builder(prop.name, ctx.resolveType(prop.type, forDomain = false))
+                PropertySpec.builder(prop.name, type)
                     .initializer(prop.name)
-                    .addAnnotation(
-                        AnnotationSpec.builder(ClassName("kotlinx.serialization", "SerialName"))
-                            .addMember("%S", prop.originalName)
-                            .build(),
-                    )
                     .build(),
             )
         }
@@ -88,8 +124,10 @@ class SwaggerCodeGenerator {
             )
 
         schema.properties.forEach { prop ->
+            val type = ctx.resolveType(prop.type, forDomain = true)
+                .copy(nullable = !prop.required)
             typeBuilder.addProperty(
-                PropertySpec.builder(prop.name, ctx.resolveType(prop.type, forDomain = true))
+                PropertySpec.builder(prop.name, type)
                     .initializer(prop.name)
                     .build(),
             )
@@ -400,7 +438,7 @@ private class GeneratorContext(val template: ModuleTemplate) {
             "path" -> AnnotationSpec.builder(ClassName("retrofit2.http", "Path"))
             "header" -> AnnotationSpec.builder(ClassName("retrofit2.http", "Header"))
             else -> AnnotationSpec.builder(ClassName("retrofit2.http", "Query"))
-        }.addMember("%S", param.name).build()
+        }.addMember("%S", param.originalName).build()
         return ParameterSpec.builder(param.name.toSafeIdentifier(), type)
             .addAnnotation(ann)
             .build()

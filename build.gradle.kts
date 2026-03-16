@@ -9,4 +9,5 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.test.logger) apply false
+    alias(libs.plugins.shadow) apply false
 }

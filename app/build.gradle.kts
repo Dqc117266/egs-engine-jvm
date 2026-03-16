@@ -1,5 +1,6 @@
 plugins {
     id("com.dqc.egsengine.convention.application")
+    alias(libs.plugins.shadow)
 }
 
 application {

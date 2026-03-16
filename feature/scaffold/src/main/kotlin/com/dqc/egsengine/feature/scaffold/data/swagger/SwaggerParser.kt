@@ -99,6 +99,7 @@ class SwaggerParser {
             val schema = obj.get("schema")
             SwaggerParameter(
                 name = toSafePropertyName(name),
+                originalName = name,
                 location = location,
                 required = required,
                 type = resolveType(schema),
@@ -173,7 +174,12 @@ class SwaggerParser {
     }
 
     private fun sanitizeMethodName(name: String): String {
-        val safe = name.replace(Regex("[^A-Za-z0-9_]"), "_")
+        val parts = name.split(Regex("[^A-Za-z0-9]")).filter { it.isNotBlank() }
+        val camel = parts.mapIndexed { i, part ->
+            if (i == 0) part.replaceFirstChar { c -> c.lowercase() }
+            else part.replaceFirstChar { c -> c.uppercase() }
+        }.joinToString("")
+        val safe = camel.ifBlank { "autoGen" }
         return if (safe.firstOrNull()?.isDigit() == true) "_$safe" else safe
     }
 
@@ -181,7 +187,7 @@ class SwaggerParser {
         val camel = name.split("-", "_", ".")
             .filter { it.isNotBlank() }
             .mapIndexed { i, part ->
-                if (i == 0) part.lowercase()
+                if (i == 0) part.replaceFirstChar { it.lowercase() }
                 else part.replaceFirstChar(Char::uppercase)
             }
             .joinToString("")

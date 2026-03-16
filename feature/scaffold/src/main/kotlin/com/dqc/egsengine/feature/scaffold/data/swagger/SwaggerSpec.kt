@@ -28,6 +28,7 @@ data class SwaggerOperation(
 
 data class SwaggerParameter(
     val name: String,
+    val originalName: String,
     val location: String,
     val required: Boolean,
     val type: SwaggerType,
