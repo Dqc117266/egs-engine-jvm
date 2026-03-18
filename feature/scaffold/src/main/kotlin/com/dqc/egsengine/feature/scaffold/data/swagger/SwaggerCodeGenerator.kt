@@ -362,7 +362,8 @@ class SwaggerCodeGenerator {
     private fun MutableList<ModuleGenerator.GeneratedFile>.addKt(moduleDir: String, fileSpec: FileSpec) {
         val pkgPath = fileSpec.packageName.replace('.', '/')
         val path = "$moduleDir/src/main/kotlin/$pkgPath/${fileSpec.name}.kt"
-        add(ModuleGenerator.GeneratedFile(path, fileSpec.toString()))
+        val content = fileSpec.toString().replace(Regex("""(?m)^(\s*)public """), "$1")
+        add(ModuleGenerator.GeneratedFile(path, content))
     }
 }
 
