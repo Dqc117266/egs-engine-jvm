@@ -18,7 +18,12 @@ class CreateCommand : CliktCommand(name = "create") {
 
     companion object {
         fun withSubcommands(): CreateCommand =
-            CreateCommand().subcommands(CreateModuleCommand(), CreateApiCommand(), CreatePageCommand())
+            CreateCommand().subcommands(
+                CreateProjectCommand(),
+                CreateModuleCommand(),
+                CreateApiCommand(),
+                CreatePageCommand(),
+            )
     }
 }
 
