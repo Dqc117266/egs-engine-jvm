@@ -2,7 +2,6 @@ package com.dqc.egsengine.feature.scaffold.domain.swagger
 
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
-import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages

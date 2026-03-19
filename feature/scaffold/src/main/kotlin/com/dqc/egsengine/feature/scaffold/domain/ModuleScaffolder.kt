@@ -96,13 +96,14 @@ class ModuleScaffolder(
         val baseFrag = findBaseClass("BaseFragment")
 
         val resultClass = if (bp != null) "$bp.feature.base.domain.result.Result" else null
-        val retrofitProvider = if (bp != null) "$bp.feature.common.network.DynamicRetrofitProvider" else null
+        // retrofitProvider = null: 默认 create module 不生成 api 代码时，RepositoryImpl 保持空参数
+        // 需要网络时可通过 create api 生成，或手动添加
 
         return BaseClassPackages(
             baseViewModel = baseVm,
             baseFragment = baseFrag,
             resultClass = resultClass,
-            retrofitProvider = retrofitProvider,
+            retrofitProvider = null,
         )
     }
 

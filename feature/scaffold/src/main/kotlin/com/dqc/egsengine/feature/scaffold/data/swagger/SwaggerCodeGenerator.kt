@@ -346,13 +346,15 @@ class SwaggerCodeGenerator {
     private fun generateRootKoinModule(ctx: GeneratorContext): FileSpec {
         val moduleClass = ClassName("org.koin.core.module", "Module")
         val listType = ClassName("kotlin.collections", "List").parameterizedBy(moduleClass)
+        val presentationPackage = "${ctx.rootPackage}.presentation"
 
         return FileSpec.builder(ctx.rootPackage, "${ctx.pascalModuleName}KoinModule")
             .addProperty(
                 PropertySpec.builder("feature${ctx.pascalModuleName}Modules", listType)
                     .initializer(
                         CodeBlock.of(
-                            "listOf(%T, %T)",
+                            "listOf(%T, %T, %T)",
+                            ClassName(presentationPackage, "presentationModule"),
                             ClassName(ctx.domainPackage, "domainModule"),
                             ClassName(ctx.dataPackage, "dataModule"),
                         ),

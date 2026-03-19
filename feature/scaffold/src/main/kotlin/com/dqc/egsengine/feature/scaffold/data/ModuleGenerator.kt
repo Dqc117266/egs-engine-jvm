@@ -31,6 +31,8 @@ class ModuleGenerator {
         files.addKt(moduleDir, kotlinGen.generateViewModel())
 
         if (isAndroid) {
+            kotlinGen.generateContract()?.let { files.addKt(moduleDir, it) }
+
             kotlinGen.generateFragment()?.let { files.addKt(moduleDir, it) }
 
             val camel = toPascalCase(template.name).replaceFirstChar { it.lowercase() }

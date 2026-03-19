@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.MemberName
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
@@ -18,6 +19,12 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
     private val pkg = template.packageName
     private val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
     private val bcp = template.baseClassPackages
+
+    /** Base package for UiState, UiIntent, UiEffect (same as BaseViewModel) */
+    private val uiContractPackage: String
+        get() = bcp.baseViewModel?.substringBeforeLast(".")
+            ?: template.basePackage?.let { "$it.feature.base.presentation.viewmodel" }
+            ?: "com.example.feature.base.presentation.viewmodel"
 
     private val moduleClass = ClassName("org.koin.core.module", "Module")
     private val koinModule = MemberName("org.koin.dsl", "module")
@@ -90,7 +97,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
             .build()
 
     fun generatePresentationModule(): FileSpec {
-        val viewModelClass = ClassName("$pkg.presentation.viewmodel", "${pascal}ViewModel")
+        val viewModelClass = ClassName("$pkg.presentation.fragment.$camel", "${pascal}ViewModel")
 
         return FileSpec.builder("$pkg.presentation", "PresentationModule")
             .addProperty(
@@ -105,6 +112,67 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
                     )
                     .build(),
             )
+            .build()
+    }
+
+    fun generateContract(): FileSpec? {
+        if (!isAndroid) return null
+        val uiContractPackage = bcp.baseViewModel?.substringBeforeLast(".")
+            ?: template.basePackage?.let { "$it.feature.base.presentation.viewmodel" }
+            ?: "com.example.feature.base.presentation.viewmodel"
+        val uiState = ClassName(uiContractPackage, "UiState")
+        val uiIntent = ClassName(uiContractPackage, "UiIntent")
+        val uiEffect = ClassName(uiContractPackage, "UiEffect")
+
+        val isLoadingType = ClassName("kotlin", "Boolean")
+        val errorType = ClassName("kotlin", "String").copy(nullable = true)
+        val stateType = TypeSpec.classBuilder("State")
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter(
+                        ParameterSpec.builder("isLoading", isLoadingType)
+                            .defaultValue("false")
+                            .build(),
+                    )
+                    .addParameter(
+                        ParameterSpec.builder("error", errorType)
+                            .defaultValue("null")
+                            .build(),
+                    )
+                    .build(),
+            )
+            .addProperty(
+                PropertySpec.builder("isLoading", isLoadingType)
+                    .initializer("isLoading")
+                    .build(),
+            )
+            .addProperty(
+                PropertySpec.builder("error", errorType)
+                    .initializer("error")
+                    .build(),
+            )
+            .addSuperinterface(uiState)
+            .build()
+
+        val intentType = TypeSpec.interfaceBuilder("Intent")
+            .addModifiers(KModifier.SEALED)
+            .addSuperinterface(uiIntent)
+            .build()
+
+        val effectType = TypeSpec.classBuilder("Effect")
+            .addModifiers(KModifier.SEALED)
+            .addSuperinterface(uiEffect)
+            .build()
+
+        val contractBuilder = TypeSpec.interfaceBuilder("${pascal}Contract")
+            .addType(stateType)
+            .addType(intentType)
+            .addType(effectType)
+            .build()
+
+        return FileSpec.builder("$pkg.presentation.fragment.$camel", "${pascal}Contract")
+            .addImport(uiContractPackage, "UiState", "UiIntent", "UiEffect")
+            .addType(contractBuilder)
             .build()
     }
 
@@ -162,29 +230,42 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
     }
 
     fun generateViewModel(): FileSpec {
-        val repoInterface = ClassName("$pkg.domain.repository", "${pascal}Repository")
+        val contractClassName = ClassName("$pkg.presentation.fragment.$camel", "${pascal}Contract")
+        val contractStateClass = contractClassName.nestedClass("State")
+        val contractIntentClass = contractClassName.nestedClass("Intent")
+        val contractEffectClass = contractClassName.nestedClass("Effect")
 
         val classBuilder = TypeSpec.classBuilder("${pascal}ViewModel")
             .addModifiers(KModifier.INTERNAL)
-            .primaryConstructor(
-                FunSpec.constructorBuilder()
-                    .addParameter("repository", repoInterface)
-                    .build(),
-            )
-            .addProperty(
-                PropertySpec.builder("repository", repoInterface)
-                    .initializer("repository")
-                    .addModifiers(KModifier.PRIVATE)
-                    .build(),
-            )
+            .primaryConstructor(FunSpec.constructorBuilder().build())
 
         if (isAndroid && bcp.baseViewModel != null) {
-            classBuilder.superclass(bcp.baseViewModel.toClassName())
+            val baseVm = bcp.baseViewModel.toClassName()
+            classBuilder.superclass(
+                baseVm.parameterizedBy(
+                    contractStateClass,
+                    contractIntentClass,
+                    contractEffectClass,
+                ),
+            )
+            classBuilder.addSuperclassConstructorParameter(
+                CodeBlock.builder()
+                    .add("%T(\n", contractStateClass)
+                    .add("    isLoading = false,\n")
+                    .add("    error = null,\n")
+                    .add(")")
+                    .build(),
+            )
+            classBuilder.addFunction(
+                FunSpec.builder("registerIntents")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .build(),
+            )
         } else {
             classBuilder.superclass(ClassName("androidx.lifecycle", "ViewModel"))
         }
 
-        return FileSpec.builder("$pkg.presentation.viewmodel", "${pascal}ViewModel")
+        return FileSpec.builder("$pkg.presentation.fragment.$camel", "${pascal}ViewModel")
             .addType(classBuilder.build())
             .build()
     }
@@ -238,4 +319,6 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
 }
 
 internal fun FileSpec.toFixedString(): String =
-    toString().replace("`data`", "data")
+    toString()
+        .replace("`data`", "data")
+        .replace(Regex("""(?m)^(\s*)public """), "$1")
