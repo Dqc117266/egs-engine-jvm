@@ -103,10 +103,10 @@ class PageScaffolder(
             logger.debug("Created ViewModel: ${file.path}")
         }
 
-        // Layout XML
+        // Layout XML (snake_case: TaskDetail -> fragment_task_detail.xml)
         val layoutContent = generator.generateLayout()
         val layoutFile = projectRoot.resolve(
-            "feature/$moduleName/src/main/res/layout/fragment_${pageName.lowercase()}.xml"
+            "feature/$moduleName/src/main/res/layout/fragment_${toSnakeCase(template.pageName)}.xml"
         )
         layoutFile.parentFile.mkdirs()
         layoutFile.writeText(layoutContent)
@@ -158,8 +158,8 @@ class PageScaffolder(
             files.add(GeneratedFileInfo(path, fileSpec.toFixedString()))
         }
 
-        // Layout
-        val layoutPath = "$modulePath/src/main/res/layout/fragment_${template.pageName.lowercase()}.xml"
+        // Layout (snake_case)
+        val layoutPath = "$modulePath/src/main/res/layout/fragment_${toSnakeCase(template.pageName)}.xml"
         files.add(GeneratedFileInfo(layoutPath, generator.generateLayout()))
 
         return files
@@ -193,10 +193,20 @@ class PageScaffolder(
             retrofitProvider = basePackage?.let { "$it.feature.common.network.DynamicRetrofitProvider" },
         )
     }
+
+    /** camelCase/PascalCase -> snake_case，如 TaskDetail -> task_detail */
+    private fun toSnakeCase(s: String): String =
+        s.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
 }
 
 /**
- * FileSpec 扩展方法，修复 data 关键字转义问题
+ * FileSpec 扩展方法，修复 data 关键字转义、移除冗余 public
  */
+/** camelCase/PascalCase → snake_case，如 TaskDetail → task_detail */
+private fun String.toSnakeCase(): String =
+    replace(Regex("([a-z0-9])([A-Z])"), "$1_$2").lowercase()
+
 private fun com.squareup.kotlinpoet.FileSpec.toFixedString(): String =
-    toString().replace("`data`", "data")
+    toString()
+        .replace("`data`", "data")
+        .replace(Regex("""(?m)^(\s*)public """), "$1")

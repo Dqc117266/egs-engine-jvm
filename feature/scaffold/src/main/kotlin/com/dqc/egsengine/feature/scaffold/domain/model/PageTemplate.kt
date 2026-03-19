@@ -19,6 +19,7 @@ data class UseCaseInfo(
     val name: String,
     val packageName: String,
     val path: String,
+    val returnType: String? = null,
 ) {
     val camelName: String = name.replaceFirstChar { it.lowercase() }
         .replace("UseCase", "")

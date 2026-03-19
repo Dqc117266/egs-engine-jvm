@@ -141,11 +141,11 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
 
         // 2. 输入页面名称
         print("> 输入页面名称 (如: Profile): ")
-        val name = readLine()?.trim()
+        val name = readlnOrNull()?.trim()
             ?: throw IllegalArgumentException("页面名称不能为空")
         require(name.isNotBlank()) { "页面名称不能为空" }
-        require(name.matches(Regex("^[A-Z][a-zA-Z0-9]*$"))) {
-            "页面名称必须以字母开头，只能包含字母和数字"
+        require(name.first().isLetter() && name.all { it.isLetterOrDigit() }) {
+            "页面名称必须以字母开头，只能包含字母和数字（支持 camelCase 如 taskDetail）"
         }
         echo()
 

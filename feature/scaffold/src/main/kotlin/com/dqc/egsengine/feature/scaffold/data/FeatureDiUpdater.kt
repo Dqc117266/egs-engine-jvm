@@ -98,22 +98,23 @@ class FeatureDiUpdater {
 
         // 添加 import
         val viewModelImport = "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
-        val updatedContent = if (!content.contains(viewModelImport)) {
-            content.replace(
+        val viewModelOfImport = "import org.koin.core.module.dsl.viewModelOf"
+        var updatedContent = content
+        if (!updatedContent.contains(viewModelImport)) {
+            updatedContent = updatedContent.replace(
                 "import org.koin.dsl.module",
                 "import org.koin.dsl.module\n$viewModelImport"
             )
-        } else {
-            content
+        }
+        if (!updatedContent.contains("viewModelOf")) {
+            updatedContent = updatedContent.replace(
+                "import org.koin.dsl.module",
+                "import org.koin.dsl.module\n$viewModelOfImport"
+            )
         }
 
-        // 添加 viewModelOf 绑定
-        val viewModelBinding = if (useCases.isEmpty()) {
-            "    viewModelOf(::$pascalName" + "ViewModel)"
-        } else {
-            val params = useCases.joinToString(", ") { "get()" }
-            "    viewModel { $pascalName" + "ViewModel($params) }"
-        }
+        // 始终使用 viewModelOf（ViewModel 空参或由 Koin 自动注入）
+        val viewModelBinding = "    viewModelOf(::$pascalName" + "ViewModel)"
 
         // 查找 module 代码块并插入
         val moduleRegex = Regex("""(module\s*\{[^}]*)(\s*\})""")
@@ -149,12 +150,7 @@ class FeatureDiUpdater {
         val pascalName = pageName.replaceFirstChar { it.uppercase() }
         val camelName = pageName.replaceFirstChar { it.lowercase() }
 
-        val binding = if (useCases.isEmpty()) {
-            "viewModelOf(::$pascalName" + "ViewModel)"
-        } else {
-            val params = useCases.joinToString(", ") { "get()" }
-            "viewModel { $pascalName" + "ViewModel($params) }"
-        }
+        val binding = "viewModelOf(::$pascalName" + "ViewModel)"
 
         return """
             // 将添加到 PresentationModule.kt:

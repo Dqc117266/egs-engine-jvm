@@ -84,12 +84,21 @@ class UseCaseScanner {
     private fun extractUseCaseInfo(file: File, projectRoot: File): UseCaseInfo {
         val packageName = extractPackageName(file)
         val relativePath = file.relativeTo(projectRoot).path
+        val returnType = extractReturnType(file)
 
         return UseCaseInfo(
             name = file.nameWithoutExtension,
             packageName = packageName,
-            path = relativePath
+            path = relativePath,
+            returnType = returnType,
         )
+    }
+
+    private fun extractReturnType(file: File): String? {
+        val content = file.readText()
+        // 匹配 invoke 函数返回类型: ): Result<SseEmitter> = 或 ): SseEmitter =
+        val regex = Regex("""(?:suspend\s+)?(?:operator\s+)?fun\s+invoke\s*\([^)]*\)\s*:\s*([^\s=]+)\s*=""")
+        return regex.find(content)?.groupValues?.get(1)?.trim()
     }
 
     private fun extractPackageName(file: File): String {

@@ -19,6 +19,8 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
     private val pascalName = template.pageName
     private val camelName = pascalName.replaceFirstChar { it.lowercase() }
+    /** snake_case 布局名，如 task_detail */
+    private val layoutSnakeName = pascalName.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
     private val pkg = template.modulePackage
     private val fragmentPkg = "$pkg.presentation.fragment.$camelName"
     private val baseClasses = template.baseClassPackages
@@ -47,79 +49,127 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
     /**
      * 生成 Contract 文件
+     * - State: data class (data, isLoading, error)，data 类型根据 useCases 可扩展
+     * - Intent: sealed class，每个 useCase 对应一个请求意图（LoadData/Refresh + 其他）
+     * - Effect: sealed class，仅 ShowToast
      */
     fun generateContract(): FileSpec {
-        return FileSpec.builder(fragmentPkg, "${pascalName}Contract")
+        val intentClass = ClassName(fragmentPkg, "${pascalName}Contract", "Intent")
+        val effectClass = ClassName(fragmentPkg, "${pascalName}Contract", "Effect")
+
+        // State: data, isLoading, error + 每个 useCase 的返回值类型作为属性
+        val modelPackage = "$pkg.domain.model"
+        val stateBuilder = TypeSpec.classBuilder("State")
+            .addSuperinterface(uiStateClass)
+        val constructorBuilder = FunSpec.constructorBuilder()
+            .addParameter(ParameterSpec.builder("data", String::class).defaultValue("%S", "").build())
+            .addParameter(ParameterSpec.builder("isLoading", Boolean::class).defaultValue("false").build())
+            .addParameter(
+                ParameterSpec.builder("error", String::class.asTypeName().copy(nullable = true))
+                    .defaultValue("null")
+                    .build()
+            )
+        val stateProperties = mutableListOf<PropertySpec>()
+        stateProperties.add(PropertySpec.builder("data", String::class).initializer("data").build())
+        stateProperties.add(PropertySpec.builder("isLoading", Boolean::class).initializer("isLoading").build())
+        stateProperties.add(
+            PropertySpec.builder("error", String::class.asTypeName().copy(nullable = true))
+                .initializer("error")
+                .build()
+        )
+
+        template.useCases.forEach { useCase ->
+            val propName = useCase.camelName
+            val returnType = useCase.returnType
+            if (returnType != null) {
+                val innerType = Regex("""Result<([^>]+)>""").find(returnType)?.groupValues?.get(1) ?: returnType
+                val simpleType = innerType.substringAfterLast(".")
+                val typePackage = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
+                val typeClass = resolveStatePropertyType(simpleType, typePackage, modelPackage)
+                constructorBuilder.addParameter(
+                    ParameterSpec.builder(propName, typeClass.copy(nullable = true))
+                        .defaultValue("null")
+                        .build()
+                )
+                stateProperties.add(PropertySpec.builder(propName, typeClass.copy(nullable = true)).initializer(propName).build())
+            }
+        }
+
+        val stateType = stateBuilder
+            .primaryConstructor(constructorBuilder.build())
+            .addProperties(stateProperties)
+            .build()
+
+        // Intent: sealed class，根据 useCases 动态生成 LoadData/Refresh 及每个 useCase 的 intent
+        val intentNames = buildIntentNames()
+        val intentType = TypeSpec.classBuilder("Intent")
+            .addModifiers(KModifier.SEALED)
+            .addSuperinterface(uiIntentClass)
+            .addTypes(
+                intentNames.map { name ->
+                    TypeSpec.objectBuilder(name)
+                        .superclass(intentClass)
+                        .build()
+                }
+            )
+            .build()
+
+        // Effect: sealed class，仅 ShowToast
+        val effectType = TypeSpec.classBuilder("Effect")
+            .addModifiers(KModifier.SEALED)
+            .addSuperinterface(uiEffectClass)
             .addType(
-                TypeSpec.interfaceBuilder("${pascalName}Contract")
-                    // State data class
-                    .addType(
-                        TypeSpec.classBuilder("State")
-                            .addModifiers(KModifier.DATA)
-                            .addSuperinterface(uiStateClass)
-                            .primaryConstructor(
-                                FunSpec.constructorBuilder()
-                                    .addParameter(
-                                        ParameterSpec.builder("data", String::class)
-                                            .defaultValue("%S", "")
-                                            .build()
-                                    )
-                                    .addParameter(
-                                        ParameterSpec.builder("isLoading", Boolean::class)
-                                            .defaultValue("false")
-                                            .build()
-                                    )
-                                    .addParameter(
-                                        ParameterSpec.builder("error", String::class.asTypeName().copy(nullable = true))
-                                            .defaultValue("null")
-                                            .build()
-                                    )
-                                    .build()
-                            )
-                            .addProperty(PropertySpec.builder("data", String::class).initializer("data").build())
-                            .addProperty(PropertySpec.builder("isLoading", Boolean::class).initializer("isLoading").build())
-                            .addProperty(PropertySpec.builder("error", String::class.asTypeName().copy(nullable = true)).initializer("error").build())
+                TypeSpec.classBuilder("ShowToast")
+                    .superclass(effectClass)
+                    .primaryConstructor(
+                        FunSpec.constructorBuilder()
+                            .addParameter("message", String::class)
                             .build()
                     )
-                    // Intent sealed interface
-                    .addType(
-                        TypeSpec.interfaceBuilder("Intent")
-                            .addModifiers(KModifier.SEALED)
-                            .addSuperinterface(uiIntentClass)
-                            .addType(TypeSpec.objectBuilder("LoadData").addSuperinterface(ClassName(fragmentPkg, "Intent")).build())
-                            .addType(TypeSpec.objectBuilder("Refresh").addSuperinterface(ClassName(fragmentPkg, "Intent")).build())
-                            .build()
-                    )
-                    // Effect sealed class
-                    .addType(
-                        TypeSpec.classBuilder("Effect")
-                            .addModifiers(KModifier.SEALED)
-                            .addSuperinterface(uiEffectClass)
-                            .addType(
-                                TypeSpec.classBuilder("ShowToast")
-                                    .addSuperinterface(ClassName(fragmentPkg, "Effect"))
-                                    .primaryConstructor(
-                                        FunSpec.constructorBuilder()
-                                            .addParameter("message", String::class)
-                                            .build()
-                                    )
-                                    .addProperty(
-                                        PropertySpec.builder("message", String::class)
-                                            .initializer("message")
-                                            .build()
-                                    )
-                                    .build()
-                            )
-                            .addType(
-                                TypeSpec.objectBuilder("NavigateBack")
-                                    .addSuperinterface(ClassName(fragmentPkg, "Effect"))
-                                    .build()
-                            )
+                    .addProperty(
+                        PropertySpec.builder("message", String::class)
+                            .initializer("message")
                             .build()
                     )
                     .build()
             )
             .build()
+
+        return FileSpec.builder(fragmentPkg, "${pascalName}Contract")
+            .addType(
+                TypeSpec.interfaceBuilder("${pascalName}Contract")
+                    .addType(stateType)
+                    .addType(intentType)
+                    .addType(effectType)
+                    .build()
+            )
+            .build()
+    }
+
+    /**
+     * 将包装类型映射为 Kotlin 标准类型，避免生成 ModelBoolean、KotlinBoolean 等。
+     * 一般类型直接用 Kotlin 标准类型，自定义类型（如 SseEmitter）保持原样。
+     */
+    private fun resolveStatePropertyType(simpleType: String, typePackage: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
+        return when (simpleType) {
+            "Boolean", "ModelBoolean", "KotlinBoolean" -> Boolean::class.asTypeName()
+            "Int", "ModelInt", "KotlinInt" -> Int::class.asTypeName()
+            "Long", "ModelLong", "KotlinLong" -> Long::class.asTypeName()
+            "String", "ModelString", "KotlinString" -> String::class.asTypeName()
+            "Double", "ModelDouble", "KotlinDouble" -> Double::class.asTypeName()
+            "Float", "ModelFloat", "KotlinFloat" -> Float::class.asTypeName()
+            else -> ClassName(typePackage, simpleType)
+        }
+    }
+
+    /** 根据 useCases 生成 Intent 名称：LoadData、Refresh + 每个 useCase 的意图 */
+    private fun buildIntentNames(): List<String> {
+        val base = listOf("LoadData", "Refresh")
+        val fromUseCases = template.useCases.mapNotNull { useCase ->
+            val name = useCase.name.removeSuffix("UseCase")
+            if (name !in base) name else null
+        }.distinct()
+        return (base + fromUseCases)
     }
 
     /**
@@ -143,7 +193,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addType(
                 TypeSpec.classBuilder("${pascalName}Fragment")
                     .superclass(baseFragmentClass.parameterizedBy(bindingClass))
-                    .addSuperclassConstructorParameter("%T.layout.fragment_$camelName", rClass)
+                    .addSuperclassConstructorParameter("%T.layout.fragment_$layoutSnakeName", rClass)
                     .addProperty(
                         PropertySpec.builder("viewModel", viewModelClass, KModifier.PRIVATE)
                             .delegate("viewModel()")
@@ -213,7 +263,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addParameter("effect", effectClass)
             .beginControlFlow("when (effect)")
             .addStatement("is ${pascalName}Contract.Effect.ShowToast -> showToast(effect.message)")
-            .addStatement("${pascalName}Contract.Effect.NavigateBack -> { }")
             .endControlFlow()
             .build()
     }
@@ -279,15 +328,14 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addModifiers(KModifier.OVERRIDE)
 
         if (template.useCases.isNotEmpty() && baseViewModelClass.canonicalName != "androidx.lifecycle.ViewModel") {
-            // 如果有 BaseViewModel，添加 registerIntent 调用
-            registerIntentsBuilder
-                .addStatement("registerIntent<%T.LoadData> {", intentClass)
-                .addStatement("    handleLoadData()")
-                .addStatement("}")
-                .addStatement("")
-                .addStatement("registerIntent<%T.Refresh> {", intentClass)
-                .addStatement("    handleLoadData()")
-                .addStatement("}")
+            // 根据 Contract 的 Intent 动态添加 registerIntent
+            buildIntentNames().forEach { intentName ->
+                registerIntentsBuilder
+                    .addStatement("registerIntent<%T.%L> {", intentClass, intentName)
+                    .addStatement("    handleLoadData()")
+                    .addStatement("}")
+                    .addStatement("")
+            }
         } else {
             registerIntentsBuilder.addStatement("// TODO: Register intent handlers")
         }
