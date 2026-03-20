@@ -92,7 +92,7 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         // 查找 UseCase
         val allUseCases = useCaseScanner.scanByModule(projectRoot, targetModule)
         val selectedUseCases = if (apis.isNotEmpty()) {
-            apis.mapNotNull { apiName ->
+            apis.map { apiName ->
                 allUseCases.find { it.name == apiName || it.name == "${apiName}UseCase" }
                     ?: throw IllegalArgumentException("UseCase '$apiName' 在模块 '$targetModule' 中未找到")
             }
@@ -132,7 +132,7 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         echo()
 
         print("> 请输入模块编号: ")
-        val moduleIndex = readLine()?.toIntOrNull()
+        val moduleIndex = readlnOrNull()?.toIntOrNull()
             ?: throw IllegalArgumentException("无效的模块选择")
         require(moduleIndex in modules.indices) { "无效的模块编号" }
 

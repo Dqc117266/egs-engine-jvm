@@ -57,12 +57,12 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         val intentClass = ClassName(fragmentPkg, "${pascalName}Contract", "Intent")
         val effectClass = ClassName(fragmentPkg, "${pascalName}Contract", "Effect")
 
-        // State: data, isLoading, error + 每个 useCase 的返回值类型作为属性
+        // State: data class，含 isLoading、error + 每个 useCase 的返回值类型作为属性（无 data 字段）
         val modelPackage = "$pkg.domain.model"
         val stateBuilder = TypeSpec.classBuilder("State")
+            .addModifiers(KModifier.DATA)
             .addSuperinterface(uiStateClass)
         val constructorBuilder = FunSpec.constructorBuilder()
-            .addParameter(ParameterSpec.builder("data", String::class).defaultValue("%S", "").build())
             .addParameter(ParameterSpec.builder("isLoading", Boolean::class).defaultValue("false").build())
             .addParameter(
                 ParameterSpec.builder("error", String::class.asTypeName().copy(nullable = true))
@@ -70,7 +70,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     .build()
             )
         val stateProperties = mutableListOf<PropertySpec>()
-        stateProperties.add(PropertySpec.builder("data", String::class).initializer("data").build())
         stateProperties.add(PropertySpec.builder("isLoading", Boolean::class).initializer("isLoading").build())
         stateProperties.add(
             PropertySpec.builder("error", String::class.asTypeName().copy(nullable = true))
@@ -100,26 +99,24 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addProperties(stateProperties)
             .build()
 
-        // Intent: sealed class，根据 useCases 动态生成 LoadData/Refresh 及每个 useCase 的 intent
-        val intentNames = buildIntentNames()
+        // Intent: sealed class，无参数用 object，有参数用 data class
         val intentType = TypeSpec.classBuilder("Intent")
             .addModifiers(KModifier.SEALED)
             .addSuperinterface(uiIntentClass)
             .addTypes(
-                intentNames.map { name ->
-                    TypeSpec.objectBuilder(name)
-                        .superclass(intentClass)
-                        .build()
+                template.useCases.map { useCase ->
+                    buildIntentType(useCase, intentClass)
                 }
             )
             .build()
 
-        // Effect: sealed class，仅 ShowToast
+        // Effect: sealed class，ShowToast 为 data class
         val effectType = TypeSpec.classBuilder("Effect")
             .addModifiers(KModifier.SEALED)
             .addSuperinterface(uiEffectClass)
             .addType(
                 TypeSpec.classBuilder("ShowToast")
+                    .addModifiers(KModifier.DATA)
                     .superclass(effectClass)
                     .primaryConstructor(
                         FunSpec.constructorBuilder()
@@ -162,14 +159,56 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         }
     }
 
-    /** 根据 useCases 生成 Intent 名称：LoadData、Refresh + 每个 useCase 的意图 */
-    private fun buildIntentNames(): List<String> {
-        val base = listOf("LoadData", "Refresh")
-        val fromUseCases = template.useCases.mapNotNull { useCase ->
-            val name = useCase.name.removeSuffix("UseCase")
-            if (name !in base) name else null
-        }.distinct()
-        return (base + fromUseCases)
+    /** 根据 useCase 生成 Intent：无参数用 object，有参数用 data class */
+    private fun buildIntentType(useCase: com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo, intentClass: ClassName): TypeSpec {
+        val intentName = useCase.name.removeSuffix("UseCase")
+        return if (useCase.parameters.isEmpty()) {
+            TypeSpec.objectBuilder(intentName)
+                .superclass(intentClass)
+                .build()
+        } else {
+            val modelPackage = "$pkg.domain.model"
+            val constructorBuilder = FunSpec.constructorBuilder()
+            val properties = mutableListOf<PropertySpec>()
+            useCase.parameters.forEach { param ->
+                val paramType = resolveParamType(param.type, modelPackage)
+                constructorBuilder.addParameter(param.name, paramType)
+                properties.add(PropertySpec.builder(param.name, paramType).initializer(param.name).build())
+            }
+            TypeSpec.classBuilder(intentName)
+                .addModifiers(KModifier.DATA)
+                .superclass(intentClass)
+                .primaryConstructor(constructorBuilder.build())
+                .addProperties(properties)
+                .build()
+        }
+    }
+
+    /** 将参数类型字符串转为 KotlinPoet TypeName */
+    private fun resolveParamType(typeStr: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
+        val nullable = typeStr.endsWith("?")
+        val base = typeStr.removeSuffix("?")
+        val typeName = when {
+            base.startsWith("List<") -> {
+                val inner = Regex("""List<([^>]+)>""").find(base)?.groupValues?.get(1) ?: return ClassName("kotlin.collections", "List")
+                val innerType = resolveParamType(inner, modelPackage)
+                ClassName("kotlin.collections", "List").parameterizedBy(innerType)
+            }
+            else -> base.split(".").let { parts ->
+                val simple = parts.last()
+                val pkg = if (parts.size > 1) parts.dropLast(1).joinToString(".") else modelPackage
+                when (simple) {
+                    "Boolean", "ModelBoolean", "KotlinBoolean" -> Boolean::class.asTypeName()
+                    "Int", "ModelInt", "KotlinInt" -> Int::class.asTypeName()
+                    "Long", "ModelLong", "KotlinLong" -> Long::class.asTypeName()
+                    "String", "ModelString", "KotlinString" -> String::class.asTypeName()
+                    "Double", "ModelDouble", "KotlinDouble" -> Double::class.asTypeName()
+                    "Float", "ModelFloat", "KotlinFloat" -> Float::class.asTypeName()
+                    else -> ClassName(pkg, simple)
+                }
+            }
+        }
+        return if (nullable) typeName.copy(nullable = true) else typeName
     }
 
     /**
@@ -250,7 +289,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addParameter("state", stateClass)
             .addStatement("binding.apply {")
             .addStatement("    // TODO: 绑定 UI")
-            .addStatement("    // textView.text = state.data")
             .addStatement("    // progressBar.isVisible = state.isLoading")
             .addStatement("    // errorView.isVisible = state.error != null")
             .addStatement("}")
@@ -269,11 +307,17 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
     /**
      * 生成 ViewModel 文件
+     * - 每个 useCase 对应一个 registerIntent 和 handleXxx 方法
+     * - 无 onInitialize，无 LoadData/Refresh
      */
     fun generateViewModel(): FileSpec {
         val stateClass = ClassName(fragmentPkg, "${pascalName}Contract.State")
         val intentClass = ClassName(fragmentPkg, "${pascalName}Contract.Intent")
         val effectClass = ClassName(fragmentPkg, "${pascalName}Contract.Effect")
+
+        val resultPackage = template.basePackage?.let { "$it.feature.base.domain.result" } ?: "com.example.feature.base.domain.result"
+        val fileBuilder = FileSpec.builder(fragmentPkg, "${pascalName}ViewModel")
+            .addImport(resultPackage, "Result")
 
         val classBuilder = TypeSpec.classBuilder("${pascalName}ViewModel")
             .addModifiers(KModifier.INTERNAL)
@@ -308,31 +352,30 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
         classBuilder.superclass(baseVmWithTypes)
 
-        // 添加初始化 State
+        // 添加初始化 State（无 data 参数）
         if (baseViewModelClass.canonicalName != "androidx.lifecycle.ViewModel") {
             classBuilder.addSuperclassConstructorParameter(
                 CodeBlock.of("%T()", stateClass)
             )
         }
 
-        // 添加 onInitialize 方法
-        classBuilder.addFunction(
-            FunSpec.builder("onInitialize")
-                .addModifiers(KModifier.OVERRIDE)
-                .addStatement("dispatch(%T.LoadData)", intentClass)
-                .build()
-        )
-
-        // 添加 registerIntents 方法
+        // 添加 registerIntents 方法：每个 useCase 对应一个 registerIntent，有参数则传递 it.xxx
         val registerIntentsBuilder = FunSpec.builder("registerIntents")
             .addModifiers(KModifier.OVERRIDE)
 
         if (template.useCases.isNotEmpty() && baseViewModelClass.canonicalName != "androidx.lifecycle.ViewModel") {
-            // 根据 Contract 的 Intent 动态添加 registerIntent
-            buildIntentNames().forEach { intentName ->
+            template.useCases.forEach { useCase ->
+                val intentName = useCase.name.removeSuffix("UseCase")
+                val handlerName = "handle${intentName.replaceFirstChar { it.uppercase() }}"
                 registerIntentsBuilder
                     .addStatement("registerIntent<%T.%L> {", intentClass, intentName)
-                    .addStatement("    handleLoadData()")
+                if (useCase.parameters.isEmpty()) {
+                    registerIntentsBuilder.addStatement("    %L()", handlerName)
+                } else {
+                    val paramArgs = useCase.parameters.joinToString(",\n                ") { "it.${it.name}" }
+                    registerIntentsBuilder.addStatement("    %L(%L)", handlerName, paramArgs)
+                }
+                registerIntentsBuilder
                     .addStatement("}")
                     .addStatement("")
             }
@@ -342,46 +385,53 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
         classBuilder.addFunction(registerIntentsBuilder.build())
 
-        // 如果有 UseCase，添加处理方法
-        if (template.useCases.isNotEmpty()) {
-            classBuilder.addFunction(generateHandleLoadDataFun(stateClass, effectClass))
+        // 为每个 useCase 添加 handleXxx 方法，有参数则接收参数
+        template.useCases.forEach { useCase ->
+            classBuilder.addFunction(generateHandleUseCaseFun(useCase, stateClass, effectClass))
         }
 
-        return FileSpec.builder(fragmentPkg, "${pascalName}ViewModel")
-            .addType(classBuilder.build())
-            .build()
+        return fileBuilder.addType(classBuilder.build()).build()
     }
 
-    private fun generateHandleLoadDataFun(stateClass: ClassName, effectClass: ClassName): FunSpec {
-        val funBuilder = FunSpec.builder("handleLoadData")
+    private fun generateHandleUseCaseFun(useCase: com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo, stateClass: ClassName, effectClass: ClassName): FunSpec {
+        val intentName = useCase.name.removeSuffix("UseCase")
+        val handlerName = "handle${intentName.replaceFirstChar { it.uppercase() }}"
+        val showLoading = !(useCase.returnType?.contains("SseEmitter") == true)
+        val resultPackage = template.basePackage?.let { "$it.feature.base.domain.result" } ?: "com.example.feature.base.domain.result"
+        val resultClass = ClassName(resultPackage, "Result")
+        val modelPackage = "$pkg.domain.model"
+
+        val funBuilder = FunSpec.builder(handlerName)
             .addModifiers(KModifier.PRIVATE)
 
-        // 如果有 BaseViewModel 和 launchRequest 方法
+        // 添加方法参数（与 useCase 参数一致）
+        useCase.parameters.forEach { param ->
+            val paramType = resolveParamType(param.type, modelPackage)
+            funBuilder.addParameter(param.name, paramType)
+        }
+
         if (baseViewModelClass.canonicalName != "androidx.lifecycle.ViewModel") {
             funBuilder
-                .beginControlFlow("launchRequest(")
-                .addStatement("showLoading = true,")
-                .addStatement("onError = { error ->")
-                .addStatement("    updateState { copy(error = error.message) }")
-                .addStatement("    sendEffect(%T.ShowToast(%S))", effectClass, "加载失败")
+                .beginControlFlow("launchRequest(showLoading = %L) {", showLoading)
+            if (useCase.parameters.isEmpty()) {
+                funBuilder
+                    .beginControlFlow("when (val result = %L())", useCase.camelName)
+            } else {
+                val useCaseArgs = useCase.parameters.joinToString(", ") { "${it.name} = ${it.name}" }
+                funBuilder
+                    .beginControlFlow("when (val result = %L(%L))", useCase.camelName, useCaseArgs)
+            }
+            funBuilder
+                .addStatement("is %T.Success -> {", resultClass)
+                .addStatement("    updateState { copy(%L = result.value) }", useCase.camelName)
+                .addStatement("}")
+                .addStatement("is %T.Failure -> {", resultClass)
+                .addStatement("    updateState { copy(error = result.throwable?.message) }")
                 .addStatement("}")
                 .endControlFlow()
-//                .addStatement(">")
-                .addStatement("")
-
-            // 添加 UseCase 调用
-            template.useCases.firstOrNull()?.let { useCase ->
-                funBuilder.addStatement("val result = ${useCase.camelName}()")
-                funBuilder.addStatement("// TODO: 处理 result")
-                funBuilder.addStatement("updateState { copy(isLoading = false) }")
-            }
-
-            funBuilder.addStatement("}")
+                .endControlFlow()
         } else {
-            funBuilder.addStatement("// TODO: 实现数据加载逻辑")
-            template.useCases.firstOrNull()?.let { useCase ->
-                funBuilder.addStatement("// val result = ${useCase.camelName}()")
-            }
+            funBuilder.addStatement("// TODO: 实现 %L 逻辑", useCase.camelName)
         }
 
         return funBuilder.build()

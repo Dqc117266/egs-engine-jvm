@@ -13,6 +13,28 @@ data class PageTemplate(
 )
 
 /**
+ * UseCase 参数信息
+ */
+data class UseCaseParam(
+    val name: String,
+    val type: String,
+) {
+    /** 生成占位符默认值 */
+    val placeholderValue: String
+        get() = when {
+            type.endsWith("?") -> "null"
+            type == "Long" -> "0L"
+            type == "Int" -> "0"
+            type == "String" -> "\"\""
+            type == "Boolean" -> "false"
+            type == "Double" -> "0.0"
+            type == "Float" -> "0f"
+            type.startsWith("List<") -> "emptyList()"
+            else -> "null"
+        }
+}
+
+/**
  * UseCase 信息
  */
 data class UseCaseInfo(
@@ -20,6 +42,7 @@ data class UseCaseInfo(
     val packageName: String,
     val path: String,
     val returnType: String? = null,
+    val parameters: List<UseCaseParam> = emptyList(),
 ) {
     val camelName: String = name.replaceFirstChar { it.lowercase() }
         .replace("UseCase", "")

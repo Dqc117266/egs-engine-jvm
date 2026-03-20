@@ -1,6 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.data
 
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
+import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -85,13 +86,32 @@ class UseCaseScanner {
         val packageName = extractPackageName(file)
         val relativePath = file.relativeTo(projectRoot).path
         val returnType = extractReturnType(file)
+        val parameters = extractInvokeParameters(file)
 
         return UseCaseInfo(
             name = file.nameWithoutExtension,
             packageName = packageName,
             path = relativePath,
             returnType = returnType,
+            parameters = parameters,
         )
+    }
+
+    private fun extractInvokeParameters(file: File): List<UseCaseParam> {
+        val content = file.readText()
+        val invokeMatch = Regex("""(?:suspend\s+)?(?:operator\s+)?fun\s+invoke\s*\(([\s\S]*?)\)\s*:""").find(content) ?: return emptyList()
+        val paramsBlock = invokeMatch.groupValues.getOrNull(1)?.trim() ?: return emptyList()
+        if (paramsBlock.isEmpty()) return emptyList()
+
+        return paramsBlock.split(",").mapNotNull { part ->
+            val paramMatch = Regex("""(\w+)\s*:\s*([^,\n=]+)""").find(part.trim())
+            paramMatch?.let {
+                UseCaseParam(
+                    name = it.groupValues[1].trim(),
+                    type = it.groupValues[2].trim(),
+                )
+            }
+        }
     }
 
     private fun extractReturnType(file: File): String? {

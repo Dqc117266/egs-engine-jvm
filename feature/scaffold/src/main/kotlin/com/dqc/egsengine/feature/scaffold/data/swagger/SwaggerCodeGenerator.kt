@@ -28,9 +28,10 @@ class SwaggerCodeGenerator {
         val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
             schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
         }
+        val requestSchemaNames = collectRequestSchemaNames(spec)
 
         for (schema in dataSchemas) {
-            files.addKt(moduleDir, generateDataModel(schema, ctx))
+            files.addKt(moduleDir, generateDataModel(schema, ctx, schema.name in requestSchemaNames))
             files.addKt(moduleDir, generateDomainModel(schema, ctx))
         }
 
@@ -63,6 +64,20 @@ class SwaggerCodeGenerator {
         return originalNames.contains("code") && originalNames.contains("msg") && originalNames.contains("data")
     }
 
+    private fun collectRequestSchemaNames(spec: SwaggerSpec): Set<String> {
+        val names = mutableSetOf<String>()
+        fun collectFromType(type: SwaggerType?) {
+            when (type) {
+                is SwaggerType.ModelRef -> names.add(type.name)
+                is SwaggerType.ListType -> collectFromType(type.elementType)
+                is SwaggerType.MapType -> collectFromType(type.valueType)
+                else -> {}
+            }
+        }
+        spec.operations.forEach { op -> collectFromType(op.requestBody) }
+        return names
+    }
+
     private fun unwrapResponseBody(
         responseType: SwaggerType?,
         wrapperMap: Map<String, SwaggerType?>,
@@ -73,7 +88,7 @@ class SwaggerCodeGenerator {
         return responseType
     }
 
-    private fun generateDataModel(schema: SwaggerSchema, ctx: GeneratorContext): FileSpec {
+    private fun generateDataModel(schema: SwaggerSchema, ctx: GeneratorContext, isRequestSchema: Boolean): FileSpec {
         val className = ctx.dataModelName(schema.name)
         val dataClassName = ClassName(ctx.dataModelPackage, className)
         val domainClassName = ClassName(ctx.domainModelPackage, ctx.domainModelName(schema.name))
@@ -131,10 +146,39 @@ class SwaggerCodeGenerator {
             .addCode(mapperBody)
             .build()
 
-        return FileSpec.builder(ctx.dataModelPackage, className)
+        val fileBuilder = FileSpec.builder(ctx.dataModelPackage, className)
             .addType(typeBuilder.build())
             .addFunction(mapperFun)
-            .build()
+
+        // 请求模型额外生成 toData()：Domain -> ApiModel
+        if (isRequestSchema) {
+            val toDataBody = CodeBlock.builder()
+                .add("return %T(\n", dataClassName)
+                .indent()
+                .apply {
+                    schema.properties.forEach { prop ->
+                        add(
+                            "%L = %L,\n",
+                            prop.name,
+                            ctx.toDataExpression(prop.type, "this.${prop.name}", !prop.required),
+                        )
+                    }
+                }
+                .unindent()
+                .add(")\n")
+                .build()
+
+            val toDataFun = FunSpec.builder("toData")
+                .receiver(domainClassName)
+                .addModifiers(KModifier.INTERNAL)
+                .returns(dataClassName)
+                .addCode(toDataBody)
+                .build()
+
+            fileBuilder.addFunction(toDataFun)
+        }
+
+        return fileBuilder.build()
     }
 
     private fun generateDomainModel(schema: SwaggerSchema, ctx: GeneratorContext): FileSpec {
@@ -548,6 +592,31 @@ private class GeneratorContext(val template: ModuleTemplate) {
             SwaggerType.Unknown,
             -> false
         }
+    }
+
+    /** 生成 Domain -> ApiModel 的表达式，用于 toData() */
+    fun toDataExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String {
+        val mappedExpr = toDataNonNullExpression(type, sourceExpr)
+        if (!nullableContainer) return mappedExpr
+        return when (type) {
+            is SwaggerType.Primitive,
+            SwaggerType.Unknown,
+            -> sourceExpr
+            is SwaggerType.ModelRef -> "$sourceExpr?.toData()"
+            is SwaggerType.ListType -> "$sourceExpr?.map { ${toDataNonNullExpression(type.elementType, "it")} }"
+            is SwaggerType.MapType ->
+                "$sourceExpr?.mapValues { (_, value) -> ${toDataNonNullExpression(type.valueType, "value")} }"
+        }
+    }
+
+    private fun toDataNonNullExpression(type: SwaggerType, sourceExpr: String): String = when (type) {
+        is SwaggerType.Primitive,
+        SwaggerType.Unknown,
+        -> sourceExpr
+        is SwaggerType.ModelRef -> "$sourceExpr.toData()"
+        is SwaggerType.ListType -> "$sourceExpr.map { ${toDataNonNullExpression(type.elementType, "it")} }"
+        is SwaggerType.MapType ->
+            "$sourceExpr.mapValues { (_, value) -> ${toDataNonNullExpression(type.valueType, "value")} }"
     }
 }
 
