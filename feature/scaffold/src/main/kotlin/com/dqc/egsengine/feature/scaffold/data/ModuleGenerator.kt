@@ -35,16 +35,16 @@ class ModuleGenerator {
 
             kotlinGen.generateFragment()?.let { files.addKt(moduleDir, it) }
 
-            val camel = toPascalCase(template.name).replaceFirstChar { it.lowercase() }
+            val layoutSnakeName = toSnakeCase(toPascalCase(template.name))
             files.add(
                 GeneratedFile(
-                    "$moduleDir/src/main/res/layout/fragment_$camel.xml",
+                    "$moduleDir/src/main/res/layout/fragment_$layoutSnakeName.xml",
                     xmlGen.generateLayout(),
                 ),
             )
             files.add(
                 GeneratedFile(
-                    "$moduleDir/src/main/res/navigation/${camel}_nav_graph.xml",
+                    "$moduleDir/src/main/res/navigation/${layoutSnakeName}_nav_graph.xml",
                     xmlGen.generateNavGraph(),
                 ),
             )
@@ -109,4 +109,8 @@ class ModuleGenerator {
         name.split("-", "_").joinToString("") { part ->
             part.replaceFirstChar { it.uppercase() }
         }
+
+    /** camelCase/PascalCase -> snake_case，如 UiStructureEngine -> ui_structure_engine */
+    private fun toSnakeCase(s: String): String =
+        s.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
 }

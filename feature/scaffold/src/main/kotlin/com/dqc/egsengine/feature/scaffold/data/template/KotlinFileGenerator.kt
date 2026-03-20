@@ -16,6 +16,8 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
 
     private val pascal = template.name.toPascalCase()
     private val camel = pascal.replaceFirstChar { it.lowercase() }
+    /** snake_case 布局名，如 ui_structure_engine */
+    private val layoutSnakeName = pascal.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
     private val pkg = template.packageName
     private val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
     private val bcp = template.baseClassPackages
@@ -284,7 +286,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
             .addType(
                 TypeSpec.classBuilder("${pascal}Fragment")
                     .superclass(baseFragment.parameterizedBy(bindingClass))
-                    .addSuperclassConstructorParameter("%T.layout.fragment_$camel", rClass)
+                    .addSuperclassConstructorParameter("%T.layout.fragment_$layoutSnakeName", rClass)
                     .addFunction(
                         FunSpec.builder("onViewCreated")
                             .addModifiers(KModifier.OVERRIDE)
