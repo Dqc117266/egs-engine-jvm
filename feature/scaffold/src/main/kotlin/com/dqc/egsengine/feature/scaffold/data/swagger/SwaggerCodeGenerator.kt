@@ -264,7 +264,7 @@ class SwaggerCodeGenerator {
                 funBuilder.addParameter(ctx.buildRepositoryParam(param))
             }
             op.requestBody?.let { bodyType ->
-                funBuilder.addParameter("body", ctx.resolveType(bodyType, forDomain = false))
+                funBuilder.addParameter("body", ctx.resolveType(bodyType, forDomain = true))
             }
             typeBuilder.addFunction(funBuilder.build())
         }
@@ -302,8 +302,8 @@ class SwaggerCodeGenerator {
                 callArgs.add(paramName)
             }
             op.requestBody?.let { bodyType ->
-                funBuilder.addParameter("body", ctx.resolveType(bodyType, forDomain = false))
-                callArgs.add("body")
+                funBuilder.addParameter("body", ctx.resolveType(bodyType, forDomain = true))
+                callArgs.add("body.toData()")
             }
 
             val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
@@ -327,10 +327,14 @@ class SwaggerCodeGenerator {
         }
 
         val needsToDomainImport = spec.operations.any { ctx.requiresToDomainImport(it.responseBody) }
+        val needsToDataImport = spec.operations.any { it.requestBody != null }
         return FileSpec.builder(ctx.dataRepositoryPackage, ctx.repositoryImplName)
             .apply {
                 if (needsToDomainImport) {
                     addImport(ctx.dataModelPackage, "toDomain")
+                }
+                if (needsToDataImport) {
+                    addImport(ctx.dataModelPackage, "toData")
                 }
             }
             .addType(typeBuilder.build())
@@ -436,7 +440,7 @@ class SwaggerCodeGenerator {
             args.add(param.name.toSafeIdentifier())
         }
         op.requestBody?.let { bodyType ->
-            invokeBuilder.addParameter("body", ctx.resolveType(bodyType, forDomain = false))
+            invokeBuilder.addParameter("body", ctx.resolveType(bodyType, forDomain = true))
             args.add("body")
         }
         invokeBuilder.addStatement("return repository.%L(%L)", op.operationId, args.joinToString(", "))

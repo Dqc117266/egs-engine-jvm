@@ -184,7 +184,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         }
     }
 
-    /** 将参数类型字符串转为 KotlinPoet TypeName */
+    /** 将参数类型字符串转为 KotlinPoet TypeName，ApiModel 映射为 domain model */
     private fun resolveParamType(typeStr: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
         val nullable = typeStr.endsWith("?")
         val base = typeStr.removeSuffix("?")
@@ -204,7 +204,14 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     "String", "ModelString", "KotlinString" -> String::class.asTypeName()
                     "Double", "ModelDouble", "KotlinDouble" -> Double::class.asTypeName()
                     "Float", "ModelFloat", "KotlinFloat" -> Float::class.asTypeName()
-                    else -> ClassName(pkg, simple)
+                    else -> {
+                        // ApiModel (data layer) -> domain model
+                        if (simple.endsWith("ApiModel")) {
+                            ClassName(modelPackage, simple.removeSuffix("ApiModel"))
+                        } else {
+                            ClassName(pkg, simple)
+                        }
+                    }
                 }
             }
         }
