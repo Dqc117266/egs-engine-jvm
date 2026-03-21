@@ -11,3 +11,15 @@ plugins {
     alias(libs.plugins.test.logger) apply false
     alias(libs.plugins.shadow) apply false
 }
+
+tasks.register("ciKonsist") {
+    dependsOn(":konsist-test:test")
+}
+
+tasks.register("ciScaffoldTests") {
+    dependsOn(":feature:scaffold:test")
+}
+
+tasks.register("ciChecks") {
+    dependsOn("ciKonsist", "ciScaffoldTests")
+}
