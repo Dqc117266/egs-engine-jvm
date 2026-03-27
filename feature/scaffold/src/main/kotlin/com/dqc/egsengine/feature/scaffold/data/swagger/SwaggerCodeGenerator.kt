@@ -31,7 +31,10 @@ class SwaggerCodeGenerator {
         val requestSchemaNames = collectRequestSchemaNames(spec)
 
         for (schema in dataSchemas) {
-            files.addKt(moduleDir, generateDataModel(schema, ctx, schema.name in requestSchemaNames))
+            files.addKt(
+                moduleDir,
+                generateDataModel(schema, ctx, schema.name in requestSchemaNames)
+            )
             files.addKt(moduleDir, generateDomainModel(schema, ctx))
         }
 
@@ -61,7 +64,9 @@ class SwaggerCodeGenerator {
 
     private fun isCommonResultWrapper(schema: SwaggerSchema): Boolean {
         val originalNames = schema.properties.map { it.originalName }.toSet()
-        return originalNames.contains("code") && originalNames.contains("msg") && originalNames.contains("data")
+        return originalNames.contains("code") && originalNames.contains("msg") && originalNames.contains(
+            "data"
+        )
     }
 
     private fun collectRequestSchemaNames(spec: SwaggerSpec): Set<String> {
@@ -88,7 +93,11 @@ class SwaggerCodeGenerator {
         return responseType
     }
 
-    private fun generateDataModel(schema: SwaggerSchema, ctx: GeneratorContext, isRequestSchema: Boolean): FileSpec {
+    private fun generateDataModel(
+        schema: SwaggerSchema,
+        ctx: GeneratorContext,
+        isRequestSchema: Boolean
+    ): FileSpec {
         val className = ctx.dataModelName(schema.name)
         val dataClassName = ClassName(ctx.dataModelPackage, className)
         val domainClassName = ClassName(ctx.domainModelPackage, ctx.domainModelName(schema.name))
@@ -239,7 +248,9 @@ class SwaggerCodeGenerator {
             op.requestBody?.let { bodyType ->
                 funBuilder.addParameter(
                     ParameterSpec.builder("body", ctx.resolveType(bodyType, forDomain = false))
-                        .addAnnotation(AnnotationSpec.builder(ClassName("retrofit2.http", "Body")).build())
+                        .addAnnotation(
+                            AnnotationSpec.builder(ClassName("retrofit2.http", "Body")).build()
+                        )
                         .build(),
                 )
             }
@@ -311,13 +322,19 @@ class SwaggerCodeGenerator {
             if (ctx.hasResultWrappers()) {
                 val toResult = MemberName(ctx.template.toResultPackage ?: "", "toResult")
                 if (mapperExpr != null) {
-                    funBuilder.addStatement("return %L.%M { %L }", serviceCall, toResult, mapperExpr)
+                    funBuilder.addStatement(
+                        "return %L.%M { %L }",
+                        serviceCall,
+                        toResult,
+                        mapperExpr
+                    )
                 } else {
                     funBuilder.addStatement("return %L.%M()", serviceCall, toResult)
                 }
             } else {
                 if (mapperExpr != null) {
-                    val mappedServiceCall = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
+                    val mappedServiceCall =
+                        ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
                     funBuilder.addStatement("return %L", mappedServiceCall!!)
                 } else {
                     funBuilder.addStatement("return %L", serviceCall)
@@ -326,7 +343,8 @@ class SwaggerCodeGenerator {
             typeBuilder.addFunction(funBuilder.build())
         }
 
-        val needsToDomainImport = spec.operations.any { ctx.requiresToDomainImport(it.responseBody) }
+        val needsToDomainImport =
+            spec.operations.any { ctx.requiresToDomainImport(it.responseBody) }
         val needsToDataImport = spec.operations.any { it.requestBody != null }
         return FileSpec.builder(ctx.dataRepositoryPackage, ctx.repositoryImplName)
             .apply {
@@ -349,14 +367,18 @@ class SwaggerCodeGenerator {
 
         val body = CodeBlock.builder()
             .beginControlFlow("%M", MemberName("org.koin.dsl", "module"))
-            .addStatement("%M(::%T) { %M<%T>() }",
+            .addStatement(
+                "%M(::%T) { %M<%T>() }",
                 MemberName("org.koin.core.module.dsl", "singleOf"),
                 repoImpl,
                 MemberName("org.koin.core.module.dsl", "bind"),
-                repoInterface)
-            .addStatement("single { get<%T>().create(%T::class.java) }",
+                repoInterface
+            )
+            .addStatement(
+                "single { get<%T>().create(%T::class.java) }",
                 ClassName("retrofit2", "Retrofit"),
-                service)
+                service
+            )
             .endControlFlow()
             .build()
 
@@ -375,9 +397,11 @@ class SwaggerCodeGenerator {
         val body = CodeBlock.builder()
             .beginControlFlow("%M", MemberName("org.koin.dsl", "module"))
         spec.operations.forEach { op ->
-            body.addStatement("%M(::%T)",
+            body.addStatement(
+                "%M(::%T)",
                 MemberName("org.koin.core.module.dsl", "singleOf"),
-                ClassName(ctx.domainUseCasePackage, "${op.operationId.toSafePascal()}UseCase"))
+                ClassName(ctx.domainUseCasePackage, "${op.operationId.toSafePascal()}UseCase")
+            )
         }
         body.endControlFlow()
 
@@ -443,7 +467,11 @@ class SwaggerCodeGenerator {
             invokeBuilder.addParameter("body", ctx.resolveType(bodyType, forDomain = true))
             args.add("body")
         }
-        invokeBuilder.addStatement("return repository.%L(%L)", op.operationId, args.joinToString(", "))
+        invokeBuilder.addStatement(
+            "return repository.%L(%L)",
+            op.operationId,
+            args.joinToString(", ")
+        )
         typeBuilder.addFunction(invokeBuilder.build())
 
         return FileSpec.builder(ctx.domainUseCasePackage, useCaseName)
@@ -451,7 +479,10 @@ class SwaggerCodeGenerator {
             .build()
     }
 
-    private fun MutableList<ModuleGenerator.GeneratedFile>.addKt(moduleDir: String, fileSpec: FileSpec) {
+    private fun MutableList<ModuleGenerator.GeneratedFile>.addKt(
+        moduleDir: String,
+        fileSpec: FileSpec
+    ) {
         val pkgPath = fileSpec.packageName.replace('.', '/')
         val path = "$moduleDir/src/main/kotlin/$pkgPath/${fileSpec.name}.kt"
         val content = fileSpec.toString()
@@ -506,18 +537,22 @@ private class GeneratorContext(val template: ModuleTemplate) {
             PrimitiveKind.DOUBLE -> ClassName("kotlin", "Double")
             PrimitiveKind.BOOLEAN -> ClassName("kotlin", "Boolean")
         }
+
         is SwaggerType.ModelRef -> {
             val pkg = if (forDomain) domainModelPackage else dataModelPackage
             val simpleName = if (forDomain) domainModelName(type.name) else dataModelName(type.name)
             ClassName(pkg, simpleName)
         }
+
         is SwaggerType.ListType -> ClassName("kotlin.collections", "List").parameterizedBy(
             resolveType(type.elementType, forDomain),
         )
+
         is SwaggerType.MapType -> ClassName("kotlin.collections", "Map").parameterizedBy(
             ClassName("kotlin", "String"),
             resolveType(type.valueType, forDomain),
         )
+
         SwaggerType.Unknown -> ClassName("kotlinx.serialization.json", "JsonElement")
     }
 
@@ -535,7 +570,6 @@ private class GeneratorContext(val template: ModuleTemplate) {
             .copy(nullable = !param.required)
         val ann = when (param.location.lowercase()) {
             "path" -> AnnotationSpec.builder(ClassName("retrofit2.http", "Path"))
-            "header" -> AnnotationSpec.builder(ClassName("retrofit2.http", "Header"))
             else -> AnnotationSpec.builder(ClassName("retrofit2.http", "Query"))
         }.addMember("%S", param.originalName).build()
         return ParameterSpec.builder(param.name.toSafeIdentifier(), type)
@@ -549,40 +583,27 @@ private class GeneratorContext(val template: ModuleTemplate) {
             resolveType(param.type, forDomain = false).copy(nullable = !param.required),
         ).build()
 
-    fun toDomainExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String {
-        val mappedExpr = toDomainNonNullExpression(type, sourceExpr)
-        if (!nullableContainer) return mappedExpr
-        return when (type) {
-            is SwaggerType.Primitive,
-            SwaggerType.Unknown,
-            -> sourceExpr
-            is SwaggerType.ModelRef -> "$sourceExpr?.toDomain()"
-            is SwaggerType.ListType -> "$sourceExpr?.map { ${toDomainNonNullExpression(type.elementType, "it")} }"
-            is SwaggerType.MapType ->
-                "$sourceExpr?.mapValues { (_, value) -> ${toDomainNonNullExpression(type.valueType, "value")} }"
-        }
-    }
+    fun toDomainExpression(
+        type: SwaggerType,
+        sourceExpr: String,
+        nullableContainer: Boolean
+    ): String =
+        mapExpression(type, sourceExpr, nullableContainer, "toDomain")
 
-    private fun toDomainNonNullExpression(type: SwaggerType, sourceExpr: String): String = when (type) {
-        is SwaggerType.Primitive,
-        SwaggerType.Unknown,
-        -> sourceExpr
-        is SwaggerType.ModelRef -> "$sourceExpr.toDomain()"
-        is SwaggerType.ListType -> "$sourceExpr.map { ${toDomainNonNullExpression(type.elementType, "it")} }"
-        is SwaggerType.MapType ->
-            "$sourceExpr.mapValues { (_, value) -> ${toDomainNonNullExpression(type.valueType, "value")} }"
-    }
+    private fun toDomainNonNullExpression(type: SwaggerType, sourceExpr: String): String =
+        mapExpressionNonNull(type, sourceExpr, "toDomain")
 
     fun repositoryResponseMapExpression(type: SwaggerType?, sourceExpr: String): String? {
         val t = type ?: return null
         return when (t) {
             is SwaggerType.Primitive,
             SwaggerType.Unknown,
-            -> null
+                -> null
+
             is SwaggerType.ModelRef,
             is SwaggerType.ListType,
             is SwaggerType.MapType,
-            -> toDomainNonNullExpression(t, sourceExpr)
+                -> mapExpressionNonNull(t, sourceExpr, "toDomain")
         }
     }
 
@@ -594,33 +615,80 @@ private class GeneratorContext(val template: ModuleTemplate) {
             is SwaggerType.MapType -> requiresToDomainImport(t.valueType)
             is SwaggerType.Primitive,
             SwaggerType.Unknown,
-            -> false
+                -> false
         }
     }
 
     /** 生成 Domain -> ApiModel 的表达式，用于 toData() */
-    fun toDataExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String {
-        val mappedExpr = toDataNonNullExpression(type, sourceExpr)
+    fun toDataExpression(
+        type: SwaggerType,
+        sourceExpr: String,
+        nullableContainer: Boolean
+    ): String =
+        mapExpression(type, sourceExpr, nullableContainer, "toData")
+
+    private fun toDataNonNullExpression(type: SwaggerType, sourceExpr: String): String =
+        mapExpressionNonNull(type, sourceExpr, "toData")
+
+    private fun mapExpressionNonNull(
+        type: SwaggerType,
+        sourceExpr: String,
+        method: String
+    ): String = when (type) {
+        is SwaggerType.Primitive,
+        SwaggerType.Unknown,
+            -> sourceExpr
+
+        is SwaggerType.ModelRef -> "$sourceExpr.$method()"
+        is SwaggerType.ListType -> "$sourceExpr.map { ${
+            mapExpressionNonNull(
+                type.elementType,
+                "it",
+                method
+            )
+        } }"
+
+        is SwaggerType.MapType ->
+            "$sourceExpr.mapValues { (_, value) -> ${
+                mapExpressionNonNull(
+                    type.valueType,
+                    "value",
+                    method
+                )
+            } }"
+    }
+
+    private fun mapExpression(
+        type: SwaggerType,
+        sourceExpr: String,
+        nullableContainer: Boolean,
+        method: String
+    ): String {
+        val mappedExpr = mapExpressionNonNull(type, sourceExpr, method)
         if (!nullableContainer) return mappedExpr
         return when (type) {
             is SwaggerType.Primitive,
             SwaggerType.Unknown,
-            -> sourceExpr
-            is SwaggerType.ModelRef -> "$sourceExpr?.toData()"
-            is SwaggerType.ListType -> "$sourceExpr?.map { ${toDataNonNullExpression(type.elementType, "it")} }"
-            is SwaggerType.MapType ->
-                "$sourceExpr?.mapValues { (_, value) -> ${toDataNonNullExpression(type.valueType, "value")} }"
-        }
-    }
+                -> sourceExpr
 
-    private fun toDataNonNullExpression(type: SwaggerType, sourceExpr: String): String = when (type) {
-        is SwaggerType.Primitive,
-        SwaggerType.Unknown,
-        -> sourceExpr
-        is SwaggerType.ModelRef -> "$sourceExpr.toData()"
-        is SwaggerType.ListType -> "$sourceExpr.map { ${toDataNonNullExpression(type.elementType, "it")} }"
-        is SwaggerType.MapType ->
-            "$sourceExpr.mapValues { (_, value) -> ${toDataNonNullExpression(type.valueType, "value")} }"
+            is SwaggerType.ModelRef -> "$sourceExpr?.$method()"
+            is SwaggerType.ListType -> "$sourceExpr?.map { ${
+                mapExpressionNonNull(
+                    type.elementType,
+                    "it",
+                    method
+                )
+            } }"
+
+            is SwaggerType.MapType ->
+                "$sourceExpr?.mapValues { (_, value) -> ${
+                    mapExpressionNonNull(
+                        type.valueType,
+                        "value",
+                        method
+                    )
+                } }"
+        }
     }
 }
 
@@ -634,7 +702,15 @@ private fun String.toSafePascal(): String =
 private fun String.toSafeIdentifier(): String {
     val id = replace(Regex("[^A-Za-z0-9_]"), "_")
     val headSafe = if (id.firstOrNull()?.isDigit() == true) "_$id" else id
-    return if (headSafe in setOf("in", "class", "object", "when", "is", "fun")) "${headSafe}Value" else headSafe
+    return if (headSafe in setOf(
+            "in",
+            "class",
+            "object",
+            "when",
+            "is",
+            "fun"
+        )
+    ) "${headSafe}Value" else headSafe
 }
 
 private fun String.toClassName(): ClassName {
