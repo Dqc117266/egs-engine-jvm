@@ -18,7 +18,7 @@ class ModuleGenerator {
         val xmlGen = XmlTemplateGenerator(template)
         val files = mutableListOf<GeneratedFile>()
         val moduleDir = "feature/${template.name}"
-        val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
+        val isAndroid = template.isAndroid
 
         files.add(GeneratedFile("$moduleDir/build.gradle.kts", generateBuildFile(template)))
 
@@ -87,7 +87,7 @@ class ModuleGenerator {
     }
 
     private fun generateBuildFile(template: ModuleTemplate): String = buildString {
-        val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
+        val isAndroid = template.isAndroid
 
         appendLine("plugins {")
         if (template.conventionPluginId != null) {

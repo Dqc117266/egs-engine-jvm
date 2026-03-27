@@ -6,6 +6,7 @@ import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
+import com.dqc.egsengine.feature.scaffold.domain.isAndroid
 import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -48,7 +49,7 @@ class SwaggerApiScaffolder(
         val nullableBase = customPackage ?: config.effectiveBasePackage()
         val normalizedModule = moduleName.replace("-", "").replace("_", "")
         val modulePackage = "$basePackage.feature.$normalizedModule"
-        val namespace = if (config.projectType in listOf("ANDROID", "KMP_ANDROID")) modulePackage else null
+        val namespace = if (config.isAndroid) modulePackage else null
 
         return ModuleTemplate(
             name = moduleName,

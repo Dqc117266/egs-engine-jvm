@@ -5,8 +5,6 @@ import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
-import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -58,7 +56,7 @@ class ModuleScaffolder(
             "com.example.feature.${moduleName.replace("-", "")}"
         }
 
-        val isAndroid = config.projectType in listOf("ANDROID", "KMP_ANDROID")
+        val isAndroid = config.isAndroid
         val namespace = if (isAndroid && basePackage != null) {
             "${basePackage}.feature.${moduleName.replace("-", "")}"
         } else {

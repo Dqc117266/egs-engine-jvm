@@ -9,6 +9,9 @@ import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 fun EgsConfig.effectiveBasePackage(): String? =
     scaffoldOverrides?.basePackage ?: basePackage
 
+val EgsConfig.isAndroid: Boolean
+    get() = projectType in setOf("ANDROID", "KMP_ANDROID")
+
 private fun EgsConfig.resolveNamedBaseClass(className: String): String? {
     val fromOverride = when (className) {
         "BaseViewModel" -> scaffoldOverrides?.baseViewModelFqn

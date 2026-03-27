@@ -19,7 +19,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
     /** snake_case 布局名，如 ui_structure_engine */
     private val layoutSnakeName = pascal.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
     private val pkg = template.packageName
-    private val isAndroid = template.projectType in listOf("ANDROID", "KMP_ANDROID")
+    private val isAndroid = template.isAndroid
     private val bcp = template.baseClassPackages
 
     /** Base package for UiState, UiIntent, UiEffect (same as BaseViewModel) */

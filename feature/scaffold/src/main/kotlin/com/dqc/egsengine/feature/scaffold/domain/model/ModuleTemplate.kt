@@ -13,7 +13,9 @@ data class ModuleTemplate(
     val apiResultClass: String? = null,
     val commonResultClass: String? = null,
     val toResultPackage: String? = null,
-)
+) {
+    val isAndroid: Boolean get() = projectType in setOf("ANDROID", "KMP_ANDROID")
+}
 
 data class BaseClassPackages(
     val baseViewModel: String? = null,

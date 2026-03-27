@@ -34,17 +34,20 @@ object CliFormatter {
         return sb.toString()
     }
 
-    fun formatSuccess(message: String): String = "[OK] $message"
-
-    fun formatError(message: String): String = "[ERROR] $message"
-
-    fun formatWarning(message: String): String = "[WARN] $message"
-
-    fun formatInfo(message: String): String = "[INFO] $message"
-
     // ANSI 颜色码
     private const val ANSI_GREEN = "\u001B[32m"
+    private const val ANSI_RED = "\u001B[31m"
+    private const val ANSI_YELLOW = "\u001B[33m"
+    private const val ANSI_CYAN = "\u001B[36m"
     private const val ANSI_RESET = "\u001B[0m"
+
+    fun formatSuccess(message: String): String = "$ANSI_GREEN[OK] $message$ANSI_RESET"
+
+    fun formatError(message: String): String = "$ANSI_RED[ERROR] $message$ANSI_RESET"
+
+    fun formatWarning(message: String): String = "$ANSI_YELLOW[WARN] $message$ANSI_RESET"
+
+    fun formatInfo(message: String): String = "$ANSI_CYAN[INFO] $message$ANSI_RESET"
 
     fun green(text: String): String = "$ANSI_GREEN$text$ANSI_RESET"
 }

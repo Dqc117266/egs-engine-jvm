@@ -1,0 +1,2852 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "芋道快速开发平台",
+    "description": "提供管理后台、用户 App 的所有功能",
+    "contact": {
+      "url": "http://dashboard.yudao.iocoder.cn",
+      "email": "xingyu4j@vip.qq.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://gitee.com/zhijiantianya/ruoyi-vue-pro/blob/master/LICENSE"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:48080",
+      "description": "Generated server url"
+    }
+  ],
+  "security": [
+    {
+      "Authorization": []
+    },
+    {
+      "Authorization": []
+    }
+  ],
+  "paths": {
+    "/admin-api/ai/topic/update": {
+      "put": {
+        "tags": [
+          "管理后台 - AI 专题配置"
+        ],
+        "summary": "更新AI 专题配置",
+        "operationId": "Topic_updateTopic",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicSaveReqVO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/api-key/update": {
+      "put": {
+        "tags": [
+          "管理后台 - AI API Key 配置"
+        ],
+        "summary": "更新AI API Key 配置",
+        "operationId": "ApiKey_updateApiKey",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeySaveReqVO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/stream/cancel": {
+      "post": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "取消流式对话",
+        "operationId": "AppAiChat_cancelStream",
+        "parameters": [
+          {
+            "name": "streamId",
+            "in": "query",
+            "description": "流式对话 ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "abc123"
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/topic/create": {
+      "post": {
+        "tags": [
+          "管理后台 - AI 专题配置"
+        ],
+        "summary": "创建AI 专题配置",
+        "operationId": "Topic_createTopic",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicSaveReqVO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultLong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/api-key/create": {
+      "post": {
+        "tags": [
+          "管理后台 - AI API Key 配置"
+        ],
+        "summary": "创建AI API Key 配置",
+        "operationId": "ApiKey_createApiKey",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeySaveReqVO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultLong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/topic/list": {
+      "get": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "获取专题列表",
+        "operationId": "AppAiChat_getTopicList",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultListAppAiTopicRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/topic/check": {
+      "get": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "检查专题权限",
+        "operationId": "AppAiChat_checkTopicPermission",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "query",
+            "description": "专题 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/stream": {
+      "get": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "流式对话（SSE）",
+        "description": "使用 Server-Sent Events 实现实时流式对话",
+        "operationId": "AppAiChat_chatStream",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "description": "会话 ID（新会话可不传）",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "会话 ID（新会话可不传）",
+              "example": 1001
+            },
+            "example": 1001
+          },
+          {
+            "name": "topicId",
+            "in": "query",
+            "description": "专题 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "专题 ID",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "content",
+            "in": "query",
+            "description": "消息内容",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "消息内容",
+              "example": "你好",
+              "minLength": 1
+            },
+            "example": "你好"
+          },
+          {
+            "name": "imageUrls",
+            "in": "query",
+            "description": "图片 URL 列表（图片识别时使用）",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "description": "图片 URL 列表（图片识别时使用）",
+              "example": [
+                "https://xxx.com/1.jpg"
+              ],
+              "items": {
+                "type": "string",
+                "description": "图片 URL 列表（图片识别时使用）",
+                "example": [
+                  "https://xxx.com/1.jpg"
+                ]
+              }
+            },
+            "example": [
+              "https://xxx.com/1.jpg"
+            ]
+          },
+          {
+            "name": "apiKeyId",
+            "in": "query",
+            "description": "使用的模型配置 ID",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "使用的模型配置 ID",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEmitter"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/session/page": {
+      "get": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "获取会话分页",
+        "operationId": "AppAiChat_getSessionPage",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "query",
+            "description": "专题 ID",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "专题 ID",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "页码，从 1 开始",
+              "example": 1,
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页条数，最大值为 200",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每页条数，最大值为 200",
+              "example": 10,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 10
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultPageResultAppAiChatSessionRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/message/page": {
+      "get": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "获取专题消息分页",
+        "operationId": "AppAiChat_getMessagePage",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "query",
+            "description": "专题 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "专题 ID",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "页码，从 1 开始",
+              "example": 1,
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页条数，最大值为 200",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每页条数，最大值为 200",
+              "example": 10,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 10
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultPageResultAppAiChatMessageRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/message/list": {
+      "get": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "获取会话消息列表",
+        "operationId": "AppAiChat_getMessageList",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "description": "会话 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultListAppAiChatMessageRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/topic/page": {
+      "get": {
+        "tags": [
+          "管理后台 - AI 专题配置"
+        ],
+        "summary": "获得AI 专题配置分页",
+        "operationId": "Topic_getTopicPage",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "专题名称",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "专题名称",
+              "example": "王五"
+            },
+            "example": "王五"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "专题类型",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "专题类型",
+              "example": 2
+            },
+            "example": 2
+          },
+          {
+            "name": "systemPrompt",
+            "in": "query",
+            "description": "系统提示词（System Prompt）",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "系统提示词（System Prompt）"
+            }
+          },
+          {
+            "name": "welcomeMessage",
+            "in": "query",
+            "description": "欢迎语",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "欢迎语"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "状态（0-启用 1-禁用）",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "状态（0-启用 1-禁用）",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "排序",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "排序"
+            }
+          },
+          {
+            "name": "memberOnly",
+            "in": "query",
+            "description": "是否会员专享",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否会员专享"
+            }
+          },
+          {
+            "name": "dailyLimit",
+            "in": "query",
+            "description": "每日限制次数（0 表示不限制）",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每日限制次数（0 表示不限制）"
+            }
+          },
+          {
+            "name": "remark",
+            "in": "query",
+            "description": "备注",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "备注",
+              "example": "你猜"
+            },
+            "example": "你猜"
+          },
+          {
+            "name": "createTime",
+            "in": "query",
+            "description": "创建时间",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "description": "创建时间",
+              "items": {
+                "type": "string",
+                "format": "date-time",
+                "description": "创建时间"
+              }
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "页码，从 1 开始",
+              "example": 1,
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页条数，最大值为 200",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每页条数，最大值为 200",
+              "example": 10,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 10
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultPageResultTopicRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/topic/get": {
+      "get": {
+        "tags": [
+          "管理后台 - AI 专题配置"
+        ],
+        "summary": "获得AI 专题配置",
+        "operationId": "Topic_getTopic",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "编号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1024
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultTopicRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/topic/export-excel": {
+      "get": {
+        "tags": [
+          "管理后台 - AI 专题配置"
+        ],
+        "summary": "导出AI 专题配置 Excel",
+        "operationId": "Topic_exportTopicExcel",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "专题名称",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "专题名称",
+              "example": "王五"
+            },
+            "example": "王五"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "专题类型",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "专题类型",
+              "example": 2
+            },
+            "example": 2
+          },
+          {
+            "name": "systemPrompt",
+            "in": "query",
+            "description": "系统提示词（System Prompt）",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "系统提示词（System Prompt）"
+            }
+          },
+          {
+            "name": "welcomeMessage",
+            "in": "query",
+            "description": "欢迎语",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "欢迎语"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "状态（0-启用 1-禁用）",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "状态（0-启用 1-禁用）",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "排序",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "排序"
+            }
+          },
+          {
+            "name": "memberOnly",
+            "in": "query",
+            "description": "是否会员专享",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否会员专享"
+            }
+          },
+          {
+            "name": "dailyLimit",
+            "in": "query",
+            "description": "每日限制次数（0 表示不限制）",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每日限制次数（0 表示不限制）"
+            }
+          },
+          {
+            "name": "remark",
+            "in": "query",
+            "description": "备注",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "备注",
+              "example": "你猜"
+            },
+            "example": "你猜"
+          },
+          {
+            "name": "createTime",
+            "in": "query",
+            "description": "创建时间",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "description": "创建时间",
+              "items": {
+                "type": "string",
+                "format": "date-time",
+                "description": "创建时间"
+              }
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "页码，从 1 开始",
+              "example": 1,
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页条数，最大值为 200",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每页条数，最大值为 200",
+              "example": 10,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 10
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin-api/ai/api-key/page": {
+      "get": {
+        "tags": [
+          "管理后台 - AI API Key 配置"
+        ],
+        "summary": "获得AI API Key 配置分页",
+        "operationId": "ApiKey_getApiKeyPage",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "配置名称",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "配置名称",
+              "example": "芋艿"
+            },
+            "example": "芋艿"
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "description": "AI 平台类型",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "AI 平台类型"
+            }
+          },
+          {
+            "name": "apiKey",
+            "in": "query",
+            "description": "API Key（加密存储）",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "API Key（加密存储）"
+            }
+          },
+          {
+            "name": "secretKey",
+            "in": "query",
+            "description": "Secret Key（部分平台需要，加密存储）",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Secret Key（部分平台需要，加密存储）"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "模型名称",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "模型名称"
+            }
+          },
+          {
+            "name": "baseUrl",
+            "in": "query",
+            "description": "自定义 Base URL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "自定义 Base URL",
+              "example": "https://www.iocoder.cn"
+            },
+            "example": "https://www.iocoder.cn"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "是否启用（0-禁用 1-启用）",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "是否启用（0-禁用 1-启用）",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "排序",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "排序"
+            }
+          },
+          {
+            "name": "remark",
+            "in": "query",
+            "description": "备注",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "备注",
+              "example": "你说的对"
+            },
+            "example": "你说的对"
+          },
+          {
+            "name": "createTime",
+            "in": "query",
+            "description": "创建时间",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "description": "创建时间",
+              "items": {
+                "type": "string",
+                "format": "date-time",
+                "description": "创建时间"
+              }
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "页码，从 1 开始",
+              "example": 1,
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页条数，最大值为 200",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每页条数，最大值为 200",
+              "example": 10,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 10
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultPageResultApiKeyRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/api-key/get": {
+      "get": {
+        "tags": [
+          "管理后台 - AI API Key 配置"
+        ],
+        "summary": "获得AI API Key 配置",
+        "operationId": "ApiKey_getApiKey",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "编号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1024
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultApiKeyRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/api-key/export-excel": {
+      "get": {
+        "tags": [
+          "管理后台 - AI API Key 配置"
+        ],
+        "summary": "导出AI API Key 配置 Excel",
+        "operationId": "ApiKey_exportApiKeyExcel",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "配置名称",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "配置名称",
+              "example": "芋艿"
+            },
+            "example": "芋艿"
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "description": "AI 平台类型",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "AI 平台类型"
+            }
+          },
+          {
+            "name": "apiKey",
+            "in": "query",
+            "description": "API Key（加密存储）",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "API Key（加密存储）"
+            }
+          },
+          {
+            "name": "secretKey",
+            "in": "query",
+            "description": "Secret Key（部分平台需要，加密存储）",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Secret Key（部分平台需要，加密存储）"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "模型名称",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "模型名称"
+            }
+          },
+          {
+            "name": "baseUrl",
+            "in": "query",
+            "description": "自定义 Base URL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "自定义 Base URL",
+              "example": "https://www.iocoder.cn"
+            },
+            "example": "https://www.iocoder.cn"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "是否启用（0-禁用 1-启用）",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "是否启用（0-禁用 1-启用）",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "排序",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "排序"
+            }
+          },
+          {
+            "name": "remark",
+            "in": "query",
+            "description": "备注",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "备注",
+              "example": "你说的对"
+            },
+            "example": "你说的对"
+          },
+          {
+            "name": "createTime",
+            "in": "query",
+            "description": "创建时间",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "description": "创建时间",
+              "items": {
+                "type": "string",
+                "format": "date-time",
+                "description": "创建时间"
+              }
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "页码，从 1 开始",
+              "example": 1,
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页条数，最大值为 200",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "description": "每页条数，最大值为 200",
+              "example": 10,
+              "maximum": 200,
+              "minimum": 1
+            },
+            "example": 10
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app-api/ai/chat/session/delete": {
+      "delete": {
+        "tags": [
+          "用户 App - AI 对话"
+        ],
+        "summary": "删除会话",
+        "operationId": "AppAiChat_deleteSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "description": "会话 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/topic/delete": {
+      "delete": {
+        "tags": [
+          "管理后台 - AI 专题配置"
+        ],
+        "summary": "删除AI 专题配置",
+        "operationId": "Topic_deleteTopic",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "编号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/topic/delete-list": {
+      "delete": {
+        "tags": [
+          "管理后台 - AI 专题配置"
+        ],
+        "summary": "批量删除AI 专题配置",
+        "operationId": "Topic_deleteTopicList",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "编号",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/api-key/delete": {
+      "delete": {
+        "tags": [
+          "管理后台 - AI API Key 配置"
+        ],
+        "summary": "删除AI API Key 配置",
+        "operationId": "ApiKey_deleteApiKey",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "编号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/api-key/delete-list": {
+      "delete": {
+        "tags": [
+          "管理后台 - AI API Key 配置"
+        ],
+        "summary": "批量删除AI API Key 配置",
+        "operationId": "ApiKey_deleteApiKeyList",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "编号",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/ai/**": {
+      "get": {
+        "tags": [
+          "default-controller"
+        ],
+        "operationId": "Default_ai404",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "default-controller"
+        ],
+        "operationId": "Default_ai404_2",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "default-controller"
+        ],
+        "operationId": "Default_ai404_1",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "default-controller"
+        ],
+        "operationId": "Default_ai404_3",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "tags": [
+          "default-controller"
+        ],
+        "operationId": "Default_ai404_6",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "default-controller"
+        ],
+        "operationId": "Default_ai404_5",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "default-controller"
+        ],
+        "operationId": "Default_ai404_4",
+        "parameters": [
+          {
+            "name": "tenant-id",
+            "in": "header",
+            "description": "租户编号",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "description": "租户编号"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "认证 Token",
+            "schema": {
+              "type": "string",
+              "default": "Bearer test1",
+              "description": "认证 Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TopicSaveReqVO": {
+        "type": "object",
+        "description": "管理后台 - AI 专题配置新增/修改 Request VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "编号",
+            "example": 2029
+          },
+          "name": {
+            "type": "string",
+            "description": "专题名称",
+            "example": "王五",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "description": "专题类型",
+            "example": 2,
+            "minLength": 1
+          },
+          "systemPrompt": {
+            "type": "string",
+            "description": "系统提示词（System Prompt）"
+          },
+          "welcomeMessage": {
+            "type": "string",
+            "description": "欢迎语"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "状态（0-启用 1-禁用）",
+            "example": 1
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32",
+            "description": "排序"
+          },
+          "memberOnly": {
+            "type": "boolean",
+            "description": "是否会员专享"
+          },
+          "dailyLimit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "每日限制次数（0 表示不限制）"
+          },
+          "apiKeyId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "关联的API Key ID",
+            "example": 1
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "你猜"
+          }
+        },
+        "required": [
+          "dailyLimit",
+          "id",
+          "memberOnly",
+          "name",
+          "sort",
+          "status",
+          "type"
+        ]
+      },
+      "CommonResultBoolean": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiKeySaveReqVO": {
+        "type": "object",
+        "description": "管理后台 - AI API Key 配置新增/修改 Request VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "编号",
+            "example": 16925
+          },
+          "name": {
+            "type": "string",
+            "description": "配置名称",
+            "example": "芋艿",
+            "minLength": 1
+          },
+          "platform": {
+            "type": "string",
+            "description": "AI 平台类型",
+            "minLength": 1
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "API Key（加密存储）",
+            "minLength": 1
+          },
+          "secretKey": {
+            "type": "string",
+            "description": "Secret Key（部分平台需要，加密存储）"
+          },
+          "model": {
+            "type": "string",
+            "description": "模型名称"
+          },
+          "baseUrl": {
+            "type": "string",
+            "description": "自定义 Base URL",
+            "example": "https://www.iocoder.cn"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "是否启用（0-禁用 1-启用）",
+            "example": 1
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32",
+            "description": "排序"
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "你说的对"
+          }
+        },
+        "required": [
+          "apiKey",
+          "id",
+          "name",
+          "platform",
+          "sort",
+          "status"
+        ]
+      },
+      "CommonResultLong": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AppAiTopicRespVO": {
+        "type": "object",
+        "description": "用户 App - AI 专题 Response VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "专题编号",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "专题名称",
+            "example": "健康助手"
+          },
+          "type": {
+            "type": "string",
+            "description": "专题类型",
+            "example": "health"
+          },
+          "welcomeMessage": {
+            "type": "string",
+            "description": "欢迎语",
+            "example": "你好！我是你的健康小助手..."
+          },
+          "memberOnly": {
+            "type": "boolean",
+            "description": "是否会员专享",
+            "example": true
+          },
+          "dailyLimit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "每日限制次数",
+            "example": 10
+          }
+        }
+      },
+      "CommonResultListAppAiTopicRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppAiTopicRespVO"
+            }
+          }
+        }
+      },
+      "SseEmitter": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AppAiChatSessionRespVO": {
+        "type": "object",
+        "description": "用户 App - AI 对话会话 Response VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "会话编号",
+            "example": 1
+          },
+          "topicId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "专题 ID",
+            "example": 1
+          },
+          "topicName": {
+            "type": "string",
+            "description": "专题名称",
+            "example": "健康助手"
+          },
+          "title": {
+            "type": "string",
+            "description": "会话标题",
+            "example": "健康咨询"
+          },
+          "lastMessageTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最后消息时间"
+          },
+          "messageCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "消息数量",
+            "example": 10
+          }
+        }
+      },
+      "CommonResultPageResultAppAiChatSessionRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultAppAiChatSessionRespVO"
+          }
+        }
+      },
+      "PageResultAppAiChatSessionRespVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "总量"
+          },
+          "list": {
+            "type": "array",
+            "description": "数据",
+            "items": {
+              "$ref": "#/components/schemas/AppAiChatSessionRespVO"
+            }
+          }
+        },
+        "required": [
+          "list",
+          "total"
+        ]
+      },
+      "AppAiChatMessageRespVO": {
+        "type": "object",
+        "description": "用户 App - AI 对话消息 Response VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "消息编号",
+            "example": 1
+          },
+          "type": {
+            "type": "integer",
+            "format": "int32",
+            "description": "消息类型：1-用户 2-AI",
+            "example": 1
+          },
+          "isUser": {
+            "type": "boolean",
+            "description": "是否为用户消息",
+            "example": true
+          },
+          "content": {
+            "type": "string",
+            "description": "消息内容",
+            "example": "你好"
+          },
+          "messageTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "消息时间"
+          }
+        }
+      },
+      "CommonResultPageResultAppAiChatMessageRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultAppAiChatMessageRespVO"
+          }
+        }
+      },
+      "PageResultAppAiChatMessageRespVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "总量"
+          },
+          "list": {
+            "type": "array",
+            "description": "数据",
+            "items": {
+              "$ref": "#/components/schemas/AppAiChatMessageRespVO"
+            }
+          }
+        },
+        "required": [
+          "list",
+          "total"
+        ]
+      },
+      "CommonResultListAppAiChatMessageRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppAiChatMessageRespVO"
+            }
+          }
+        }
+      },
+      "CommonResultPageResultTopicRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultTopicRespVO"
+          }
+        }
+      },
+      "PageResultTopicRespVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "总量"
+          },
+          "list": {
+            "type": "array",
+            "description": "数据",
+            "items": {
+              "$ref": "#/components/schemas/TopicRespVO"
+            }
+          }
+        },
+        "required": [
+          "list",
+          "total"
+        ]
+      },
+      "TopicRespVO": {
+        "type": "object",
+        "description": "管理后台 - AI 专题配置 Response VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "编号",
+            "example": 2029
+          },
+          "name": {
+            "type": "string",
+            "description": "专题名称",
+            "example": "王五"
+          },
+          "type": {
+            "type": "string",
+            "description": "专题类型",
+            "example": 2
+          },
+          "systemPrompt": {
+            "type": "string",
+            "description": "系统提示词（System Prompt）"
+          },
+          "welcomeMessage": {
+            "type": "string",
+            "description": "欢迎语"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "状态（0-启用 1-禁用）",
+            "example": 1
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32",
+            "description": "排序"
+          },
+          "memberOnly": {
+            "type": "boolean",
+            "description": "是否会员专享"
+          },
+          "dailyLimit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "每日限制次数（0 表示不限制）"
+          },
+          "apiKeyId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "关联的API Key ID",
+            "example": 1
+          },
+          "apiKeyName": {
+            "type": "string",
+            "description": "关联的API Key名称",
+            "example": "OpenAI API"
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "你猜"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          }
+        },
+        "required": [
+          "createTime",
+          "dailyLimit",
+          "id",
+          "memberOnly",
+          "name",
+          "sort",
+          "status",
+          "type"
+        ]
+      },
+      "CommonResultTopicRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TopicRespVO"
+          }
+        }
+      },
+      "ApiKeyRespVO": {
+        "type": "object",
+        "description": "管理后台 - AI API Key 配置 Response VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "编号",
+            "example": 16925
+          },
+          "name": {
+            "type": "string",
+            "description": "配置名称",
+            "example": "芋艿"
+          },
+          "platform": {
+            "type": "string",
+            "description": "AI 平台类型"
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "API Key（加密存储）"
+          },
+          "secretKey": {
+            "type": "string",
+            "description": "Secret Key（部分平台需要，加密存储）"
+          },
+          "model": {
+            "type": "string",
+            "description": "模型名称"
+          },
+          "baseUrl": {
+            "type": "string",
+            "description": "自定义 Base URL",
+            "example": "https://www.iocoder.cn"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "是否启用（0-禁用 1-启用）",
+            "example": 1
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32",
+            "description": "排序"
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "你说的对"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          }
+        },
+        "required": [
+          "apiKey",
+          "createTime",
+          "id",
+          "name",
+          "platform",
+          "sort",
+          "status"
+        ]
+      },
+      "CommonResultPageResultApiKeyRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultApiKeyRespVO"
+          }
+        }
+      },
+      "PageResultApiKeyRespVO": {
+        "type": "object",
+        "description": "分页结果",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "总量"
+          },
+          "list": {
+            "type": "array",
+            "description": "数据",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyRespVO"
+            }
+          }
+        },
+        "required": [
+          "list",
+          "total"
+        ]
+      },
+      "CommonResultApiKeyRespVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ApiKeyRespVO"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Authorization": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "x-openapi": {
+    "x-setting": {
+      "customCode": 200,
+      "language": "zh-CN",
+      "enableSwaggerModels": true,
+      "swaggerModelName": "Swagger Models",
+      "enableReloadCacheParameter": false,
+      "enableAfterScript": true,
+      "enableDocumentManage": true,
+      "enableVersion": false,
+      "enableRequestCache": true,
+      "enableFilterMultipartApis": false,
+      "enableFilterMultipartApiMethodType": "POST",
+      "enableHost": false,
+      "enableHostText": "",
+      "enableDynamicParameter": false,
+      "enableDebug": true,
+      "enableFooter": true,
+      "enableFooterCustom": false,
+      "enableSearch": true,
+      "enableOpenApi": true,
+      "enableHomeCustom": false,
+      "enableGroup": true,
+      "enableResponseCode": true
+    },
+    "x-markdownFiles": []
+  }
+}
