@@ -23,7 +23,7 @@ class BuildFileParser {
         val type = detectModuleType(content, plugins, moduleDir)
         val namespace = extractNamespace(content)
 
-        logger.debug("Parsed ${buildFile.name}: type=$type, plugins=$plugins")
+        logger.debug("Parsed {}: type={}, plugins={}", buildFile.name, type, plugins)
         return ParsedBuildFile(plugins, dependencies, type, namespace)
     }
 

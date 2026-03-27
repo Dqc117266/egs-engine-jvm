@@ -25,19 +25,17 @@ class BaseClassScannerImpl : BaseClassScanner {
             val moduleDir = projectRoot.resolve(relDir)
             if (!moduleDir.isDirectory) continue
 
-            val sourceRoots = listOf(
-                moduleDir.resolve("src/main/kotlin"),
-                moduleDir.resolve("src/main/java"),
-            )
-
-            for (sourceRoot in sourceRoots) {
-                if (!sourceRoot.isDirectory) continue
+            for (sourceRoot in GradleSourceRoots.orderedKotlinRoots(moduleDir)) {
+                scanDirectory(sourceRoot, sourceRoot, modulePath, projectRoot, results)
+            }
+            for (sourceRoot in GradleSourceRoots.orderedJavaRoots(moduleDir)) {
                 scanDirectory(sourceRoot, sourceRoot, modulePath, projectRoot, results)
             }
         }
 
-        logger.info("Found ${results.size} base classes across ${modules.size} modules")
-        return results
+        val deduped = results.distinctBy { "${it.packageName}.${it.name}" }
+        logger.info("Found ${deduped.size} base classes across ${modules.size} modules")
+        return deduped
     }
 
     private fun scanDirectory(

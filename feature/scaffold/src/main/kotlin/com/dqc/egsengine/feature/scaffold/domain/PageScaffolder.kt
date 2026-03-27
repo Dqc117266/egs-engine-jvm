@@ -4,11 +4,12 @@ import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.data.template.PageKotlinFileGenerator
-import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.GeneratedFileInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
+import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
+import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -36,7 +37,7 @@ class PageScaffolder(
 
         // 1. 读取配置
         val config = configReader.read(projectRoot)
-        val basePackage = config.basePackage
+        val basePackage = config.effectiveBasePackage()
 
         // 2. 构建模块包名
         val modulePackage = if (basePackage != null) {
@@ -46,7 +47,7 @@ class PageScaffolder(
         }
 
         // 3. 解析基础类配置
-        val baseClasses = resolveBaseClassPackages(config.baseClasses, basePackage)
+        val baseClasses = config.resolveScaffoldBaseClasses(includeRetrofitProvider = true)
 
         // 4. 构建模板
         val template = PageTemplate(
@@ -174,24 +175,6 @@ class PageScaffolder(
         file.parentFile.mkdirs()
         file.writeText(fileSpec.toFixedString())
         return file
-    }
-
-    /**
-     * 解析基础类包配置
-     */
-    private fun resolveBaseClassPackages(
-        baseClasses: List<com.dqc.egsengine.feature.init.domain.model.BaseClassInfo>,
-        basePackage: String?,
-    ): BaseClassPackages {
-        fun findBaseClass(name: String): String? =
-            baseClasses.find { it.name == name }?.let { "${it.packageName}.$name" }
-
-        return BaseClassPackages(
-            baseViewModel = findBaseClass("BaseViewModel"),
-            baseFragment = findBaseClass("BaseFragment"),
-            resultClass = basePackage?.let { "$it.feature.base.domain.result.Result" },
-            retrofitProvider = basePackage?.let { "$it.feature.common.network.DynamicRetrofitProvider" },
-        )
     }
 
     /** camelCase/PascalCase -> snake_case，如 TaskDetail -> task_detail */

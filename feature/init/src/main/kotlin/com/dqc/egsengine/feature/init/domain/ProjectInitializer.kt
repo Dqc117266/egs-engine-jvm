@@ -1,6 +1,7 @@
 package com.dqc.egsengine.feature.init.domain
 
 import com.dqc.egsengine.feature.init.data.EgsConfigWriter
+import com.dqc.egsengine.feature.init.data.GradleSourceRoots
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.dqc.egsengine.feature.init.domain.model.ModuleStructure
 import org.slf4j.LoggerFactory
@@ -95,10 +96,23 @@ class ProjectInitializer(
 
         val kotlinDirs = mutableListOf<File>()
         featureDir.walkTopDown().forEach { file ->
-            if (file.isDirectory && file.name == "kotlin" && file.parentFile.name == "main") {
+            if (!file.isDirectory || file.name != "kotlin") return@forEach
+            val sourceSetDir = file.parentFile
+            val srcDir = sourceSetDir.parentFile
+            if (srcDir.name == "src" && sourceSetDir.isDirectory) {
                 kotlinDirs.add(file)
             }
         }
+
+        kotlinDirs.sortWith(
+            compareBy<File> {
+                when (it.parentFile.name) {
+                    "commonMain" -> 0
+                    "main" -> 1
+                    else -> 2
+                }
+            }.thenBy { it.path },
+        )
 
         for (kotlinDir in kotlinDirs) {
             val packageDir = findDeepestSingleChildPath(kotlinDir)
@@ -155,7 +169,7 @@ class ProjectInitializer(
 
             featureModuleCount++
 
-            val kotlinDir = findKotlinSourceDir(moduleDir) ?: continue
+            val kotlinDir = GradleSourceRoots.orderedKotlinRoots(moduleDir).firstOrNull() ?: continue
             val packageDir = findDeepestPackageDir(kotlinDir)
 
             packageDir.listFiles()
@@ -164,7 +178,7 @@ class ProjectInitializer(
                     layerCounts[layerDir.name] = (layerCounts[layerDir.name] ?: 0) + 1
                 }
 
-            if (moduleDir.resolve("src/main/res").isDirectory) {
+            if (GradleSourceRoots.hasAndroidStyleRes(moduleDir)) {
                 resCount++
             }
         }
@@ -179,10 +193,6 @@ class ProjectInitializer(
             hasRes = resCount > featureModuleCount / 2,
         )
     }
-
-    private fun findKotlinSourceDir(moduleDir: File): File? =
-        moduleDir.resolve("src/main/kotlin").takeIf { it.isDirectory }
-            ?: moduleDir.resolve("src/main/java").takeIf { it.isDirectory }
 
     private fun findDeepestPackageDir(sourceRoot: File): File {
         var current = sourceRoot

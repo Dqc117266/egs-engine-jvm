@@ -4,8 +4,9 @@ import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
-import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
+import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
+import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -43,7 +44,8 @@ class SwaggerApiScaffolder(
     }
 
     private fun buildTemplate(config: EgsConfig, moduleName: String, customPackage: String?): ModuleTemplate {
-        val basePackage = customPackage ?: config.basePackage ?: "com.example"
+        val basePackage = customPackage ?: config.effectiveBasePackage() ?: "com.example"
+        val nullableBase = customPackage ?: config.effectiveBasePackage()
         val normalizedModule = moduleName.replace("-", "").replace("_", "")
         val modulePackage = "$basePackage.feature.$normalizedModule"
         val namespace = if (config.projectType in listOf("ANDROID", "KMP_ANDROID")) modulePackage else null
@@ -56,26 +58,11 @@ class SwaggerApiScaffolder(
             hasRes = config.moduleStructure.hasRes,
             namespace = namespace,
             projectType = config.projectType,
-            basePackage = config.basePackage,
-            baseClassPackages = resolveBaseClassPackages(config),
-            apiResultClass = config.basePackage?.let { "$it.feature.base.data.retrofit.ApiResult" },
-            commonResultClass = config.basePackage?.let { "$it.feature.base.data.retrofit.CommonResult" },
-            toResultPackage = config.basePackage?.let { "$it.feature.base.data.retrofit" },
-        )
-    }
-
-    private fun resolveBaseClassPackages(config: EgsConfig): BaseClassPackages {
-        val baseClasses = config.baseClasses
-        val bp = config.basePackage
-
-        fun findBaseClass(name: String): String? =
-            baseClasses.find { it.name == name }?.let { "${it.packageName}.$name" }
-
-        return BaseClassPackages(
-            baseViewModel = findBaseClass("BaseViewModel"),
-            baseFragment = findBaseClass("BaseFragment"),
-            resultClass = bp?.let { "$it.feature.base.domain.result.Result" },
-            retrofitProvider = bp?.let { "$it.feature.common.network.DynamicRetrofitProvider" },
+            basePackage = nullableBase,
+            baseClassPackages = config.resolveScaffoldBaseClasses(includeRetrofitProvider = true),
+            apiResultClass = nullableBase?.let { "$it.feature.base.data.retrofit.ApiResult" },
+            commonResultClass = nullableBase?.let { "$it.feature.base.data.retrofit.CommonResult" },
+            toResultPackage = nullableBase?.let { "$it.feature.base.data.retrofit" },
         )
     }
 

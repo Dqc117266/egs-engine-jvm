@@ -4,8 +4,9 @@ import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
-import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
+import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
+import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -50,7 +51,7 @@ class ModuleScaffolder(
     }
 
     private fun buildTemplate(config: EgsConfig, moduleName: String, customPackage: String?): ModuleTemplate {
-        val basePackage = customPackage ?: config.basePackage
+        val basePackage = customPackage ?: config.effectiveBasePackage()
         val featurePackage = if (basePackage != null) {
             "$basePackage.feature.${moduleName.replace("-", "")}"
         } else {
@@ -58,16 +59,16 @@ class ModuleScaffolder(
         }
 
         val isAndroid = config.projectType in listOf("ANDROID", "KMP_ANDROID")
-        val namespace = if (isAndroid && config.basePackage != null) {
-            "${config.basePackage}.feature.${moduleName.replace("-", "")}"
+        val namespace = if (isAndroid && basePackage != null) {
+            "${basePackage}.feature.${moduleName.replace("-", "")}"
         } else {
             null
         }
 
-        val baseClassPackages = resolveBaseClassPackages(config)
-        val apiResultClass = config.basePackage?.let { "$it.feature.base.data.retrofit.ApiResult" }
-        val commonResultClass = config.basePackage?.let { "$it.feature.base.data.retrofit.CommonResult" }
-        val toResultPackage = config.basePackage?.let { "$it.feature.base.data.retrofit" }
+        val baseClassPackages = config.resolveScaffoldBaseClasses(includeRetrofitProvider = false)
+        val apiResultClass = basePackage?.let { "$it.feature.base.data.retrofit.ApiResult" }
+        val commonResultClass = basePackage?.let { "$it.feature.base.data.retrofit.CommonResult" }
+        val toResultPackage = basePackage?.let { "$it.feature.base.data.retrofit" }
 
         return ModuleTemplate(
             name = moduleName,
@@ -77,33 +78,11 @@ class ModuleScaffolder(
             hasRes = config.moduleStructure.hasRes,
             namespace = namespace,
             projectType = config.projectType,
-            basePackage = config.basePackage,
+            basePackage = config.effectiveBasePackage(),
             baseClassPackages = baseClassPackages,
             apiResultClass = apiResultClass,
             commonResultClass = commonResultClass,
             toResultPackage = toResultPackage,
-        )
-    }
-
-    private fun resolveBaseClassPackages(config: EgsConfig): BaseClassPackages {
-        val baseClasses = config.baseClasses
-        val bp = config.basePackage
-
-        fun findBaseClass(name: String): String? =
-            baseClasses.find { it.name == name }?.let { "${it.packageName}.$name" }
-
-        val baseVm = findBaseClass("BaseViewModel")
-        val baseFrag = findBaseClass("BaseFragment")
-
-        val resultClass = if (bp != null) "$bp.feature.base.domain.result.Result" else null
-        // retrofitProvider = null: 默认 create module 不生成 api 代码时，RepositoryImpl 保持空参数
-        // 需要网络时可通过 create api 生成，或手动添加
-
-        return BaseClassPackages(
-            baseViewModel = baseVm,
-            baseFragment = baseFrag,
-            resultClass = resultClass,
-            retrofitProvider = null,
         )
     }
 
