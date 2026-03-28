@@ -22,7 +22,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
     /** snake_case 布局名，如 task_detail */
     private val layoutSnakeName = pascalName.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
     private val pkg = template.modulePackage
-    private val fragmentPkg = "$pkg.presentation.fragment.$camelName"
+    private val screenPkg = "$pkg.presentation.screen.$camelName"
     private val baseClasses = template.baseClassPackages
     private val basePackage = template.basePackage
 
@@ -54,8 +54,8 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
      * - Effect: sealed class，仅 ShowToast
      */
     fun generateContract(): FileSpec {
-        val intentClass = ClassName(fragmentPkg, "${pascalName}Contract", "Intent")
-        val effectClass = ClassName(fragmentPkg, "${pascalName}Contract", "Effect")
+        val intentClass = ClassName(screenPkg, "${pascalName}Contract", "Intent")
+        val effectClass = ClassName(screenPkg, "${pascalName}Contract", "Effect")
 
         // State: data class，含 isLoading、error + 每个 useCase 的返回值类型作为属性（无 data 字段）
         val modelPackage = "$pkg.domain.model"
@@ -132,7 +132,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             )
             .build()
 
-        return FileSpec.builder(fragmentPkg, "${pascalName}Contract")
+        return FileSpec.builder(screenPkg, "${pascalName}Contract")
             .addType(
                 TypeSpec.interfaceBuilder("${pascalName}Contract")
                     .addType(stateType)
@@ -146,8 +146,22 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
     /**
      * 将包装类型映射为 Kotlin 标准类型，避免生成 ModelBoolean、KotlinBoolean 等。
      * 一般类型直接用 Kotlin 标准类型，自定义类型（如 SseEmitter）保持原样。
+     * 支持泛型类型如 List<XXX>。
      */
     private fun resolveStatePropertyType(simpleType: String, typePackage: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
+        // 处理泛型类型如 List<AppAiChatMessageRespVO>
+        if (simpleType.startsWith("List<") && simpleType.endsWith(">")) {
+            val innerType = simpleType.substring(5, simpleType.length - 1) // 提取 List<XXX> 中的 XXX
+            val innerSimpleType = innerType.substringAfterLast(".")
+            val innerTypePackage = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
+            val innerClass = resolveBasicType(innerSimpleType, innerTypePackage, modelPackage)
+            return ClassName("kotlin.collections", "List").parameterizedBy(innerClass)
+        }
+
+        return resolveBasicType(simpleType, typePackage, modelPackage)
+    }
+
+    private fun resolveBasicType(simpleType: String, typePackage: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
         return when (simpleType) {
             "Boolean", "ModelBoolean", "KotlinBoolean" -> Boolean::class.asTypeName()
             "Int", "ModelInt", "KotlinInt" -> Int::class.asTypeName()
@@ -155,7 +169,14 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             "String", "ModelString", "KotlinString" -> String::class.asTypeName()
             "Double", "ModelDouble", "KotlinDouble" -> Double::class.asTypeName()
             "Float", "ModelFloat", "KotlinFloat" -> Float::class.asTypeName()
-            else -> ClassName(typePackage, simpleType)
+            else -> {
+                // ApiModel (data layer) -> domain model
+                if (simpleType.endsWith("ApiModel")) {
+                    ClassName(modelPackage, simpleType.removeSuffix("ApiModel"))
+                } else {
+                    ClassName(typePackage, simpleType)
+                }
+            }
         }
     }
 
@@ -226,11 +247,11 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
         val bindingClass = ClassName("$pkg.databinding", "Fragment${pascalName}Binding")
         val rClass = ClassName(pkg, "R")
-        val stateClass = ClassName(fragmentPkg, "${pascalName}Contract.State")
-        val effectClass = ClassName(fragmentPkg, "${pascalName}Contract.Effect")
-        val viewModelClass = ClassName(fragmentPkg, "${pascalName}ViewModel")
+        val stateClass = ClassName(screenPkg, "${pascalName}Contract.State")
+        val effectClass = ClassName(screenPkg, "${pascalName}Contract.Effect")
+        val viewModelClass = ClassName(screenPkg, "${pascalName}ViewModel")
 
-        return FileSpec.builder(fragmentPkg, "${pascalName}Fragment")
+        return FileSpec.builder(screenPkg, "${pascalName}Fragment")
             .addImport("androidx.lifecycle", "Lifecycle")
             .addImport("androidx.lifecycle", "lifecycleScope")
             .addImport("androidx.lifecycle", "repeatOnLifecycle")
@@ -318,12 +339,12 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
      * - 无 onInitialize，无 LoadData/Refresh
      */
     fun generateViewModel(): FileSpec {
-        val stateClass = ClassName(fragmentPkg, "${pascalName}Contract.State")
-        val intentClass = ClassName(fragmentPkg, "${pascalName}Contract.Intent")
-        val effectClass = ClassName(fragmentPkg, "${pascalName}Contract.Effect")
+        val stateClass = ClassName(screenPkg, "${pascalName}Contract.State")
+        val intentClass = ClassName(screenPkg, "${pascalName}Contract.Intent")
+        val effectClass = ClassName(screenPkg, "${pascalName}Contract.Effect")
 
         val resultPackage = template.basePackage?.let { "$it.feature.base.domain.result" } ?: "com.example.feature.base.domain.result"
-        val fileBuilder = FileSpec.builder(fragmentPkg, "${pascalName}ViewModel")
+        val fileBuilder = FileSpec.builder(screenPkg, "${pascalName}ViewModel")
             .addImport(resultPackage, "Result")
 
         val classBuilder = TypeSpec.classBuilder("${pascalName}ViewModel")
@@ -445,6 +466,71 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
     }
 
     /**
+     * 生成 Compose Screen 文件
+     */
+    fun generateScreen(): FileSpec {
+        // Screen 放在 screen/{name}/ 目录下
+        val screenDirPkg = "$pkg.presentation.screen.$camelName"
+        val viewModelClass = ClassName(screenDirPkg, "${pascalName}ViewModel")
+        val contractClass = ClassName(screenDirPkg, "${pascalName}Contract")
+        val effectClass = ClassName(screenDirPkg, "${pascalName}Contract", "Effect")
+        val composableAnnotation = ClassName("androidx.compose.runtime", "Composable")
+        val modifierClass = ClassName("androidx.compose.ui", "Modifier")
+
+        return FileSpec.builder(screenDirPkg, "${pascalName}Screen")
+            .addImport("androidx.compose.foundation.layout", "Column", "fillMaxSize", "padding")
+            .addImport("androidx.compose.runtime", "LaunchedEffect", "getValue")
+            .addImport("androidx.compose.ui", "Modifier")
+            .addImport("androidx.compose.ui.unit", "dp")
+            .addImport("androidx.lifecycle.compose", "collectAsStateWithLifecycle")
+            .addImport("org.koin.androidx.compose", "koinViewModel")
+            .addFunction(
+                FunSpec.builder("${pascalName}Screen")
+                    .addAnnotation(composableAnnotation)
+                    .addParameter(
+                        ParameterSpec.builder("modifier", modifierClass)
+                            .defaultValue("%T", modifierClass)
+                            .build()
+                    )
+                    .addStatement("")
+                    .addStatement("val viewModel: %T = koinViewModel()", viewModelClass)
+                    .addStatement("val uiState by viewModel.uiState.collectAsStateWithLifecycle()")
+                    .addStatement("")
+                    .addComment("Handle effects (one-time events)")
+                    .beginControlFlow("LaunchedEffect(Unit)")
+                    .beginControlFlow("viewModel.effect.collect { effect ->")
+                    .beginControlFlow("when (effect)")
+                    .addStatement("is %T.ShowToast -> {", effectClass)
+                    .addStatement("    // TODO: Show Toast via SnackbarHostState")
+                    .addStatement("}")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .endControlFlow()
+                    .addStatement("")
+                    .addComment("UI Content")
+                    .addStatement(
+                        "Column(\n" +
+                        "    modifier = modifier.fillMaxSize().padding(16.dp),\n" +
+                        ") {"
+                    )
+                    .beginControlFlow("when")
+                    .addStatement("uiState.isLoading -> {")
+                    .addStatement("    // TODO: Show LoadingIndicator()")
+                    .addStatement("}")
+                    .addStatement("uiState.error != null -> {")
+                    .addStatement("    // TODO: Show Error View")
+                    .addStatement("}")
+                    .addStatement("else -> {")
+                    .addStatement("    // TODO: Show Content")
+                    .addStatement("}")
+                    .endControlFlow()
+                    .addStatement("}")
+                    .build()
+            )
+            .build()
+    }
+
+    /**
      * 生成 Layout XML 文件
      */
     fun generateLayout(): String = buildString {
@@ -459,7 +545,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         appendLine("""    <androidx.constraintlayout.widget.ConstraintLayout""")
         appendLine("""        android:layout_width="match_parent"""")
         appendLine("""        android:layout_height="match_parent"""")
-        appendLine("""        tools:context=".$fragmentPkg.${pascalName}Fragment">""")
+        appendLine("""        tools:context=".$screenPkg.${pascalName}Fragment">""")
         appendLine()
         appendLine("""        <!-- TODO: Add UI components -->""")
         appendLine()

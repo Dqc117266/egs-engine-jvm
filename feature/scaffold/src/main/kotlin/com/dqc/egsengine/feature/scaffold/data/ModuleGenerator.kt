@@ -32,22 +32,8 @@ class ModuleGenerator {
 
         if (isAndroid) {
             kotlinGen.generateContract()?.let { files.addKt(moduleDir, it) }
+            kotlinGen.generateNavigationRoute()?.let { files.addKt(moduleDir, it) }
 
-            kotlinGen.generateFragment()?.let { files.addKt(moduleDir, it) }
-
-            val layoutSnakeName = toSnakeCase(toPascalCase(template.name))
-            files.add(
-                GeneratedFile(
-                    "$moduleDir/src/main/res/layout/fragment_$layoutSnakeName.xml",
-                    xmlGen.generateLayout(),
-                ),
-            )
-            files.add(
-                GeneratedFile(
-                    "$moduleDir/src/main/res/navigation/${layoutSnakeName}_nav_graph.xml",
-                    xmlGen.generateNavGraph(),
-                ),
-            )
             files.add(
                 GeneratedFile(
                     "$moduleDir/src/main/AndroidManifest.xml",

@@ -71,12 +71,13 @@ class PageScaffolder(
             )
         }
 
-        // 6. 检查目标目录是否存在
-        val fragmentDir = projectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/${modulePackage.replace(".", "/")}/presentation/fragment/${pageName.lowercase()}"
+        // 6. 检查目标目录是否已存在
+        val camelName = template.pageName.replaceFirstChar { it.lowercase() }
+        val screenDir = projectRoot.resolve(
+            "feature/$moduleName/src/main/kotlin/${modulePackage.replace(".", "/")}/presentation/screen/$camelName"
         )
-        require(!fragmentDir.exists()) {
-            "Page directory already exists: ${fragmentDir.relativeTo(projectRoot).path}"
+        require(!screenDir.exists()) {
+            "Page directory already exists: ${screenDir.relativeTo(projectRoot).path}"
         }
 
         // 7. 生成文件
@@ -90,13 +91,6 @@ class PageScaffolder(
             logger.debug("Created Contract: ${file.path}")
         }
 
-        // Fragment (if BaseFragment available)
-        generator.generateFragment()?.let { fileSpec ->
-            val file = writeFile(projectRoot, moduleName, fileSpec)
-            createdFiles.add(file)
-            logger.debug("Created Fragment: ${file.path}")
-        }
-
         // ViewModel
         generator.generateViewModel().let { fileSpec ->
             val file = writeFile(projectRoot, moduleName, fileSpec)
@@ -104,15 +98,12 @@ class PageScaffolder(
             logger.debug("Created ViewModel: ${file.path}")
         }
 
-        // Layout XML (snake_case: TaskDetail -> fragment_task_detail.xml)
-        val layoutContent = generator.generateLayout()
-        val layoutFile = projectRoot.resolve(
-            "feature/$moduleName/src/main/res/layout/fragment_${toSnakeCase(template.pageName)}.xml"
-        )
-        layoutFile.parentFile.mkdirs()
-        layoutFile.writeText(layoutContent)
-        createdFiles.add(layoutFile)
-        logger.debug("Created Layout: ${layoutFile.path}")
+        // Compose Screen
+        generator.generateScreen().let { fileSpec ->
+            val file = writeScreenFile(projectRoot, moduleName, fileSpec)
+            createdFiles.add(file)
+            logger.debug("Created Screen: ${file.path}")
+        }
 
         // 8. 更新 DI Module
         diUpdater.updatePresentationModule(
@@ -147,21 +138,17 @@ class PageScaffolder(
             files.add(GeneratedFileInfo(path, fileSpec.toFixedString()))
         }
 
-        // Fragment
-        generator.generateFragment()?.let { fileSpec ->
-            val path = "$modulePath/src/main/kotlin/${fileSpec.packageName.replace(".", "/")}/${fileSpec.name}.kt"
-            files.add(GeneratedFileInfo(path, fileSpec.toFixedString()))
-        }
-
         // ViewModel
         generator.generateViewModel().let { fileSpec ->
             val path = "$modulePath/src/main/kotlin/${fileSpec.packageName.replace(".", "/")}/${fileSpec.name}.kt"
             files.add(GeneratedFileInfo(path, fileSpec.toFixedString()))
         }
 
-        // Layout (snake_case)
-        val layoutPath = "$modulePath/src/main/res/layout/fragment_${toSnakeCase(template.pageName)}.xml"
-        files.add(GeneratedFileInfo(layoutPath, generator.generateLayout()))
+        // Compose Screen
+        generator.generateScreen().let { fileSpec ->
+            val path = "$modulePath/src/main/kotlin/${fileSpec.packageName.replace(".", "/")}/${fileSpec.name}.kt"
+            files.add(GeneratedFileInfo(path, fileSpec.toFixedString()))
+        }
 
         return files
     }
@@ -170,6 +157,17 @@ class PageScaffolder(
      * 写入 Kotlin 文件
      */
     private fun writeFile(projectRoot: File, moduleName: String, fileSpec: com.squareup.kotlinpoet.FileSpec): File {
+        val pkgPath = fileSpec.packageName.replace(".", "/")
+        val file = projectRoot.resolve("feature/$moduleName/src/main/kotlin/$pkgPath/${fileSpec.name}.kt")
+        file.parentFile.mkdirs()
+        file.writeText(fileSpec.toFixedString())
+        return file
+    }
+
+    /**
+     * 写入 Screen Kotlin 文件（放在 presentation/screen 目录）
+     */
+    private fun writeScreenFile(projectRoot: File, moduleName: String, fileSpec: com.squareup.kotlinpoet.FileSpec): File {
         val pkgPath = fileSpec.packageName.replace(".", "/")
         val file = projectRoot.resolve("feature/$moduleName/src/main/kotlin/$pkgPath/${fileSpec.name}.kt")
         file.parentFile.mkdirs()

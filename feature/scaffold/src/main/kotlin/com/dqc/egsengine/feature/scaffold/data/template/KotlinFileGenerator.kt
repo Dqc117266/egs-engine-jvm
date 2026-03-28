@@ -99,7 +99,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
             .build()
 
     fun generatePresentationModule(): FileSpec {
-        val viewModelClass = ClassName("$pkg.presentation.fragment.$camel", "${pascal}ViewModel")
+        val viewModelClass = ClassName("$pkg.presentation.screen", "${pascal}ViewModel")
 
         return FileSpec.builder("$pkg.presentation", "PresentationModule")
             .addProperty(
@@ -113,6 +113,31 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
                             .build(),
                     )
                     .build(),
+            )
+            .build()
+    }
+
+    /**
+     * 生成 NavigationRoute 文件
+     */
+    fun generateNavigationRoute(): FileSpec? {
+        if (!isAndroid) return null
+
+        val serializableClass = ClassName("kotlinx.serialization", "Serializable")
+
+        return FileSpec.builder("$pkg.presentation", "${pascal}NavigationRoute")
+            .addImport("kotlinx.serialization", "Serializable")
+            .addType(
+                TypeSpec.interfaceBuilder("${pascal}NavigationRoute")
+                    .addKdoc("%L模块的导航路由定义", pascal)
+                    .addModifiers(KModifier.SEALED)
+                    .addType(
+                        TypeSpec.objectBuilder(pascal)
+                            .addAnnotation(serializableClass)
+                            .superclass(ClassName("$pkg.presentation", "${pascal}NavigationRoute"))
+                            .build()
+                    )
+                    .build()
             )
             .build()
     }
@@ -172,7 +197,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
             .addType(effectType)
             .build()
 
-        return FileSpec.builder("$pkg.presentation.fragment.$camel", "${pascal}Contract")
+        return FileSpec.builder("$pkg.presentation.screen", "${pascal}Contract")
             .addImport(uiContractPackage, "UiState", "UiIntent", "UiEffect")
             .addType(contractBuilder)
             .build()
@@ -232,7 +257,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
     }
 
     fun generateViewModel(): FileSpec {
-        val contractClassName = ClassName("$pkg.presentation.fragment.$camel", "${pascal}Contract")
+        val contractClassName = ClassName("$pkg.presentation.screen", "${pascal}Contract")
         val contractStateClass = contractClassName.nestedClass("State")
         val contractIntentClass = contractClassName.nestedClass("Intent")
         val contractEffectClass = contractClassName.nestedClass("Effect")
@@ -267,7 +292,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
             classBuilder.superclass(ClassName("androidx.lifecycle", "ViewModel"))
         }
 
-        return FileSpec.builder("$pkg.presentation.fragment.$camel", "${pascal}ViewModel")
+        return FileSpec.builder("$pkg.presentation.screen", "${pascal}ViewModel")
             .addType(classBuilder.build())
             .build()
     }
@@ -282,7 +307,7 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
         val bundleClass = ClassName("android.os", "Bundle")
         val viewClass = ClassName("android.view", "View")
 
-        return FileSpec.builder("$pkg.presentation.fragment.$camel", "${pascal}Fragment")
+        return FileSpec.builder("$pkg.presentation.screen", "${pascal}Fragment")
             .addType(
                 TypeSpec.classBuilder("${pascal}Fragment")
                     .superclass(baseFragment.parameterizedBy(bindingClass))

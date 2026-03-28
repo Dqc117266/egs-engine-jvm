@@ -17,7 +17,7 @@ class CreateCommandsIntegrationTest {
     }
 
     @Test
-    fun `create module generates snake_case resources`() {
+    fun `create module generates NavigationRoute and no XML resources`() {
         startKoin { modules(featureScaffoldModule) }
         val projectRoot = createProjectFixture()
 
@@ -30,8 +30,14 @@ class CreateCommandsIntegrationTest {
             ),
         )
 
-        assertTrue(projectRoot.resolve("feature/uiStructureEngine/src/main/res/layout/fragment_ui_structure_engine.xml").exists())
-        assertTrue(projectRoot.resolve("feature/uiStructureEngine/src/main/res/navigation/ui_structure_engine_nav_graph.xml").exists())
+        // 验证：应该生成 NavigationRoute
+        assertTrue(projectRoot.resolve(
+            "feature/uiStructureEngine/src/main/kotlin/com/dqc/example/feature/uiStructureEngine/presentation/UiStructureEngineNavigationRoute.kt"
+        ).exists())
+
+        // 验证：不应该生成 XML 文件
+        assertFalse(projectRoot.resolve("feature/uiStructureEngine/src/main/res/layout/fragment_ui_structure_engine.xml").exists())
+        assertFalse(projectRoot.resolve("feature/uiStructureEngine/src/main/res/navigation/ui_structure_engine_nav_graph.xml").exists())
     }
 
     @Test
@@ -73,7 +79,7 @@ class CreateCommandsIntegrationTest {
         )
 
         val vmPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/fragment/tasklist/TaskListViewModel.kt",
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/tasklist/TaskListViewModel.kt",
         )
         assertTrue(vmPath.exists())
         val vmContent = vmPath.readText()
@@ -103,7 +109,7 @@ class CreateCommandsIntegrationTest {
 
         assertFalse(
             projectRoot.resolve(
-                "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/fragment/taskdryrun",
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/taskdryrun",
             ).exists(),
         )
     }

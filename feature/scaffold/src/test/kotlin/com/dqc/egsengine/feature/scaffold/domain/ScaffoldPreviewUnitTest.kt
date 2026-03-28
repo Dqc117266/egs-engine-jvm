@@ -13,7 +13,7 @@ import java.io.File
 
 class ScaffoldPreviewUnitTest {
     @Test
-    fun `module dry run previews snake case resource names without writing files`() {
+    fun `module dry run previews NavigationRoute without writing files`() {
         val projectRoot = createProjectFixture()
         val scaffolder = ModuleScaffolder(
             configReader = EgsConfigReader(),
@@ -29,13 +29,15 @@ class ScaffoldPreviewUnitTest {
         )
 
         assertTrue(result.dryRun)
-        assertTrue(result.files.any { it.endsWith("fragment_ui_structure_engine.xml") })
-        assertTrue(result.files.any { it.endsWith("ui_structure_engine_nav_graph.xml") })
+        // 验证：应该生成 NavigationRoute，而不是 XML
+        assertTrue(result.files.any { it.endsWith("UiStructureEngineNavigationRoute.kt") }, "应该生成 NavigationRoute")
+        assertFalse(result.files.any { it.endsWith("fragment_ui_structure_engine.xml") }, "不应该生成 XML Layout")
+        assertFalse(result.files.any { it.endsWith("ui_structure_engine_nav_graph.xml") }, "不应该生成 NavGraph XML")
         assertFalse(projectRoot.resolve("feature/uiStructureEngine").exists())
     }
 
     @Test
-    fun `page dry run previews files and does not create directories`() {
+    fun `page dry run previews Screen and Contract without creating directories`() {
         val projectRoot = createProjectFixture()
         val pageScaffolder = PageScaffolder(
             configReader = EgsConfigReader(),
@@ -59,11 +61,13 @@ class ScaffoldPreviewUnitTest {
         )
 
         assertTrue(result.dryRun)
-        assertTrue(result.files.any { it.path.endsWith("fragment_task_detail.xml") })
-        assertTrue(result.files.any { it.path.endsWith("TaskDetailContract.kt") })
+        // 验证：应该生成 Compose Screen 和 Contract，而不是 Fragment/XML
+        assertTrue(result.files.any { it.path.endsWith("TaskDetailScreen.kt") }, "应该生成 Screen")
+        assertTrue(result.files.any { it.path.endsWith("TaskDetailContract.kt") }, "应该生成 Contract")
+        assertFalse(result.files.any { it.path.endsWith("fragment_task_detail.xml") }, "不应该生成 XML Layout")
         assertFalse(
             projectRoot.resolve(
-                "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/fragment/taskdetail",
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/taskdetail",
             ).exists(),
         )
     }
