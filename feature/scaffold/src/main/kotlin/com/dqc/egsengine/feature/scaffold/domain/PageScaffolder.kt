@@ -3,7 +3,7 @@ package com.dqc.egsengine.feature.scaffold.domain
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
-import com.dqc.egsengine.feature.scaffold.data.template.PageKotlinFileGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.template.PageKotlinFileGenerator
 import com.dqc.egsengine.feature.scaffold.domain.model.GeneratedFileInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate

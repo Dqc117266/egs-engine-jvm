@@ -1,11 +1,15 @@
 package com.dqc.egsengine.feature.scaffold.domain
 
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
+import com.dqc.egsengine.feature.init.domain.model.Platform
+import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
 import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
+import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 
-/**
- * Effective base package for scaffolding: optional [EgsConfig.scaffoldOverrides.basePackage] wins over auto-detected [EgsConfig.basePackage].
- */
+// ---------------------------------------------------------------------------
+// Legacy EgsConfig extensions (backward compat for single-project mode)
+// ---------------------------------------------------------------------------
+
 fun EgsConfig.effectiveBasePackage(): String? =
     scaffoldOverrides?.basePackage ?: basePackage
 
@@ -22,9 +26,6 @@ private fun EgsConfig.resolveNamedBaseClass(className: String): String? {
     return baseClasses.find { it.name == className }?.let { "${it.packageName}.$className" }
 }
 
-/**
- * @param includeRetrofitProvider when true, fills [BaseClassPackages.retrofitProvider] from [effectiveBasePackage] (Swagger/page flows).
- */
 fun EgsConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean): BaseClassPackages {
     val bp = effectiveBasePackage()
     return BaseClassPackages(
@@ -36,5 +37,67 @@ fun EgsConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean): Base
         } else {
             null
         },
+    )
+}
+
+// ---------------------------------------------------------------------------
+// SubProjectConfig extensions (new workspace-aware multi-platform)
+// ---------------------------------------------------------------------------
+
+fun SubProjectConfig.effectiveBasePackage(): String =
+    scaffoldOverrides?.basePackage ?: basePackage
+
+val SubProjectConfig.isAndroid: Boolean
+    get() = platform in setOf(Platform.ANDROID, Platform.KMP_ANDROID)
+
+private fun SubProjectConfig.resolveNamedBaseClass(className: String): String? {
+    val fromOverride = when (className) {
+        "BaseViewModel" -> scaffoldOverrides?.baseViewModelFqn
+        "BaseFragment" -> scaffoldOverrides?.baseFragmentFqn
+        else -> null
+    }
+    if (!fromOverride.isNullOrBlank()) return fromOverride.trim()
+    return baseClasses.find { it.name == className }?.let { "${it.packageName}.$className" }
+}
+
+fun SubProjectConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean = false): BaseClassPackages {
+    val bp = effectiveBasePackage()
+    return when (platform) {
+        Platform.ANDROID, Platform.KMP, Platform.KMP_ANDROID -> BaseClassPackages(
+            baseViewModel = resolveNamedBaseClass("BaseViewModel"),
+            baseFragment = resolveNamedBaseClass("BaseFragment"),
+            resultClass = "$bp.feature.base.domain.result.Result",
+            retrofitProvider = if (includeRetrofitProvider) {
+                "$bp.feature.common.network.DynamicRetrofitProvider"
+            } else {
+                null
+            },
+        )
+        Platform.SPRING_BOOT, Platform.KOTLIN_JVM -> BaseClassPackages()
+        Platform.VUE3 -> BaseClassPackages()
+    }
+}
+
+fun SubProjectConfig.toModuleTemplate(moduleName: String): ModuleTemplate {
+    val normalizedModule = moduleName.replace("-", "").replace("_", "")
+    val bp = effectiveBasePackage()
+    val featurePackage = "$bp.feature.$normalizedModule"
+    val isAndroid = this.isAndroid
+    val namespace = if (isAndroid) featurePackage else null
+
+    return ModuleTemplate(
+        name = moduleName,
+        packageName = featurePackage,
+        conventionPluginId = conventionPluginId,
+        layers = moduleStructure?.layers ?: listOf("data", "domain", "presentation"),
+        hasRes = moduleStructure?.hasRes ?: false,
+        namespace = namespace,
+        projectType = platform.name,
+        platform = platform,
+        basePackage = bp,
+        baseClassPackages = resolveScaffoldBaseClasses(includeRetrofitProvider = false),
+        apiResultClass = if (isAndroid) "$bp.feature.base.data.retrofit.ApiResult" else null,
+        commonResultClass = if (isAndroid) "$bp.feature.base.data.retrofit.CommonResult" else null,
+        toResultPackage = if (isAndroid) "$bp.feature.base.data.retrofit" else null,
     )
 }

@@ -2,6 +2,8 @@ package com.dqc.egsengine.feature.init.di
 
 import com.dqc.egsengine.feature.init.data.BaseClassScannerImpl
 import com.dqc.egsengine.feature.init.data.EgsConfigWriter
+import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
+import com.dqc.egsengine.feature.init.data.WorkspaceConfigWriter
 import com.dqc.egsengine.feature.init.domain.BaseClassScanner
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
 import org.koin.dsl.module
@@ -9,5 +11,7 @@ import org.koin.dsl.module
 val featureInitModule = module {
     single<BaseClassScanner> { BaseClassScannerImpl() }
     single { EgsConfigWriter() }
+    single { WorkspaceConfigReader() }
+    single { WorkspaceConfigWriter() }
     single { ProjectInitializer(get(), get()) }
 }

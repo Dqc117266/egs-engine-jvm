@@ -1,9 +1,12 @@
 package com.dqc.egsengine.feature.scaffold.domain
 
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
+import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
+import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
+import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -12,9 +15,14 @@ class ModuleScaffolder(
     private val configReader: EgsConfigReader,
     private val generator: ModuleGenerator,
     private val settingsUpdater: SettingsGradleUpdater,
+    private val workspaceResolver: WorkspaceConfigResolver,
+    private val platformGenerators: Map<Platform, PlatformModuleGenerator>,
 ) {
     private val logger = LoggerFactory.getLogger(ModuleScaffolder::class.java)
 
+    /**
+     * Legacy single-project scaffold (reads .egs/config.json).
+     */
     fun scaffold(
         projectRoot: File,
         moduleName: String,
@@ -39,7 +47,43 @@ class ModuleScaffolder(
         generator.generate(projectRoot, template)
         settingsUpdater.update(projectRoot, moduleName)
 
-        logger.info("Scaffolded module '$moduleName' at ${moduleDir.absolutePath}")
+        logger.info("Scaffolded module '{}' at {}", moduleName, moduleDir.absolutePath)
+
+        return ScaffoldResult(
+            moduleName = moduleName,
+            files = preview.map { it.path },
+            dryRun = false,
+        )
+    }
+
+    /**
+     * Workspace-aware scaffold targeting a specific sub-project by key ("client", "backend", "admin").
+     */
+    fun scaffoldForProject(
+        projectRoot: File,
+        moduleName: String,
+        projectKey: String,
+        dryRun: Boolean = false,
+    ): ScaffoldResult {
+        val config = workspaceResolver.resolveByKey(projectRoot, projectKey)
+        val gen = platformGenerators[config.platform]
+            ?: throw IllegalArgumentException("No generator registered for platform: ${config.platform}")
+
+        val subProjectRoot = projectRoot.resolve(config.path)
+        val preview = gen.preview(subProjectRoot, moduleName, config)
+
+        if (dryRun) {
+            return ScaffoldResult(
+                moduleName = moduleName,
+                files = preview.map { it.path },
+                dryRun = true,
+            )
+        }
+
+        gen.generate(subProjectRoot, moduleName, config)
+        gen.updateSettings(projectRoot, moduleName, config)
+
+        logger.info("Scaffolded module '{}' for project '{}' (platform={})", moduleName, projectKey, config.platform)
 
         return ScaffoldResult(
             moduleName = moduleName,

@@ -9,7 +9,12 @@ import com.dqc.egsengine.feature.common.di.commonModule
 import com.dqc.egsengine.feature.init.di.featureInitModule
 import com.dqc.egsengine.feature.init.presentation.InitCommand
 import com.dqc.egsengine.feature.scaffold.di.featureScaffoldModule
+import com.dqc.egsengine.feature.scaffold.presentation.BackendCommand
+import com.dqc.egsengine.feature.scaffold.presentation.ClientCommand
 import com.dqc.egsengine.feature.scaffold.presentation.CreateCommand
+import com.dqc.egsengine.feature.scaffold.presentation.LintCommand
+import com.dqc.egsengine.feature.scaffold.presentation.NewCommand
+import com.dqc.egsengine.feature.scaffold.presentation.WebCommand
 import com.dqc.egsengine.feature.script.di.featureScriptModule
 import com.dqc.egsengine.feature.script.presentation.ScriptCommand
 import com.dqc.egsengine.feature.task.di.featureTaskModule
@@ -43,6 +48,11 @@ fun main(args: Array<String>) {
             ScriptCommand(),
             InitCommand(),
             CreateCommand.withSubcommands(),
+            NewCommand.withSubcommands(),
+            BackendCommand.withSubcommands(),
+            ClientCommand.withSubcommands(),
+            WebCommand.withSubcommands(),
+            LintCommand.withSubcommands(),
         )
         .main(args)
 }

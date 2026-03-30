@@ -1,6 +1,7 @@
-package com.dqc.egsengine.feature.scaffold.data.template
+package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
+import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -12,21 +13,16 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
-/**
- * 页面 Kotlin 文件生成器 - 使用 KotlinPoet 生成 Contract/Fragment/ViewModel
- */
 class PageKotlinFileGenerator(private val template: PageTemplate) {
 
     private val pascalName = template.pageName
     private val camelName = pascalName.replaceFirstChar { it.lowercase() }
-    /** snake_case 布局名，如 task_detail */
     private val layoutSnakeName = pascalName.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
     private val pkg = template.modulePackage
     private val screenPkg = "$pkg.presentation.screen.$camelName"
     private val baseClasses = template.baseClassPackages
     private val basePackage = template.basePackage
 
-    // 基础类名
     private val uiStateClass = baseClasses.baseViewModel?.let {
         ClassName(it.substringBeforeLast("."), "UiState")
     } ?: ClassName("com.example.base", "UiState")
@@ -47,17 +43,10 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         ClassName(it.substringBeforeLast("."), it.substringAfterLast("."))
     }
 
-    /**
-     * 生成 Contract 文件
-     * - State: data class (data, isLoading, error)，data 类型根据 useCases 可扩展
-     * - Intent: sealed class，每个 useCase 对应一个请求意图（LoadData/Refresh + 其他）
-     * - Effect: sealed class，仅 ShowToast
-     */
     fun generateContract(): FileSpec {
         val intentClass = ClassName(screenPkg, "${pascalName}Contract", "Intent")
         val effectClass = ClassName(screenPkg, "${pascalName}Contract", "Effect")
 
-        // State: data class，含 isLoading、error + 每个 useCase 的返回值类型作为属性（无 data 字段）
         val modelPackage = "$pkg.domain.model"
         val stateBuilder = TypeSpec.classBuilder("State")
             .addModifiers(KModifier.DATA)
@@ -67,14 +56,14 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addParameter(
                 ParameterSpec.builder("error", String::class.asTypeName().copy(nullable = true))
                     .defaultValue("null")
-                    .build()
+                    .build(),
             )
         val stateProperties = mutableListOf<PropertySpec>()
         stateProperties.add(PropertySpec.builder("isLoading", Boolean::class).initializer("isLoading").build())
         stateProperties.add(
             PropertySpec.builder("error", String::class.asTypeName().copy(nullable = true))
                 .initializer("error")
-                .build()
+                .build(),
         )
 
         template.useCases.forEach { useCase ->
@@ -88,7 +77,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                 constructorBuilder.addParameter(
                     ParameterSpec.builder(propName, typeClass.copy(nullable = true))
                         .defaultValue("null")
-                        .build()
+                        .build(),
                 )
                 stateProperties.add(PropertySpec.builder(propName, typeClass.copy(nullable = true)).initializer(propName).build())
             }
@@ -99,18 +88,16 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addProperties(stateProperties)
             .build()
 
-        // Intent: sealed class，无参数用 object，有参数用 data class
         val intentType = TypeSpec.classBuilder("Intent")
             .addModifiers(KModifier.SEALED)
             .addSuperinterface(uiIntentClass)
             .addTypes(
                 template.useCases.map { useCase ->
                     buildIntentType(useCase, intentClass)
-                }
+                },
             )
             .build()
 
-        // Effect: sealed class，ShowToast 为 data class
         val effectType = TypeSpec.classBuilder("Effect")
             .addModifiers(KModifier.SEALED)
             .addSuperinterface(uiEffectClass)
@@ -121,14 +108,14 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     .primaryConstructor(
                         FunSpec.constructorBuilder()
                             .addParameter("message", String::class)
-                            .build()
+                            .build(),
                     )
                     .addProperty(
                         PropertySpec.builder("message", String::class)
                             .initializer("message")
-                            .build()
+                            .build(),
                     )
-                    .build()
+                    .build(),
             )
             .build()
 
@@ -138,20 +125,18 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     .addType(stateType)
                     .addType(intentType)
                     .addType(effectType)
-                    .build()
+                    .build(),
             )
             .build()
     }
 
-    /**
-     * 将包装类型映射为 Kotlin 标准类型，避免生成 ModelBoolean、KotlinBoolean 等。
-     * 一般类型直接用 Kotlin 标准类型，自定义类型（如 SseEmitter）保持原样。
-     * 支持泛型类型如 List<XXX>。
-     */
-    private fun resolveStatePropertyType(simpleType: String, typePackage: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
-        // 处理泛型类型如 List<AppAiChatMessageRespVO>
+    private fun resolveStatePropertyType(
+        simpleType: String,
+        typePackage: String,
+        modelPackage: String,
+    ): com.squareup.kotlinpoet.TypeName {
         if (simpleType.startsWith("List<") && simpleType.endsWith(">")) {
-            val innerType = simpleType.substring(5, simpleType.length - 1) // 提取 List<XXX> 中的 XXX
+            val innerType = simpleType.substring(5, simpleType.length - 1)
             val innerSimpleType = innerType.substringAfterLast(".")
             val innerTypePackage = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
             val innerClass = resolveBasicType(innerSimpleType, innerTypePackage, modelPackage)
@@ -161,27 +146,27 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         return resolveBasicType(simpleType, typePackage, modelPackage)
     }
 
-    private fun resolveBasicType(simpleType: String, typePackage: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
-        return when (simpleType) {
-            "Boolean", "ModelBoolean", "KotlinBoolean" -> Boolean::class.asTypeName()
-            "Int", "ModelInt", "KotlinInt" -> Int::class.asTypeName()
-            "Long", "ModelLong", "KotlinLong" -> Long::class.asTypeName()
-            "String", "ModelString", "KotlinString" -> String::class.asTypeName()
-            "Double", "ModelDouble", "KotlinDouble" -> Double::class.asTypeName()
-            "Float", "ModelFloat", "KotlinFloat" -> Float::class.asTypeName()
-            else -> {
-                // ApiModel (data layer) -> domain model
-                if (simpleType.endsWith("ApiModel")) {
-                    ClassName(modelPackage, simpleType.removeSuffix("ApiModel"))
-                } else {
-                    ClassName(typePackage, simpleType)
-                }
+    private fun resolveBasicType(
+        simpleType: String,
+        typePackage: String,
+        modelPackage: String,
+    ): com.squareup.kotlinpoet.TypeName = when (simpleType) {
+        "Boolean", "ModelBoolean", "KotlinBoolean" -> Boolean::class.asTypeName()
+        "Int", "ModelInt", "KotlinInt" -> Int::class.asTypeName()
+        "Long", "ModelLong", "KotlinLong" -> Long::class.asTypeName()
+        "String", "ModelString", "KotlinString" -> String::class.asTypeName()
+        "Double", "ModelDouble", "KotlinDouble" -> Double::class.asTypeName()
+        "Float", "ModelFloat", "KotlinFloat" -> Float::class.asTypeName()
+        else -> {
+            if (simpleType.endsWith("ApiModel")) {
+                ClassName(modelPackage, simpleType.removeSuffix("ApiModel"))
+            } else {
+                ClassName(typePackage, simpleType)
             }
         }
     }
 
-    /** 根据 useCase 生成 Intent：无参数用 object，有参数用 data class */
-    private fun buildIntentType(useCase: com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo, intentClass: ClassName): TypeSpec {
+    private fun buildIntentType(useCase: UseCaseInfo, intentClass: ClassName): TypeSpec {
         val intentName = useCase.name.removeSuffix("UseCase")
         return if (useCase.parameters.isEmpty()) {
             TypeSpec.objectBuilder(intentName)
@@ -205,13 +190,13 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         }
     }
 
-    /** 将参数类型字符串转为 KotlinPoet TypeName，ApiModel 映射为 domain model */
     private fun resolveParamType(typeStr: String, modelPackage: String): com.squareup.kotlinpoet.TypeName {
         val nullable = typeStr.endsWith("?")
         val base = typeStr.removeSuffix("?")
         val typeName = when {
             base.startsWith("List<") -> {
-                val inner = Regex("""List<([^>]+)>""").find(base)?.groupValues?.get(1) ?: return ClassName("kotlin.collections", "List")
+                val inner = Regex("""List<([^>]+)>""").find(base)?.groupValues?.get(1)
+                    ?: return ClassName("kotlin.collections", "List")
                 val innerType = resolveParamType(inner, modelPackage)
                 ClassName("kotlin.collections", "List").parameterizedBy(innerType)
             }
@@ -226,7 +211,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     "Double", "ModelDouble", "KotlinDouble" -> Double::class.asTypeName()
                     "Float", "ModelFloat", "KotlinFloat" -> Float::class.asTypeName()
                     else -> {
-                        // ApiModel (data layer) -> domain model
                         if (simple.endsWith("ApiModel")) {
                             ClassName(modelPackage, simple.removeSuffix("ApiModel"))
                         } else {
@@ -239,9 +223,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         return if (nullable) typeName.copy(nullable = true) else typeName
     }
 
-    /**
-     * 生成 Fragment 文件
-     */
     fun generateFragment(): FileSpec? {
         if (baseFragmentClass == null) return null
 
@@ -264,7 +245,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     .addProperty(
                         PropertySpec.builder("viewModel", viewModelClass, KModifier.PRIVATE)
                             .delegate("viewModel()")
-                            .build()
+                            .build(),
                     )
                     .addFunction(
                         FunSpec.builder("onViewCreated")
@@ -274,18 +255,18 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                             .addStatement("super.onViewCreated(view, savedInstanceState)")
                             .addStatement("")
                             .addStatement("initObserver()")
-                            .build()
+                            .build(),
                     )
                     .addFunction(generateInitObserverFun())
                     .addFunction(generateRenderStateFun(stateClass))
                     .addFunction(generateHandleEffectFun(effectClass))
-                    .build()
+                    .build(),
             )
             .build()
     }
 
-    private fun generateInitObserverFun(): FunSpec {
-        return FunSpec.builder("initObserver")
+    private fun generateInitObserverFun(): FunSpec =
+        FunSpec.builder("initObserver")
             .addModifiers(KModifier.PRIVATE)
             .beginControlFlow("viewLifecycleOwner.lifecycleScope.launch")
             .beginControlFlow("viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED)")
@@ -309,10 +290,9 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .endControlFlow()
             .endControlFlow()
             .build()
-    }
 
-    private fun generateRenderStateFun(stateClass: ClassName): FunSpec {
-        return FunSpec.builder("renderState")
+    private fun generateRenderStateFun(stateClass: ClassName): FunSpec =
+        FunSpec.builder("renderState")
             .addModifiers(KModifier.PRIVATE)
             .addParameter("state", stateClass)
             .addStatement("binding.apply {")
@@ -321,23 +301,16 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             .addStatement("    // errorView.isVisible = state.error != null")
             .addStatement("}")
             .build()
-    }
 
-    private fun generateHandleEffectFun(effectClass: ClassName): FunSpec {
-        return FunSpec.builder("handleEffect")
+    private fun generateHandleEffectFun(effectClass: ClassName): FunSpec =
+        FunSpec.builder("handleEffect")
             .addModifiers(KModifier.PRIVATE)
             .addParameter("effect", effectClass)
             .beginControlFlow("when (effect)")
             .addStatement("is ${pascalName}Contract.Effect.ShowToast -> showToast(effect.message)")
             .endControlFlow()
             .build()
-    }
 
-    /**
-     * 生成 ViewModel 文件
-     * - 每个 useCase 对应一个 registerIntent 和 handleXxx 方法
-     * - 无 onInitialize，无 LoadData/Refresh
-     */
     fun generateViewModel(): FileSpec {
         val stateClass = ClassName(screenPkg, "${pascalName}Contract.State")
         val intentClass = ClassName(screenPkg, "${pascalName}Contract.Intent")
@@ -350,7 +323,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         val classBuilder = TypeSpec.classBuilder("${pascalName}ViewModel")
             .addModifiers(KModifier.INTERNAL)
 
-        // 添加构造函数参数（UseCase 注入）
         if (template.useCases.isNotEmpty()) {
             val constructorBuilder = FunSpec.constructorBuilder()
             template.useCases.forEach { useCase ->
@@ -359,19 +331,17 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
             }
             classBuilder.primaryConstructor(constructorBuilder.build())
 
-            // 添加 UseCase 属性
             template.useCases.forEach { useCase ->
                 val useCaseClass = ClassName(useCase.packageName, useCase.name)
                 classBuilder.addProperty(
                     PropertySpec.builder(useCase.camelName, useCaseClass)
                         .initializer(useCase.camelName)
                         .addModifiers(KModifier.PRIVATE)
-                        .build()
+                        .build(),
                 )
             }
         }
 
-        // 继承 BaseViewModel
         val baseVmWithTypes = if (baseViewModelClass.canonicalName != "androidx.lifecycle.ViewModel") {
             baseViewModelClass.parameterizedBy(stateClass, intentClass, effectClass)
         } else {
@@ -380,14 +350,12 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
         classBuilder.superclass(baseVmWithTypes)
 
-        // 添加初始化 State（无 data 参数）
         if (baseViewModelClass.canonicalName != "androidx.lifecycle.ViewModel") {
             classBuilder.addSuperclassConstructorParameter(
-                CodeBlock.of("%T()", stateClass)
+                CodeBlock.of("%T()", stateClass),
             )
         }
 
-        // 添加 registerIntents 方法：每个 useCase 对应一个 registerIntent，有参数则传递 it.xxx
         val registerIntentsBuilder = FunSpec.builder("registerIntents")
             .addModifiers(KModifier.OVERRIDE)
 
@@ -413,7 +381,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
 
         classBuilder.addFunction(registerIntentsBuilder.build())
 
-        // 为每个 useCase 添加 handleXxx 方法，有参数则接收参数
         template.useCases.forEach { useCase ->
             classBuilder.addFunction(generateHandleUseCaseFun(useCase, stateClass, effectClass))
         }
@@ -421,7 +388,11 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         return fileBuilder.addType(classBuilder.build()).build()
     }
 
-    private fun generateHandleUseCaseFun(useCase: com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo, stateClass: ClassName, effectClass: ClassName): FunSpec {
+    private fun generateHandleUseCaseFun(
+        useCase: UseCaseInfo,
+        stateClass: ClassName,
+        @Suppress("UNUSED_PARAMETER") effectClass: ClassName,
+    ): FunSpec {
         val intentName = useCase.name.removeSuffix("UseCase")
         val handlerName = "handle${intentName.replaceFirstChar { it.uppercase() }}"
         val showLoading = !(useCase.returnType?.contains("SseEmitter") == true)
@@ -432,7 +403,6 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         val funBuilder = FunSpec.builder(handlerName)
             .addModifiers(KModifier.PRIVATE)
 
-        // 添加方法参数（与 useCase 参数一致）
         useCase.parameters.forEach { param ->
             val paramType = resolveParamType(param.type, modelPackage)
             funBuilder.addParameter(param.name, paramType)
@@ -465,14 +435,9 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
         return funBuilder.build()
     }
 
-    /**
-     * 生成 Compose Screen 文件
-     */
     fun generateScreen(): FileSpec {
-        // Screen 放在 screen/{name}/ 目录下
         val screenDirPkg = "$pkg.presentation.screen.$camelName"
         val viewModelClass = ClassName(screenDirPkg, "${pascalName}ViewModel")
-        val contractClass = ClassName(screenDirPkg, "${pascalName}Contract")
         val effectClass = ClassName(screenDirPkg, "${pascalName}Contract", "Effect")
         val composableAnnotation = ClassName("androidx.compose.runtime", "Composable")
         val modifierClass = ClassName("androidx.compose.ui", "Modifier")
@@ -490,7 +455,7 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     .addParameter(
                         ParameterSpec.builder("modifier", modifierClass)
                             .defaultValue("%T", modifierClass)
-                            .build()
+                            .build(),
                     )
                     .addStatement("")
                     .addStatement("val viewModel: %T = koinViewModel()", viewModelClass)
@@ -510,8 +475,8 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     .addComment("UI Content")
                     .addStatement(
                         "Column(\n" +
-                        "    modifier = modifier.fillMaxSize().padding(16.dp),\n" +
-                        ") {"
+                            "    modifier = modifier.fillMaxSize().padding(16.dp),\n" +
+                            ") {",
                     )
                     .beginControlFlow("when")
                     .addStatement("uiState.isLoading -> {")
@@ -525,14 +490,11 @@ class PageKotlinFileGenerator(private val template: PageTemplate) {
                     .addStatement("}")
                     .endControlFlow()
                     .addStatement("}")
-                    .build()
+                    .build(),
             )
             .build()
     }
 
-    /**
-     * 生成 Layout XML 文件
-     */
     fun generateLayout(): String = buildString {
         appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
         appendLine("""<layout xmlns:android="http://schemas.android.com/apk/res/android"""")

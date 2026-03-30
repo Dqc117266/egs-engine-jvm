@@ -1,6 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.data.swagger
 
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -18,6 +19,9 @@ import org.slf4j.LoggerFactory
 
 class SwaggerCodeGenerator {
     private val logger = LoggerFactory.getLogger(SwaggerCodeGenerator::class.java)
+
+    fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec): List<GeneratedFile> =
+        generate(template, spec).map { GeneratedFile(it.path, it.content) }
 
     fun generate(template: ModuleTemplate, spec: SwaggerSpec): List<ModuleGenerator.GeneratedFile> {
         val moduleDir = "feature/${template.name}"

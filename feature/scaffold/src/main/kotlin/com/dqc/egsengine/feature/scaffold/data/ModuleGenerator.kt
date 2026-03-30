@@ -1,13 +1,18 @@
 package com.dqc.egsengine.feature.scaffold.data
 
-import com.dqc.egsengine.feature.scaffold.data.template.KotlinFileGenerator
-import com.dqc.egsengine.feature.scaffold.data.template.XmlTemplateGenerator
-import com.dqc.egsengine.feature.scaffold.data.template.toFixedString
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.template.KotlinFileGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.template.XmlTemplateGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.template.toFixedString
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.squareup.kotlinpoet.FileSpec
 import org.slf4j.LoggerFactory
 import java.io.File
 
+/**
+ * Legacy orchestrator kept for backward compatibility with single-project (EgsConfig) flows.
+ * New multi-platform code should use [AndroidModuleGenerator] / platform generators directly.
+ */
 class ModuleGenerator {
     private val logger = LoggerFactory.getLogger(ModuleGenerator::class.java)
 
@@ -59,10 +64,10 @@ class ModuleGenerator {
             }
 
             created.add(file)
-            logger.debug("Created: ${entry.path}")
+            logger.debug("Created: {}", entry.path)
         }
 
-        logger.info("Generated ${created.size} files for module '${template.name}'")
+        logger.info("Generated {} files for module '{}'", created.size, template.name)
         return created
     }
 
@@ -90,13 +95,4 @@ class ModuleGenerator {
             appendLine("}")
         }
     }
-
-    private fun toPascalCase(name: String): String =
-        name.split("-", "_").joinToString("") { part ->
-            part.replaceFirstChar { it.uppercase() }
-        }
-
-    /** camelCase/PascalCase -> snake_case，如 UiStructureEngine -> ui_structure_engine */
-    private fun toSnakeCase(s: String): String =
-        s.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
 }

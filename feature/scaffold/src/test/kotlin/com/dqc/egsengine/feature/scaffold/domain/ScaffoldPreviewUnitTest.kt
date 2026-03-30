@@ -1,10 +1,12 @@
 package com.dqc.egsengine.feature.scaffold.domain
 
+import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
+import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -19,6 +21,8 @@ class ScaffoldPreviewUnitTest {
             configReader = EgsConfigReader(),
             generator = ModuleGenerator(),
             settingsUpdater = SettingsGradleUpdater(),
+            workspaceResolver = WorkspaceConfigResolver(WorkspaceConfigReader()),
+            platformGenerators = emptyMap(),
         )
 
         val result = scaffolder.scaffold(

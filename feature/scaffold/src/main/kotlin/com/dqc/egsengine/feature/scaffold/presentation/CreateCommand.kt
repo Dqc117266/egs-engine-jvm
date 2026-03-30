@@ -22,7 +22,8 @@ class CreateCommand : CliktCommand(name = "create") {
                 CreateProjectCommand(),
                 CreateModuleCommand(),
                 CreateApiCommand(),
-                CreatePageCommand(),
+                CreateScreenCommand(),
+                CreatePageCommand(),  // 保留向后兼容
             )
     }
 }

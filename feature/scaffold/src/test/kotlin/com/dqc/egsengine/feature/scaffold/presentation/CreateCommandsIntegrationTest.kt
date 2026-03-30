@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
+import com.dqc.egsengine.feature.init.di.featureInitModule
 import com.dqc.egsengine.feature.scaffold.di.featureScaffoldModule
 import com.github.ajalt.clikt.core.main
 import org.junit.jupiter.api.AfterEach
@@ -18,7 +19,7 @@ class CreateCommandsIntegrationTest {
 
     @Test
     fun `create module generates NavigationRoute and no XML resources`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
 
         CreateCommand.withSubcommands().main(
@@ -31,18 +32,26 @@ class CreateCommandsIntegrationTest {
         )
 
         // 验证：应该生成 NavigationRoute
-        assertTrue(projectRoot.resolve(
-            "feature/uiStructureEngine/src/main/kotlin/com/dqc/example/feature/uiStructureEngine/presentation/UiStructureEngineNavigationRoute.kt"
-        ).exists())
+        assertTrue(
+            projectRoot.resolve(
+                "feature/uiStructureEngine/src/main/kotlin/com/dqc/example/feature/uiStructureEngine/presentation/UiStructureEngineNavigationRoute.kt"
+            ).exists()
+        )
 
         // 验证：不应该生成 XML 文件
-        assertFalse(projectRoot.resolve("feature/uiStructureEngine/src/main/res/layout/fragment_ui_structure_engine.xml").exists())
-        assertFalse(projectRoot.resolve("feature/uiStructureEngine/src/main/res/navigation/ui_structure_engine_nav_graph.xml").exists())
+        assertFalse(
+            projectRoot.resolve("feature/uiStructureEngine/src/main/res/layout/fragment_ui_structure_engine.xml")
+                .exists()
+        )
+        assertFalse(
+            projectRoot.resolve("feature/uiStructureEngine/src/main/res/navigation/ui_structure_engine_nav_graph.xml")
+                .exists()
+        )
     }
 
     @Test
     fun `create module dry run does not write files`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
 
         CreateCommand.withSubcommands().main(
@@ -60,7 +69,7 @@ class CreateCommandsIntegrationTest {
 
     @Test
     fun `create page generates files in command mode`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
         createUseCaseFixture(projectRoot)
 
@@ -88,7 +97,7 @@ class CreateCommandsIntegrationTest {
 
     @Test
     fun `create page dry run does not write files`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
         createUseCaseFixture(projectRoot)
 
@@ -116,7 +125,7 @@ class CreateCommandsIntegrationTest {
 
     @Test
     fun `create api generates domain request body and toData call`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
         val swaggerFile = createSwaggerFixture(projectRoot)
 
@@ -145,14 +154,23 @@ class CreateCommandsIntegrationTest {
         assertTrue(repositoryImplPath.exists())
         assertTrue(useCasePath.exists())
 
-        assertTrue(repositoryPath.readText().contains("suspend fun topicUpdateTopic(body: TopicSaveReqVO): Result<Boolean>"))
-        assertTrue(repositoryImplPath.readText().contains("service.topicUpdateTopic(body.toData()).toResult()"))
-        assertTrue(useCasePath.readText().contains("suspend operator fun invoke(body: TopicSaveReqVO): Result<Boolean>"))
+        assertTrue(
+            repositoryPath.readText()
+                .contains("suspend fun topicUpdateTopic(body: TopicSaveReqVO): Result<Boolean>")
+        )
+        assertTrue(
+            repositoryImplPath.readText()
+                .contains("service.topicUpdateTopic(body.toData()).toResult()")
+        )
+        assertTrue(
+            useCasePath.readText()
+                .contains("suspend operator fun invoke(body: TopicSaveReqVO): Result<Boolean>")
+        )
     }
 
     @Test
     fun `create api dry run does not write files`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
         val swaggerFile = createSwaggerFixture(projectRoot)
 

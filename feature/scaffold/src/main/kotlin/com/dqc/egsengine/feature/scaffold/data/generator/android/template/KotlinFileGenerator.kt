@@ -1,4 +1,4 @@
-package com.dqc.egsengine.feature.scaffold.data.template
+package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.squareup.kotlinpoet.ClassName
@@ -117,9 +117,6 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
             .build()
     }
 
-    /**
-     * 生成 NavigationRoute 文件
-     */
     fun generateNavigationRoute(): FileSpec? {
         if (!isAndroid) return null
 
@@ -135,9 +132,9 @@ class KotlinFileGenerator(private val template: ModuleTemplate) {
                         TypeSpec.objectBuilder(pascal)
                             .addAnnotation(serializableClass)
                             .superclass(ClassName("$pkg.presentation", "${pascal}NavigationRoute"))
-                            .build()
+                            .build(),
                     )
-                    .build()
+                    .build(),
             )
             .build()
     }

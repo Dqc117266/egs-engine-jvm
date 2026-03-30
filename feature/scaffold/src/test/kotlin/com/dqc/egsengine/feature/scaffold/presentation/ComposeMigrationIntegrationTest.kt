@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
+import com.dqc.egsengine.feature.init.di.featureInitModule
 import com.dqc.egsengine.feature.scaffold.di.featureScaffoldModule
 import com.github.ajalt.clikt.core.main
 import org.junit.jupiter.api.AfterEach
@@ -25,7 +26,7 @@ class ComposeMigrationIntegrationTest {
 
     @Test
     fun `create module generates NavigationRoute and no XML layouts`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
 
         CreateCommand.withSubcommands().main(
@@ -72,7 +73,7 @@ class ComposeMigrationIntegrationTest {
 
     @Test
     fun `create page generates Compose Screen and no Fragment or XML Layout`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
 
         // 先创建模块
@@ -133,7 +134,7 @@ class ComposeMigrationIntegrationTest {
 
     @Test
     fun `create page with use cases generates proper Screen with state handling`() {
-        startKoin { modules(featureScaffoldModule) }
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
         createUseCaseFixture(projectRoot)
 
