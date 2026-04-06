@@ -36,6 +36,12 @@ class Vue3ModuleGenerator : PlatformModuleGenerator {
         files.add(GeneratedFile("$srcBase/stores/$moduleName.ts", generateStoreStub(moduleName)))
         files.add(GeneratedFile("$srcBase/types/$moduleName.ts", generateTypesStub(moduleName)))
         files.add(GeneratedFile("$srcBase/router/modules/$moduleName.ts", generateRouterStub(moduleName)))
+        files.add(
+            GeneratedFile(
+                "$srcBase/sql/sys_menu_snippet_$moduleName.sql",
+                generateSysMenuInsertSnippet(moduleName),
+            ),
+        )
 
         return files
     }
@@ -137,4 +143,31 @@ class Vue3ModuleGenerator : PlatformModuleGenerator {
         split("-", "_").joinToString("") { part ->
             part.replaceFirstChar { it.uppercase() }
         }
+
+    /**
+     * Flyway-ready snippet for `egs-server-template` `sys_menus` (see V5__sys_menu.sql).
+     * Merge into a new migration; set [parent_id] if the menu should sit under a directory row.
+     */
+    private fun generateSysMenuInsertSnippet(moduleName: String): String {
+        val pascal = moduleName.toPascal()
+        val title = pascal.replaceFirstChar { it.titlecase() }
+        val routeName = "${pascal}Admin"
+        val perm = "$moduleName:list"
+        return buildString {
+            appendLine("-- EGS Engine: copy into egs-server-template db/migration as part of a new Flyway script.")
+            appendLine("INSERT INTO sys_menus (")
+            appendLine("    parent_id, menu_name, order_num, path, component, route_name,")
+            appendLine("    menu_type, visible, status, perms, icon")
+            appendLine(") VALUES (")
+            appendLine("    NULL,")
+            appendLine("    '$title',")
+            appendLine("    100,")
+            appendLine("    '$moduleName',")
+            appendLine("    '$moduleName/index',")
+            appendLine("    '$routeName',")
+            appendLine("    'C', TRUE, '0', '$perm', 'Document');")
+            appendLine()
+            appendLine("-- Add matching permissions to `permissions` / `role_permissions` in the same migration if needed.")
+        }
+    }
 }
