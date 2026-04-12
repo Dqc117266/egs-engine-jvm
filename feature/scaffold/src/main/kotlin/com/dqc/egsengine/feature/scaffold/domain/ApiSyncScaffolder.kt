@@ -4,6 +4,7 @@ import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpGeneratedModuleWireUpdater
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -16,6 +17,7 @@ class ApiSyncScaffolder(
     private val workspaceResolver: WorkspaceConfigResolver,
     private val swaggerParser: SwaggerParser,
     private val platformApiGenerators: Map<Platform, PlatformApiGenerator>,
+    private val kmpGeneratedModuleWireUpdater: KmpGeneratedModuleWireUpdater,
 ) {
     private val logger = LoggerFactory.getLogger(ApiSyncScaffolder::class.java)
 
@@ -55,6 +57,12 @@ class ApiSyncScaffolder(
             file.content?.let { target.writeText(it) }
             logger.debug("Generated: {}", file.path)
         }
+
+        kmpGeneratedModuleWireUpdater.wireIfNeeded(
+            subProjectRoot = subProjectRoot,
+            moduleName = clientModuleName,
+            config = clientConfig,
+        )
 
         logger.info("Synced API from backend module '{}' to client module '{}' ({} files)",
             backendModuleName, clientModuleName, generated.size)

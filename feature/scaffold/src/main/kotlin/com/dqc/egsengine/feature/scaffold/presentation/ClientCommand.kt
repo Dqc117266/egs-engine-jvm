@@ -102,6 +102,13 @@ class ClientApiSyncCommand : CliktCommand(name = "sync"), KoinComponent {
 
     private val moduleArg by argument(help = "Module name (shortcut for same-name sync)").optional()
 
+    /** Same value for both client and backend when `--client-module` / `--backend-module` are not set. */
+    private val moduleOption by option(
+        "--module",
+        "-m",
+        help = "Shortcut: use the same name for both client and backend modules",
+    )
+
     private val clientModuleOption by option(
         "--client-module",
         help = "Client feature module name",
@@ -126,10 +133,15 @@ class ClientApiSyncCommand : CliktCommand(name = "sync"), KoinComponent {
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
 
-            val clientModule = clientModuleOption ?: moduleArg
-                ?: throw IllegalArgumentException("Module name required. Usage: egs client api sync <module> or --client-module=X --backend-module=Y")
-            val backendModule = backendModuleOption ?: moduleArg
-                ?: throw IllegalArgumentException("Backend module name required. Use --backend-module=Y or provide module name as argument")
+            // Priority: explicit --client-module / --backend-module > --module > positional argument
+            val clientModule = clientModuleOption ?: moduleOption ?: moduleArg
+                ?: throw IllegalArgumentException(
+                    "Module name required. Usage: egs client api sync <module> or --module=X or --client-module=X [--backend-module=Y]",
+                )
+            val backendModule = backendModuleOption ?: moduleOption ?: moduleArg
+                ?: throw IllegalArgumentException(
+                    "Backend module name required. Use --backend-module=Y, --module=X, or positional <module>",
+                )
 
             val result = apiSyncScaffolder.syncClientApi(
                 projectRoot = dir,

@@ -10,6 +10,8 @@ import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpGeneratedModuleWireUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
@@ -18,6 +20,8 @@ import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootCr
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerCodeGenerator
+import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerTemplateRenderer
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
@@ -39,6 +43,9 @@ val featureScaffoldModule = module {
     single { SwaggerParser() }
     single { SwaggerTemplateRenderer(get()) }
     single { SwaggerCodeGenerator(get()) }
+    single { KmpSwaggerTemplateRenderer(get()) }
+    single { KmpSwaggerCodeGenerator(get()) }
+    single { KmpGeneratedModuleWireUpdater() }
     single { UseCaseScanner() }
     single { FeatureDiUpdater() }
     single { DdlParser() }
@@ -65,14 +72,15 @@ val featureScaffoldModule = module {
 
     // Platform API generators
     single { AndroidApiGenerator(get()) }
+    single { KmpApiGenerator(get()) }
     single { SpringBootApiGenerator() }
     single { Vue3ApiGenerator() }
 
     single<Map<Platform, PlatformApiGenerator>>(named("platformApiGenerators")) {
         mapOf(
             Platform.ANDROID to get<AndroidApiGenerator>(),
-            Platform.KMP to get<AndroidApiGenerator>(),
-            Platform.KMP_ANDROID to get<AndroidApiGenerator>(),
+            Platform.KMP to get<KmpApiGenerator>(),
+            Platform.KMP_ANDROID to get<KmpApiGenerator>(),
             Platform.SPRING_BOOT to get<SpringBootApiGenerator>(),
             Platform.VUE3 to get<Vue3ApiGenerator>(),
         )
@@ -85,6 +93,6 @@ val featureScaffoldModule = module {
     single { ModuleScaffolder(get(), get(), get(), get(), get(named("platformModuleGenerators"))) }
     single { SwaggerApiScaffolder(get(), get(), get()) }
     single { PageScaffolder(get(), get(), get(), get()) }
-    single { ApiSyncScaffolder(get(), get(), get(named("platformApiGenerators"))) }
+    single { ApiSyncScaffolder(get(), get(), get(named("platformApiGenerators")), get()) }
     single { EntityScaffolder(get(), get(), get()) }
 }
