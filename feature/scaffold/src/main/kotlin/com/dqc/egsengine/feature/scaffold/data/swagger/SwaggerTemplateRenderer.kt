@@ -212,6 +212,99 @@ class SwaggerTemplateRenderer(
         )
     }
 
+    /**
+     * Generated `open class Generated¡­RepositorySupport` under `¡­/generate/¡­` (not overwritten by module scaffold).
+     */
+    fun renderGeneratedRepositorySupport(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
+        val operations = spec.operations.map { op ->
+            val callArgs = mutableListOf<String>()
+            val params = op.params.map { param ->
+                val name = param.name.toSafeIdentifier()
+                callArgs.add(name)
+                val type = ctx.resolveType(param.type, forDomain = false)
+                    .let { if (!param.required) "$it?" else it }
+                mapOf("name" to name, "type" to type)
+            }
+            if (op.requestBody != null) {
+                callArgs.add("body.toData()")
+            }
+            val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
+            val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
+            val stmt = if (ctx.hasResultWrappers()) {
+                if (mapperExpr != null) {
+                    "return $serviceCall.toResult { $mapperExpr }"
+                } else {
+                    "return $serviceCall.toResult()"
+                }
+            } else {
+                if (mapperExpr != null) {
+                    val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
+                    "return $mapped"
+                } else {
+                    "return $serviceCall"
+                }
+            }
+            mapOf(
+                "operationId" to op.operationId,
+                "returnType" to ctx.repositoryReturnType(op.responseBody),
+                "params" to params,
+                "hasBody" to (op.requestBody != null),
+                "bodyType" to op.requestBody?.let { ctx.resolveType(it, forDomain = true) },
+                "statement" to stmt,
+            )
+        }
+        val needsToDomainImport = spec.operations.any { ctx.requiresToDomainImport(it.responseBody) }
+        val needsToDataImport = spec.operations.any { it.requestBody != null }
+        val needsToResult = ctx.hasResultWrappers()
+        val toResultPackage = ctx.template.toResultPackage ?: ""
+        return engine.render(
+            "android/swagger/GeneratedRepositorySupport.kt.ftl",
+            mapOf(
+                "packageName" to ctx.dataRepositoryPackage,
+                "repositoryImplName" to ctx.repositoryImplName,
+                "repositoryName" to ctx.repositoryName,
+                "servicePackage" to ctx.servicePackage,
+                "serviceName" to ctx.serviceName,
+                "domainRepositoryPackage" to ctx.domainRepositoryPackage,
+                "dataModelPackage" to ctx.dataModelPackage,
+                "needsToDomainImport" to needsToDomainImport,
+                "needsToDataImport" to needsToDataImport,
+                "needsToResult" to needsToResult,
+                "toResultPackage" to toResultPackage,
+                "operations" to operations,
+            ),
+            projectRoot,
+        )
+    }
+
+    fun renderGeneratedDataModule(ctx: SwaggerGeneratorContext, projectRoot: File? = null): String =
+        engine.render(
+            "android/swagger/GeneratedDataModule.kt.ftl",
+            mapOf(
+                "generateDiPackage" to ctx.generateDiPackage,
+                "servicePackage" to ctx.servicePackage,
+                "serviceName" to ctx.serviceName,
+            ),
+            projectRoot,
+        )
+
+    fun renderGeneratedDomainModule(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
+        val useCases = spec.operations.map { op ->
+            mapOf(
+                "useCaseClass" to "${op.operationId.toSafePascal()}UseCase",
+                "domainUseCasePackage" to ctx.domainUseCasePackage,
+            )
+        }
+        return engine.render(
+            "android/swagger/GeneratedDomainModule.kt.ftl",
+            mapOf(
+                "generateDiPackage" to ctx.generateDiPackage,
+                "useCases" to useCases,
+            ),
+            projectRoot,
+        )
+    }
+
     fun renderDataModule(ctx: SwaggerGeneratorContext, projectRoot: File? = null): String =
         engine.render(
             "android/swagger/ApiDataModule.kt.ftl",

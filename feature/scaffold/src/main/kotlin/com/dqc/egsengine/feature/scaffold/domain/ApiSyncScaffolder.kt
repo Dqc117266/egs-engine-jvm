@@ -4,6 +4,7 @@ import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
@@ -18,6 +19,7 @@ class ApiSyncScaffolder(
     private val swaggerParser: SwaggerParser,
     private val platformApiGenerators: Map<Platform, PlatformApiGenerator>,
     private val kmpApiSyncKoinUpdater: KmpApiSyncKoinUpdater,
+    private val androidApiSyncKoinUpdater: AndroidApiSyncKoinUpdater,
 ) {
     private val logger = LoggerFactory.getLogger(ApiSyncScaffolder::class.java)
 
@@ -59,6 +61,11 @@ class ApiSyncScaffolder(
         }
 
         kmpApiSyncKoinUpdater.applyAfterSync(
+            subProjectRoot = subProjectRoot,
+            moduleName = clientModuleName,
+            config = clientConfig,
+        )
+        androidApiSyncKoinUpdater.applyAfterSync(
             subProjectRoot = subProjectRoot,
             moduleName = clientModuleName,
             config = clientConfig,

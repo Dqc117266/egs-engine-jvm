@@ -141,13 +141,13 @@ class CreateCommandsIntegrationTest {
         )
 
         val repositoryPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/repository/TaskRepository.kt",
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskRepository.kt",
         )
         val repositoryImplPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/data/repository/TaskRepositoryImpl.kt",
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskRepositorySupport.kt",
         )
         val useCasePath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/usecase/TopicUpdateTopicUseCase.kt",
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/TopicUpdateTopicUseCase.kt",
         )
 
         assertTrue(repositoryPath.exists())
@@ -192,7 +192,7 @@ class CreateCommandsIntegrationTest {
 
         assertFalse(
             projectRoot.resolve(
-                "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/repository/TaskRepository.kt",
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskRepository.kt",
             ).exists(),
         )
     }

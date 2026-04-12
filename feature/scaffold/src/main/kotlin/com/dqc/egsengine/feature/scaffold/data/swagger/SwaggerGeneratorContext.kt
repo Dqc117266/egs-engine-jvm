@@ -9,11 +9,18 @@ import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 
 /**
  * Type and package resolution for Swagger codegen (Kotlin source strings, no KotlinPoet).
+ *
+ * @param generateLayout When true, packages are rooted at `[base].generate` and the repository
+ * implementation class name is `Generated[Module]RepositorySupport` (aligned with KMP `generate/` tree).
  */
-class SwaggerGeneratorContext(val template: ModuleTemplate) {
+open class SwaggerGeneratorContext(
+    val template: ModuleTemplate,
+    private val generateLayout: Boolean = false,
+) {
     val moduleName = template.name
     val pascalModuleName = moduleName.toSafePascal()
-    val rootPackage = template.packageName
+    val rootPackage =
+        if (generateLayout) "${template.packageName}.generate" else template.packageName
     val dataPackage = "$rootPackage.data"
     val domainPackage = "$rootPackage.domain"
     val dataModelPackage = "$dataPackage.datasource.api.model"
@@ -24,7 +31,11 @@ class SwaggerGeneratorContext(val template: ModuleTemplate) {
     val domainUseCasePackage = "$domainPackage.usecase"
     val serviceName = "${pascalModuleName}RetrofitService"
     val repositoryName = "${pascalModuleName}Repository"
-    val repositoryImplName = "${pascalModuleName}RepositoryImpl"
+    val repositoryImplName =
+        if (generateLayout) "Generated${pascalModuleName}RepositorySupport" else "${pascalModuleName}RepositoryImpl"
+
+    /** Koin modules for generated API (`GeneratedDataModule` / `GeneratedDomainModule`). Only used when [generateLayout]. */
+    val generateDiPackage: String get() = if (generateLayout) "$rootPackage.di" else rootPackage
 
     fun dataModelName(rawName: String): String = "${rawName.toSafePascal()}ApiModel"
     fun domainModelName(rawName: String): String = rawName.toSafePascal()

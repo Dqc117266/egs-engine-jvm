@@ -21,7 +21,7 @@ class SwaggerCodeGenerator(
     fun generate(template: ModuleTemplate, spec: SwaggerSpec): List<ModuleGenerator.GeneratedFile> {
         val moduleDir = "feature/${template.name}"
         val files = mutableListOf<ModuleGenerator.GeneratedFile>()
-        val ctx = SwaggerGeneratorContext(template)
+        val ctx = AndroidSwaggerGeneratorContext(template)
 
         val (wrapperSchemas, dataSchemas) = spec.schemas.partition { isCommonResultWrapper(it) }
         val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
@@ -55,10 +55,19 @@ class SwaggerCodeGenerator(
 
         files.addSwagger(moduleDir, ctx.servicePackage, ctx.serviceName, renderer.renderServiceInterface(adjustedSpec, ctx))
         files.addSwagger(moduleDir, ctx.domainRepositoryPackage, ctx.repositoryName, renderer.renderRepositoryInterface(adjustedSpec, ctx))
-        files.addSwagger(moduleDir, ctx.dataRepositoryPackage, ctx.repositoryImplName, renderer.renderRepositoryImpl(adjustedSpec, ctx))
-        files.addSwagger(moduleDir, ctx.dataPackage, "dataModule", renderer.renderDataModule(ctx))
-        files.addSwagger(moduleDir, ctx.domainPackage, "domainModule", renderer.renderDomainModule(adjustedSpec, ctx))
-        files.addSwagger(moduleDir, ctx.rootPackage, "${ctx.pascalModuleName}KoinModule", renderer.renderRootKoinModule(ctx))
+        files.addSwagger(
+            moduleDir,
+            ctx.dataRepositoryPackage,
+            ctx.repositoryImplName,
+            renderer.renderGeneratedRepositorySupport(adjustedSpec, ctx),
+        )
+        files.addSwagger(moduleDir, ctx.generateDiPackage, "GeneratedDataModule", renderer.renderGeneratedDataModule(ctx))
+        files.addSwagger(
+            moduleDir,
+            ctx.generateDiPackage,
+            "GeneratedDomainModule",
+            renderer.renderGeneratedDomainModule(adjustedSpec, ctx),
+        )
 
         adjustedSpec.operations.forEach { op ->
             val useCaseName = "${op.operationId.toSafePascal()}UseCase"
