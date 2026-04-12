@@ -10,6 +10,7 @@ import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootApiGenerator
@@ -26,6 +27,7 @@ import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.PageScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.swagger.SwaggerApiScaffolder
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val featureScaffoldModule = module {
@@ -46,15 +48,16 @@ val featureScaffoldModule = module {
 
     // Platform module generators
     single { AndroidModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
+    single { KmpModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
     single { ModuleGenerator(androidModuleGenerator = get()) }
     single { SpringBootModuleGenerator(get()) }
     single { Vue3ModuleGenerator() }
 
-    single<Map<Platform, PlatformModuleGenerator>> {
+    single<Map<Platform, PlatformModuleGenerator>>(named("platformModuleGenerators")) {
         mapOf(
             Platform.ANDROID to get<AndroidModuleGenerator>(),
-            Platform.KMP to get<AndroidModuleGenerator>(),
-            Platform.KMP_ANDROID to get<AndroidModuleGenerator>(),
+            Platform.KMP to get<KmpModuleGenerator>(),
+            Platform.KMP_ANDROID to get<KmpModuleGenerator>(),
             Platform.SPRING_BOOT to get<SpringBootModuleGenerator>(),
             Platform.VUE3 to get<Vue3ModuleGenerator>(),
         )
@@ -65,7 +68,7 @@ val featureScaffoldModule = module {
     single { SpringBootApiGenerator() }
     single { Vue3ApiGenerator() }
 
-    single<Map<Platform, PlatformApiGenerator>> {
+    single<Map<Platform, PlatformApiGenerator>>(named("platformApiGenerators")) {
         mapOf(
             Platform.ANDROID to get<AndroidApiGenerator>(),
             Platform.KMP to get<AndroidApiGenerator>(),
@@ -79,9 +82,9 @@ val featureScaffoldModule = module {
     single { SpringBootCrudGenerator() }
 
     // Domain layer
-    single { ModuleScaffolder(get(), get(), get(), get(), get()) }
+    single { ModuleScaffolder(get(), get(), get(), get(), get(named("platformModuleGenerators"))) }
     single { SwaggerApiScaffolder(get(), get(), get()) }
     single { PageScaffolder(get(), get(), get(), get()) }
-    single { ApiSyncScaffolder(get(), get(), get()) }
+    single { ApiSyncScaffolder(get(), get(), get(named("platformApiGenerators"))) }
     single { EntityScaffolder(get(), get(), get()) }
 }

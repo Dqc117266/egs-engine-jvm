@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # 路径配置
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EGS_ENGINE_DIR="$SCRIPT_DIR"
-KANGO_DIR="$(dirname "$SCRIPT_DIR")/kango"
+KANGO_DIR="$(dirname "$SCRIPT_DIR")/my-test-project"
 JAR_SOURCE="$EGS_ENGINE_DIR/app/build/libs/app-all.jar"
 JAR_TARGET="$KANGO_DIR/app-all.jar"
 

@@ -2,6 +2,7 @@ package com.dqc.egsengine.feature.init.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
+import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.github.ajalt.clikt.core.CliktCommand
@@ -9,18 +10,24 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.File
 
 class InitCommand : CliktCommand(name = "init"), KoinComponent {
 
     private val initializer: ProjectInitializer by inject()
+    private val workspaceConfigReader: WorkspaceConfigReader by inject()
 
     private val projectPath by argument(help = "Path to the project to initialize").default(".")
 
     override fun run() {
         try {
-            val dir = ProjectRootResolver.resolve(projectPath)
+            val resolvedRoot = ProjectRootResolver.resolve(projectPath)
+            val dir = resolveInitGradleRoot(resolvedRoot)
 
             echo("Initializing .egs for project at: ${dir.absolutePath}")
+            if (dir != resolvedRoot) {
+                echo(CliFormatter.formatInfo("(workspace root: ${resolvedRoot.absolutePath})"))
+            }
             echo()
 
             val config = initializer.initialize(dir)
@@ -68,5 +75,36 @@ class InitCommand : CliktCommand(name = "init"), KoinComponent {
         }
 
         echo("=".repeat(50))
+    }
+
+    /**
+     * [ProjectRootResolver] may point at a multi-project workspace (only `.egs/workspace.json`).
+     * [ProjectInitializer] needs a directory that contains `settings.gradle*`.
+     */
+    private fun resolveInitGradleRoot(resolvedRoot: File): File {
+        if (ProjectRootResolver.hasGradleSettings(resolvedRoot)) return resolvedRoot
+
+        if (!workspaceConfigReader.hasWorkspaceConfig(resolvedRoot)) {
+            throw IllegalArgumentException(
+                "Not a Gradle project (no settings.gradle): ${resolvedRoot.absolutePath}. " +
+                    "If you use `new project`, run init on the client app, e.g. " +
+                    "-p ${resolvedRoot.resolve("client").absolutePath}",
+            )
+        }
+
+        val workspace = workspaceConfigReader.read(resolvedRoot)
+        workspace.projects["client"]?.let { sub ->
+            val clientRoot = resolvedRoot.resolve(sub.path)
+            if (ProjectRootResolver.hasGradleSettings(clientRoot)) return clientRoot
+        }
+        for ((_, sub) in workspace.projects) {
+            val subRoot = resolvedRoot.resolve(sub.path)
+            if (ProjectRootResolver.hasGradleSettings(subRoot)) return subRoot
+        }
+        throw IllegalArgumentException(
+            "Workspace at ${resolvedRoot.absolutePath} has no Gradle subproject with settings.gradle. " +
+                "Projects in workspace.json: ${workspace.projects.keys.joinToString()}. " +
+                "Clone/finish template setup, then run init with -p pointing at that subfolder.",
+        )
     }
 }
