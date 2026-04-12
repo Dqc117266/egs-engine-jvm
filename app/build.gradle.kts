@@ -21,4 +21,5 @@ dependencies {
     implementation(projects.feature.analyzer)
     implementation(projects.feature.init)
     implementation(projects.feature.scaffold)
+    implementation(projects.feature.templateEngine)
 }

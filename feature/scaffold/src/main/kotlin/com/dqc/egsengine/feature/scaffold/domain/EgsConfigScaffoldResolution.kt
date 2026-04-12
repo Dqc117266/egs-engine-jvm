@@ -28,8 +28,15 @@ private fun EgsConfig.resolveNamedBaseClass(className: String): String? {
 
 fun EgsConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean): BaseClassPackages {
     val bp = effectiveBasePackage()
+    val namedVm = resolveNamedBaseClass("BaseViewModel")
+    val defaultVm =
+        if (isAndroid && bp != null && namedVm == null) {
+            "$bp.feature.base.presentation.viewmodel.BaseViewModel"
+        } else {
+            null
+        }
     return BaseClassPackages(
-        baseViewModel = resolveNamedBaseClass("BaseViewModel"),
+        baseViewModel = namedVm ?: defaultVm,
         baseFragment = resolveNamedBaseClass("BaseFragment"),
         resultClass = bp?.let { "$it.feature.base.domain.result.Result" },
         retrofitProvider = if (includeRetrofitProvider) {
@@ -63,7 +70,18 @@ private fun SubProjectConfig.resolveNamedBaseClass(className: String): String? {
 fun SubProjectConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean = false): BaseClassPackages {
     val bp = effectiveBasePackage()
     return when (platform) {
-        Platform.ANDROID, Platform.KMP, Platform.KMP_ANDROID -> BaseClassPackages(
+        Platform.ANDROID, Platform.KMP_ANDROID -> BaseClassPackages(
+            baseViewModel = resolveNamedBaseClass("BaseViewModel")
+                ?: "$bp.feature.base.presentation.viewmodel.BaseViewModel",
+            baseFragment = resolveNamedBaseClass("BaseFragment"),
+            resultClass = "$bp.feature.base.domain.result.Result",
+            retrofitProvider = if (includeRetrofitProvider) {
+                "$bp.feature.common.network.DynamicRetrofitProvider"
+            } else {
+                null
+            },
+        )
+        Platform.KMP -> BaseClassPackages(
             baseViewModel = resolveNamedBaseClass("BaseViewModel"),
             baseFragment = resolveNamedBaseClass("BaseFragment"),
             resultClass = "$bp.feature.base.domain.result.Result",

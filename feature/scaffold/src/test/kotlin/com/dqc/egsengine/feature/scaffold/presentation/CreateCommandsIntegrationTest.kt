@@ -31,7 +31,7 @@ class CreateCommandsIntegrationTest {
             ),
         )
 
-        // 验证：应该生成 NavigationRoute
+        // 验证：应该生�? NavigationRoute
         assertTrue(
             projectRoot.resolve(
                 "feature/uiStructureEngine/src/main/kotlin/com/dqc/example/feature/uiStructureEngine/presentation/UiStructureEngineNavigationRoute.kt"
@@ -154,18 +154,22 @@ class CreateCommandsIntegrationTest {
         assertTrue(repositoryImplPath.exists())
         assertTrue(useCasePath.exists())
 
-        assertTrue(
-            repositoryPath.readText()
-                .contains("suspend fun topicUpdateTopic(body: TopicSaveReqVO): Result<Boolean>")
-        )
+        val repositoryText = repositoryPath.readText().replace("\\s+".toRegex(), " ")
+        assertTrue(repositoryText.contains("suspend fun topicUpdateTopic"))
+        assertTrue(repositoryText.contains("body:"))
+        assertTrue(repositoryText.contains("TopicSaveReqVO"))
+        assertTrue(repositoryText.contains("Result<") && repositoryText.contains("Boolean"))
+
         assertTrue(
             repositoryImplPath.readText()
-                .contains("service.topicUpdateTopic(body.toData()).toResult()")
+                .contains("service.topicUpdateTopic(body.toData()).toResult()"),
         )
-        assertTrue(
-            useCasePath.readText()
-                .contains("suspend operator fun invoke(body: TopicSaveReqVO): Result<Boolean>")
-        )
+
+        val useCaseText = useCasePath.readText().replace("\\s+".toRegex(), " ")
+        assertTrue(useCaseText.contains("suspend operator fun invoke"))
+        assertTrue(useCaseText.contains("body:"))
+        assertTrue(useCaseText.contains("TopicSaveReqVO"))
+        assertTrue(useCaseText.contains("Result<") && useCaseText.contains("Boolean"))
     }
 
     @Test

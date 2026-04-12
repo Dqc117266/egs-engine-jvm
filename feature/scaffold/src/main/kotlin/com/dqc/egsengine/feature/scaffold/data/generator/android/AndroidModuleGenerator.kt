@@ -3,19 +3,18 @@ package com.dqc.egsengine.feature.scaffold.data.generator.android
 import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.android.template.KotlinFileGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.android.template.XmlTemplateGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.android.template.toFixedString
+import com.dqc.egsengine.feature.scaffold.data.generator.android.template.KotlinModuleTemplateRenderer
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
 import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.squareup.kotlinpoet.FileSpec
+import com.dqc.egsengine.template.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
 
 class AndroidModuleGenerator(
     private val settingsUpdater: SettingsGradleUpdater,
+    private val templateEngine: TemplateEngine,
 ) : PlatformModuleGenerator {
 
     private val logger = LoggerFactory.getLogger(AndroidModuleGenerator::class.java)
@@ -28,7 +27,7 @@ class AndroidModuleGenerator(
         config: SubProjectConfig,
     ): List<GeneratedFile> {
         val template = toModuleTemplate(moduleName, config)
-        return previewFromTemplate(template)
+        return previewFromTemplate(template, projectRoot)
     }
 
     override fun generate(
@@ -40,7 +39,7 @@ class AndroidModuleGenerator(
         val created = mutableListOf<File>()
         val subProjectRoot = projectRoot.resolve(config.path)
 
-        for (entry in previewFromTemplate(template)) {
+        for (entry in previewFromTemplate(template, subProjectRoot)) {
             val file = subProjectRoot.resolve(entry.path)
             file.parentFile.mkdirs()
 
@@ -67,31 +66,39 @@ class AndroidModuleGenerator(
         settingsUpdater.update(subProjectRoot, moduleName)
     }
 
-    fun previewFromTemplate(template: ModuleTemplate): List<GeneratedFile> {
-        val kotlinGen = KotlinFileGenerator(template)
-        val xmlGen = XmlTemplateGenerator(template)
+    fun previewFromTemplate(template: ModuleTemplate, projectRoot: File? = null): List<GeneratedFile> {
+        val kotlinGen = KotlinModuleTemplateRenderer(templateEngine, template)
         val files = mutableListOf<GeneratedFile>()
         val moduleDir = "feature/${template.name}"
         val isAndroid = template.isAndroid
 
-        files.add(GeneratedFile("$moduleDir/build.gradle.kts", generateBuildFile(template)))
+        files.add(
+            GeneratedFile(
+                "$moduleDir/build.gradle.kts",
+                kotlinGen.renderBuildGradle(projectRoot),
+            ),
+        )
 
-        files.addKt(moduleDir, kotlinGen.generateRootKoinModule())
-        files.addKt(moduleDir, kotlinGen.generateDataModule())
-        files.addKt(moduleDir, kotlinGen.generateDomainModule())
-        files.addKt(moduleDir, kotlinGen.generatePresentationModule())
-        files.addKt(moduleDir, kotlinGen.generateRepositoryInterface())
-        files.addKt(moduleDir, kotlinGen.generateRepositoryImpl())
-        files.addKt(moduleDir, kotlinGen.generateViewModel())
+        files.add(GeneratedFile("$moduleDir/${kotlinGen.pathRootKoinModule()}", kotlinGen.renderRootKoinModule(projectRoot)))
+        files.add(GeneratedFile("$moduleDir/${kotlinGen.pathDataModule()}", kotlinGen.renderDataModule(projectRoot)))
+        files.add(GeneratedFile("$moduleDir/${kotlinGen.pathDomainModule()}", kotlinGen.renderDomainModule(projectRoot)))
+        files.add(GeneratedFile("$moduleDir/${kotlinGen.pathPresentationModule()}", kotlinGen.renderPresentationModule(projectRoot)))
+        files.add(GeneratedFile("$moduleDir/${kotlinGen.pathRepository()}", kotlinGen.renderRepositoryInterface(projectRoot)))
+        files.add(GeneratedFile("$moduleDir/${kotlinGen.pathRepositoryImpl()}", kotlinGen.renderRepositoryImpl(projectRoot)))
+        files.add(GeneratedFile("$moduleDir/${kotlinGen.pathViewModel()}", kotlinGen.renderViewModel(projectRoot)))
 
         if (isAndroid) {
-            kotlinGen.generateContract()?.let { files.addKt(moduleDir, it) }
-            kotlinGen.generateNavigationRoute()?.let { files.addKt(moduleDir, it) }
+            kotlinGen.renderContract(projectRoot)?.let {
+                files.add(GeneratedFile("$moduleDir/${kotlinGen.pathContract()}", it))
+            }
+            kotlinGen.renderNavigationRoute(projectRoot)?.let {
+                files.add(GeneratedFile("$moduleDir/${kotlinGen.pathNavigationRoute()}", it))
+            }
 
             files.add(
                 GeneratedFile(
                     "$moduleDir/src/main/AndroidManifest.xml",
-                    xmlGen.generateAndroidManifest(),
+                    kotlinGen.renderAndroidManifest(projectRoot),
                 ),
             )
         }
@@ -102,7 +109,7 @@ class AndroidModuleGenerator(
     fun generateFromTemplate(projectRoot: File, template: ModuleTemplate): List<File> {
         val created = mutableListOf<File>()
 
-        for (entry in previewFromTemplate(template)) {
+        for (entry in previewFromTemplate(template, projectRoot)) {
             val file = projectRoot.resolve(entry.path)
             file.parentFile.mkdirs()
 
@@ -118,31 +125,6 @@ class AndroidModuleGenerator(
 
         logger.info("Generated {} files for module '{}'", created.size, template.name)
         return created
-    }
-
-    private fun MutableList<GeneratedFile>.addKt(moduleDir: String, fileSpec: FileSpec) {
-        val pkgPath = fileSpec.packageName.replace('.', '/')
-        val path = "$moduleDir/src/main/kotlin/$pkgPath/${fileSpec.name}.kt"
-        add(GeneratedFile(path, fileSpec.toFixedString()))
-    }
-
-    private fun generateBuildFile(template: ModuleTemplate): String = buildString {
-        val isAndroid = template.isAndroid
-
-        appendLine("plugins {")
-        if (template.conventionPluginId != null) {
-            appendLine("    id(\"${template.conventionPluginId}\")")
-        } else {
-            appendLine("    id(\"org.jetbrains.kotlin.jvm\")")
-        }
-        appendLine("}")
-
-        if (isAndroid && template.namespace != null) {
-            appendLine()
-            appendLine("android {")
-            appendLine("    namespace = \"${template.namespace}\"")
-            appendLine("}")
-        }
     }
 
     companion object {

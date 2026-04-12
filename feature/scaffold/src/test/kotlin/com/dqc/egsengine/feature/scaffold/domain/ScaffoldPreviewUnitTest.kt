@@ -5,6 +5,9 @@ import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
+import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.template.TemplateRegistry
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
@@ -19,7 +22,12 @@ class ScaffoldPreviewUnitTest {
         val projectRoot = createProjectFixture()
         val scaffolder = ModuleScaffolder(
             configReader = EgsConfigReader(),
-            generator = ModuleGenerator(),
+            generator = ModuleGenerator(
+                AndroidModuleGenerator(
+                    settingsUpdater = SettingsGradleUpdater(),
+                    templateEngine = TemplateEngine(TemplateRegistry()),
+                ),
+            ),
             settingsUpdater = SettingsGradleUpdater(),
             workspaceResolver = WorkspaceConfigResolver(WorkspaceConfigReader()),
             platformGenerators = emptyMap(),
@@ -33,10 +41,10 @@ class ScaffoldPreviewUnitTest {
         )
 
         assertTrue(result.dryRun)
-        // 验证：应该生成 NavigationRoute，而不是 XML
+        // 验证：应该生�? NavigationRoute，而不�? XML
         assertTrue(result.files.any { it.endsWith("UiStructureEngineNavigationRoute.kt") }, "应该生成 NavigationRoute")
-        assertFalse(result.files.any { it.endsWith("fragment_ui_structure_engine.xml") }, "不应该生成 XML Layout")
-        assertFalse(result.files.any { it.endsWith("ui_structure_engine_nav_graph.xml") }, "不应该生成 NavGraph XML")
+        assertFalse(result.files.any { it.endsWith("fragment_ui_structure_engine.xml") }, "不应该生�? XML Layout")
+        assertFalse(result.files.any { it.endsWith("ui_structure_engine_nav_graph.xml") }, "不应该生�? NavGraph XML")
         assertFalse(projectRoot.resolve("feature/uiStructureEngine").exists())
     }
 
@@ -47,6 +55,7 @@ class ScaffoldPreviewUnitTest {
             configReader = EgsConfigReader(),
             useCaseScanner = UseCaseScanner(),
             diUpdater = FeatureDiUpdater(),
+            templateEngine = TemplateEngine(TemplateRegistry()),
         )
 
         val result = pageScaffolder.scaffold(
@@ -65,10 +74,10 @@ class ScaffoldPreviewUnitTest {
         )
 
         assertTrue(result.dryRun)
-        // 验证：应该生成 Compose Screen 和 Contract，而不是 Fragment/XML
+        // 验证：应该生�? Compose Screen �? Contract，而不�? Fragment/XML
         assertTrue(result.files.any { it.path.endsWith("TaskDetailScreen.kt") }, "应该生成 Screen")
         assertTrue(result.files.any { it.path.endsWith("TaskDetailContract.kt") }, "应该生成 Contract")
-        assertFalse(result.files.any { it.path.endsWith("fragment_task_detail.xml") }, "不应该生成 XML Layout")
+        assertFalse(result.files.any { it.path.endsWith("fragment_task_detail.xml") }, "不应该生�? XML Layout")
         assertFalse(
             projectRoot.resolve(
                 "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/taskdetail",

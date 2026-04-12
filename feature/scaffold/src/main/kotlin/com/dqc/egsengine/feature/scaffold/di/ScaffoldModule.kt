@@ -19,6 +19,8 @@ import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
+import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
+import com.dqc.egsengine.template.di.featureTemplateEngineModule
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
@@ -27,12 +29,14 @@ import com.dqc.egsengine.feature.scaffold.domain.swagger.SwaggerApiScaffolder
 import org.koin.dsl.module
 
 val featureScaffoldModule = module {
+    includes(featureTemplateEngineModule)
+
     // Data layer - shared
     single { EgsConfigReader() }
-    single { ModuleGenerator() }
     single { SettingsGradleUpdater() }
     single { SwaggerParser() }
-    single { SwaggerCodeGenerator() }
+    single { SwaggerTemplateRenderer(get()) }
+    single { SwaggerCodeGenerator(get()) }
     single { UseCaseScanner() }
     single { FeatureDiUpdater() }
     single { DdlParser() }
@@ -41,7 +45,8 @@ val featureScaffoldModule = module {
     single { WorkspaceConfigResolver(get()) }
 
     // Platform module generators
-    single { AndroidModuleGenerator(get()) }
+    single { AndroidModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
+    single { ModuleGenerator(androidModuleGenerator = get()) }
     single { SpringBootModuleGenerator(get()) }
     single { Vue3ModuleGenerator() }
 
@@ -76,7 +81,7 @@ val featureScaffoldModule = module {
     // Domain layer
     single { ModuleScaffolder(get(), get(), get(), get(), get()) }
     single { SwaggerApiScaffolder(get(), get(), get()) }
-    single { PageScaffolder(get(), get(), get()) }
+    single { PageScaffolder(get(), get(), get(), get()) }
     single { ApiSyncScaffolder(get(), get(), get()) }
     single { EntityScaffolder(get(), get(), get()) }
 }
