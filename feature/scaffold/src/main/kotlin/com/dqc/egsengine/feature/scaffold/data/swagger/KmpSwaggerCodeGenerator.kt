@@ -21,11 +21,30 @@ class KmpSwaggerCodeGenerator(
     fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec): List<GeneratedFile> =
         generate(template, spec).map { GeneratedFile(it.path, it.content) }
 
+    /**
+     * Applies the same wrapper unwrap and header filtering as [generate], for use by cached repository generation.
+     */
+    fun adjustSpecForKmp(spec: SwaggerSpec): SwaggerSpec {
+        val (wrapperSchemas, _) = spec.schemas.partition { isCommonResultWrapper(it) }
+        val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
+            schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
+        }
+        return spec.copy(
+            operations = spec.operations.map { op ->
+                op.copy(
+                    params = op.params.filter { it.location.lowercase() != "header" },
+                    responseBody = unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
+                )
+            },
+        )
+    }
+
     fun generate(template: ModuleTemplate, spec: SwaggerSpec): List<ModuleGenerator.GeneratedFile> {
         val moduleDir = "feature/${template.name}"
         val files = mutableListOf<ModuleGenerator.GeneratedFile>()
         val ctx = KmpSwaggerGeneratorContext(template)
 
+        val adjustedSpec = adjustSpecForKmp(spec)
         val (wrapperSchemas, dataSchemas) = spec.schemas.partition { isCommonResultWrapper(it) }
         val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
             schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
@@ -46,15 +65,6 @@ class KmpSwaggerCodeGenerator(
                 renderer.renderDomainModel(schema, ctx),
             )
         }
-
-        val adjustedSpec = spec.copy(
-            operations = spec.operations.map { op ->
-                op.copy(
-                    params = op.params.filter { it.location.lowercase() != "header" },
-                    responseBody = unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
-                )
-            },
-        )
 
         files.addCommonMain(
             moduleDir,

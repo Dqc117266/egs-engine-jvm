@@ -197,42 +197,56 @@ class KmpSwaggerTemplateRenderer(
         )
     }
 
-    fun renderGeneratedRepositorySupport(spec: SwaggerSpec, ctx: KmpSwaggerGeneratorContext, projectRoot: File? = null): String {
+    fun defaultRepositorySupportStatement(op: SwaggerOperation, ctx: KmpSwaggerGeneratorContext): String {
+        val callArgs = mutableListOf<String>()
+        op.params.forEach { param ->
+            callArgs.add(param.name.toSafeIdentifier())
+        }
+        if (op.requestBody != null) {
+            callArgs.add("body.toData()")
+        }
+        val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
+        val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
+        return if (ctx.hasResultWrappers()) {
+            if (mapperExpr != null) {
+                "return $serviceCall.toResult { $mapperExpr }"
+            } else {
+                "return $serviceCall.toResult()"
+            }
+        } else {
+            if (mapperExpr != null) {
+                val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
+                "return $mapped"
+            } else {
+                "return $serviceCall"
+            }
+        }
+    }
+
+    fun renderGeneratedRepositorySupport(
+        spec: SwaggerSpec,
+        ctx: KmpSwaggerGeneratorContext,
+        projectRoot: File? = null,
+        includeDbDataSource: Boolean = false,
+        dbDataSourceClass: String = "",
+        statementOverride: (SwaggerOperation, String) -> String = { _, stmt -> stmt },
+        extraImports: Set<String> = emptySet(),
+    ): String {
         val operations = spec.operations.map { op ->
-            val callArgs = mutableListOf<String>()
             val params = op.params.map { param ->
                 val name = param.name.toSafeIdentifier()
-                callArgs.add(name)
                 val type = ctx.resolveType(param.type, forDomain = true)
                     .let { if (!param.required) "$it?" else it }
                 mapOf("name" to name, "type" to type)
             }
-            if (op.requestBody != null) {
-                callArgs.add("body.toData()")
-            }
-            val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
-            val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
-            val stmt = if (ctx.hasResultWrappers()) {
-                if (mapperExpr != null) {
-                    "return $serviceCall.toResult { $mapperExpr }"
-                } else {
-                    "return $serviceCall.toResult()"
-                }
-            } else {
-                if (mapperExpr != null) {
-                    val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
-                    "return $mapped"
-                } else {
-                    "return $serviceCall"
-                }
-            }
+            val stmt = defaultRepositorySupportStatement(op, ctx)
             mapOf(
                 "operationId" to op.operationId,
                 "returnType" to ctx.repositoryReturnType(op.responseBody),
                 "params" to params,
                 "hasBody" to (op.requestBody != null),
                 "bodyType" to op.requestBody?.let { ctx.resolveType(it, forDomain = true) },
-                "statement" to stmt,
+                "statement" to statementOverride(op, stmt),
             )
         }
         val needsToDomainImport = spec.operations.any { ctx.requiresToDomainImport(it.responseBody) }
@@ -263,6 +277,10 @@ class KmpSwaggerTemplateRenderer(
             if (needsToDataImport) {
                 add("${ctx.dataModelPackage}.toData")
             }
+            if (includeDbDataSource && dbDataSourceClass.isNotBlank()) {
+                add("${ctx.rootPackage}.generate.data.datasource.database.$dbDataSourceClass")
+            }
+            addAll(extraImports)
         }.sorted()
         return engine.render(
             "kmp/swagger/GeneratedRepositorySupport.kt.ftl",
@@ -271,6 +289,8 @@ class KmpSwaggerTemplateRenderer(
                 "repositoryImplName" to ctx.repositoryImplName,
                 "repositoryName" to ctx.repositoryName,
                 "serviceName" to ctx.serviceName,
+                "includeDbDataSource" to includeDbDataSource,
+                "dbDataSourceClass" to dbDataSourceClass,
                 "operations" to operations,
                 "imports" to imports,
             ),

@@ -5,7 +5,8 @@ import ${imp}
 </#list>
 
 internal open class ${repositoryImplName}(
-    private val service: ${serviceName},
+    private val service: ${serviceName},<#if includeDbDataSource>
+    protected val dbDataSource: ${dbDataSourceClass},</#if>
 ) : ${repositoryName} {
 <#list operations as op>
     override suspend fun ${op.operationId}(

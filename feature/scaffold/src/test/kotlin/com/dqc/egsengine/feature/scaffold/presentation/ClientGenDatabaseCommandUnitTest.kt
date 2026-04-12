@@ -24,7 +24,7 @@ class ClientGenDatabaseCommandUnitTest {
     fun `client gen database passes sql module project and dry-run`() {
         val scaffolder = mockk<KmpDatabaseScaffolder>()
         every {
-            scaffolder.scaffoldDatabase(any(), any(), any(), any())
+            scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
         } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
             moduleName = "storage",
             files = listOf(GeneratedFile("feature/storage/x.kt", "")),
@@ -63,6 +63,8 @@ class ClientGenDatabaseCommandUnitTest {
                 match { it.canonicalPath == sqlFile.canonicalFile.canonicalPath },
                 "storage",
                 true,
+                false,
+                false,
             )
         }
     }
@@ -71,7 +73,7 @@ class ClientGenDatabaseCommandUnitTest {
     fun `short option -m works`() {
         val scaffolder = mockk<KmpDatabaseScaffolder>()
         every {
-            scaffolder.scaffoldDatabase(any(), any(), any(), any())
+            scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
         } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
             moduleName = "m",
             files = emptyList(),
@@ -104,7 +106,50 @@ class ClientGenDatabaseCommandUnitTest {
         )
 
         verify(exactly = 1) {
-            scaffolder.scaffoldDatabase(any(), any(), "m", false)
+            scaffolder.scaffoldDatabase(any(), any(), "m", false, false, false)
+        }
+    }
+
+    @Test
+    fun `client gen database --repo and --cached passed to scaffolder`() {
+        val scaffolder = mockk<KmpDatabaseScaffolder>()
+        every {
+            scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
+        } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
+            moduleName = "todo",
+            files = emptyList(),
+            dryRun = false,
+        )
+
+        startKoin {
+            modules(
+                module {
+                    single { scaffolder }
+                },
+            )
+        }
+
+        val projectRoot = createTempProjectDir()
+        val sqlFile = File.createTempFile("dbgen3", ".sql").apply {
+            writeText("CREATE TABLE t (id INT NOT NULL PRIMARY KEY);")
+        }
+
+        ClientCommand.withSubcommands().main(
+            listOf(
+                "gen",
+                "database",
+                sqlFile.absolutePath,
+                "-m",
+                "todo",
+                "-p",
+                projectRoot.absolutePath,
+                "--repo",
+                "--cached",
+            ),
+        )
+
+        verify(exactly = 1) {
+            scaffolder.scaffoldDatabase(any(), any(), "todo", false, true, true)
         }
     }
 

@@ -116,17 +116,30 @@ class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent 
 
     private val dryRun by option("--dry-run", help = "Preview without writing files").flag()
 
+    private val repo by option(
+        "--repo",
+        help = "Generate repository layer (Mode A: DB-only, Mode B: inject DB into API repository when api sync exists)",
+    ).flag()
+
+    private val cached by option(
+        "--cached",
+        help = "With --repo and existing API sync: cache-aside GETs + entity mappers (implies --repo)",
+    ).flag()
+
     override fun run() {
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
             val sqlPath = File(sqlFile)
             val resolvedSql = if (sqlPath.isAbsolute) sqlPath else File(System.getProperty("user.dir")).resolve(sqlPath).normalize()
 
+            val effectiveRepo = repo || cached
             val result = scaffolder.scaffoldDatabase(
                 projectRoot = dir,
                 sqlFile = resolvedSql,
                 moduleName = moduleName,
                 dryRun = dryRun,
+                repo = effectiveRepo,
+                cached = cached,
             )
 
             if (result.dryRun) {

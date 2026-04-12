@@ -6,7 +6,6 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
-import com.dqc.egsengine.feature.scaffold.data.ddl.model.ColumnSchema
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
@@ -40,7 +39,7 @@ class KmpDatabaseCodeGenerator(
         val moduleDir = "feature/${template.name}"
         val files = mutableListOf<GeneratedFile>()
 
-        val tableModels = tables.map { buildTableModel(it) }
+        val tableModels = KmpDatabaseTemplateModels.buildRows(tables)
 
         for (t in tableModels) {
             val entityContent = templateEngine.render(
@@ -114,19 +113,18 @@ class KmpDatabaseCodeGenerator(
         )
 
         val dsContent = templateEngine.render(
-            "kmp/database/DatabaseDataSource.kt.ftl",
+                "kmp/database/DatabaseDataSource.kt.ftl",
             mapOf(
                 "databasePackageName" to databasePackageName,
                 "moduleDatabaseName" to moduleDatabaseName,
                 "tables" to tableModels.map { tm ->
-                    val prefixPascal = SqlNaming.snakeToPascal(tm.table.tableName)
                     mapOf(
                         "entityPackageName" to entityPackageName,
                         "entityClassName" to tm.entityClassName,
                         "daoPackageName" to daoPackageName,
                         "daoClassName" to tm.daoClassName,
                         "daoPropertyName" to tm.daoPropertyName,
-                        "prefixPascal" to prefixPascal,
+                        "prefixPascal" to tm.prefixPascal,
                         "pkPropertyName" to tm.pkPropertyName,
                         "pkKotlinType" to tm.pkKotlinType,
                     )
@@ -145,70 +143,6 @@ class KmpDatabaseCodeGenerator(
 
         logger.info("Generated {} KMP database files for module {}", files.size, template.name)
         return files
-    }
-
-    private data class TableModel(
-        val table: TableSchema,
-        val entityClassName: String,
-        val daoClassName: String,
-        val daoPropertyName: String,
-        val orderByColumnName: String,
-        /** SQL column name for primary key (WHERE clause). */
-        val pkColumnName: String,
-        /** Kotlin property name for primary key. */
-        val pkPropertyName: String,
-        val pkKotlinType: String,
-        val entityColumns: List<Map<String, Any?>>,
-    )
-
-    private fun buildTableModel(
-        table: TableSchema,
-    ): TableModel {
-        val base = SqlNaming.snakeToPascal(table.tableName)
-        val entityClassName = "${base}Entity"
-        val daoClassName = "${base}Dao"
-        val daoPropertyName = daoClassName.replaceFirstChar { it.lowercase() }
-
-        val sorted = sortColumns(table)
-        val pkCol = sorted.firstOrNull { it.isPrimaryKey } ?: sorted.first()
-        val pkPropertyName = SqlNaming.snakeToLowerCamel(pkCol.name)
-        val entityColumns = sorted.map { col ->
-            val autoGen = col.isAutoIncrement && col.kotlinType in setOf("Long", "Int")
-            mapOf(
-                "name" to col.name,
-                "kotlinPropertyName" to SqlNaming.snakeToLowerCamel(col.name),
-                "kotlinType" to col.kotlinType,
-                "nullableMark" to if (col.nullable) "?" else "",
-                "isPrimaryKey" to col.isPrimaryKey,
-                "autoGenerate" to autoGen,
-            )
-        }
-
-        return TableModel(
-            table = table,
-            entityClassName = entityClassName,
-            daoClassName = daoClassName,
-            daoPropertyName = daoPropertyName,
-            orderByColumnName = pkCol.name,
-            pkColumnName = pkCol.name,
-            pkPropertyName = pkPropertyName,
-            pkKotlinType = pkCol.kotlinType,
-            entityColumns = entityColumns,
-        )
-    }
-
-    private fun sortColumns(table: TableSchema): List<ColumnSchema> {
-        val pk = table.primaryKey
-        val withPk = table.columns.sortedWith(
-            compareBy<ColumnSchema> { col ->
-                when {
-                    pk != null && col.name == pk -> 0
-                    col.isPrimaryKey -> 0
-                    else -> 1
-                }
-            }.thenBy { it.name },
-        )
-        return withPk
     }
 
     private fun generatedCommonMain(

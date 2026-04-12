@@ -13,8 +13,13 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncK
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCachedRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCodeGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseDbOnlyDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseEntityMapperGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGeneratedDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
@@ -51,6 +56,11 @@ val featureScaffoldModule = module {
     single { KmpSwaggerTemplateRenderer(get()) }
     single { KmpSwaggerCodeGenerator(get()) }
     single { KmpDatabaseCodeGenerator(get()) }
+    single { KmpDatabaseRepositoryGenerator(get()) }
+    single { KmpDatabaseDbOnlyDataModuleUpdater() }
+    single { KmpDatabaseRepositoryUpdater() }
+    single { KmpDatabaseEntityMapperGenerator(get()) }
+    single { KmpDatabaseCachedRepositoryGenerator(get(), get()) }
     single { KmpFeatureBuildGradleUpdater() }
     single { KmpDatabaseGeneratedDataModuleUpdater() }
     single { KmpApiSyncKoinUpdater(get()) }
@@ -103,6 +113,21 @@ val featureScaffoldModule = module {
     single { SwaggerApiScaffolder(get(), get(), get()) }
     single { PageScaffolder(get(), get(), get(), get()) }
     single { ApiSyncScaffolder(get(), get(), get(named("platformApiGenerators")), get(), get()) }
-    single { KmpDatabaseScaffolder(get(), get(), get(), get(), get()) }
+    single {
+        KmpDatabaseScaffolder(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
     single { EntityScaffolder(get(), get(), get()) }
 }
