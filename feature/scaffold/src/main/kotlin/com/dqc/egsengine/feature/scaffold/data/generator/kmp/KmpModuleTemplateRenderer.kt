@@ -61,13 +61,13 @@ internal class KmpModuleTemplateRenderer(
     fun renderScreen(projectRoot: File? = null): String =
         engine.render("kmp/module/Screen.kt.ftl", m, projectRoot)
 
-    fun pathRootKoinModule(): String = "$sourceRoot/${model.pkgPath}/${model.pascal}Module.kt"
+    fun pathRootKoinModule(): String = "$sourceRoot/${model.pkgPath}/di/${model.pascal}Module.kt"
 
-    fun pathDataModule(): String = "$sourceRoot/${model.pkgPath}/data/DataModule.kt"
+    fun pathDataModule(): String = "$sourceRoot/${model.pkgPath}/di/DataModule.kt"
 
-    fun pathDomainModule(): String = "$sourceRoot/${model.pkgPath}/domain/DomainModule.kt"
+    fun pathDomainModule(): String = "$sourceRoot/${model.pkgPath}/di/DomainModule.kt"
 
-    fun pathPresentationModule(): String = "$sourceRoot/${model.pkgPath}/presentation/PresentationModule.kt"
+    fun pathPresentationModule(): String = "$sourceRoot/${model.pkgPath}/di/PresentationModule.kt"
 
     fun pathRepository(): String = "$sourceRoot/${model.pkgPath}/domain/repository/${model.pascal}Repository.kt"
 

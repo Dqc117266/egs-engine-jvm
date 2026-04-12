@@ -11,7 +11,8 @@ import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpGeneratedModuleWireUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
@@ -27,6 +28,7 @@ import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
 import com.dqc.egsengine.template.di.featureTemplateEngineModule
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.PageScaffolder
@@ -45,7 +47,8 @@ val featureScaffoldModule = module {
     single { SwaggerCodeGenerator(get()) }
     single { KmpSwaggerTemplateRenderer(get()) }
     single { KmpSwaggerCodeGenerator(get()) }
-    single { KmpGeneratedModuleWireUpdater() }
+    single { KmpDatabaseCodeGenerator(get()) }
+    single { KmpApiSyncKoinUpdater() }
     single { UseCaseScanner() }
     single { FeatureDiUpdater() }
     single { DdlParser() }
@@ -94,5 +97,6 @@ val featureScaffoldModule = module {
     single { SwaggerApiScaffolder(get(), get(), get()) }
     single { PageScaffolder(get(), get(), get(), get()) }
     single { ApiSyncScaffolder(get(), get(), get(named("platformApiGenerators")), get()) }
+    single { KmpDatabaseScaffolder(get(), get(), get()) }
     single { EntityScaffolder(get(), get(), get()) }
 }

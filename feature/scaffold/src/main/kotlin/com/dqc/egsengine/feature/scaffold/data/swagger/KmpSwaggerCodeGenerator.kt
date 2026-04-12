@@ -76,13 +76,13 @@ class KmpSwaggerCodeGenerator(
         )
         files.addCommonMain(
             moduleDir,
-            ctx.generateRootPackage,
+            ctx.generateDiPackage,
             "GeneratedDataModule",
             renderer.renderGeneratedDataModule(ctx),
         )
         files.addCommonMain(
             moduleDir,
-            ctx.generateRootPackage,
+            ctx.generateDiPackage,
             "GeneratedDomainModule",
             renderer.renderGeneratedDomainModule(adjustedSpec, ctx),
         )

@@ -2,8 +2,12 @@ package ${packageName}
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ${domainModelPackage}.${domainSimpleName}
+<#if imports?has_content>
+<#list imports as imp>
+import ${imp}
+</#list>
 
+</#if>
 @Serializable
 data class ${className}(
 <#list props as p>

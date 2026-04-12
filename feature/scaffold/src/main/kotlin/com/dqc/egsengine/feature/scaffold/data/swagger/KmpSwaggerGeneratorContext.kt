@@ -16,6 +16,8 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
     val pascalModuleName = moduleName.toSafePascal()
     val rootPackage = template.packageName
     val generateRootPackage = "$rootPackage.generate"
+    /** Koin modules for generated API (`GeneratedDataModule` / `GeneratedDomainModule`). */
+    val generateDiPackage = "$generateRootPackage.di"
 
     val dataModelPackage = "$generateRootPackage.data.datasource.api.model"
     val servicePackage = "$generateRootPackage.data.datasource.api.service"
@@ -36,44 +38,88 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
 
     /**
      * Ktorfit + template network stack: `NetworkResult<CommonResult<T>, *>`.
+     * Uses short names; add [importsForServiceReturnType] imports at file top.
      */
     fun serviceReturnType(responseType: SwaggerType?): String {
         val bodyType = resolveType(responseType ?: SwaggerType.Unknown, forDomain = false)
         if (!hasResultWrappers()) return bodyType
-        val common = "${template.commonResultClass}<$bodyType>"
-        return "${template.apiResultClass}<$common, *>"
+        return "NetworkResult<CommonResult<$bodyType>, *>"
     }
 
+    /**
+     * Domain `Result<T>` with short name; add [importsForRepositoryReturnType] imports.
+     */
     fun repositoryReturnType(responseType: SwaggerType?): String {
         val bodyType = resolveType(responseType ?: SwaggerType.Unknown, forDomain = true)
         if (template.baseClassPackages.resultClass != null && hasResultWrappers()) {
-            return "${template.baseClassPackages.resultClass}<$bodyType>"
+            return "Result<$bodyType>"
         }
         return bodyType
     }
 
+    /**
+     * Short Kotlin type names (imports via [importsForType] / [importsForServiceReturnType]).
+     */
     fun resolveType(type: SwaggerType, forDomain: Boolean): String = when (type) {
         is SwaggerType.Primitive -> when (type.kind) {
-            PrimitiveKind.STRING -> "kotlin.String"
-            PrimitiveKind.INT -> "kotlin.Int"
-            PrimitiveKind.LONG -> "kotlin.Long"
-            PrimitiveKind.DOUBLE -> "kotlin.Double"
-            PrimitiveKind.BOOLEAN -> "kotlin.Boolean"
+            PrimitiveKind.STRING -> "String"
+            PrimitiveKind.INT -> "Int"
+            PrimitiveKind.LONG -> "Long"
+            PrimitiveKind.DOUBLE -> "Double"
+            PrimitiveKind.BOOLEAN -> "Boolean"
         }
 
         is SwaggerType.ModelRef -> {
-            val pkg = if (forDomain) domainModelPackage else dataModelPackage
-            val simpleName = if (forDomain) domainModelName(type.name) else dataModelName(type.name)
-            "$pkg.$simpleName"
+            if (forDomain) domainModelName(type.name) else dataModelName(type.name)
         }
 
         is SwaggerType.ListType ->
-            "kotlin.collections.List<${resolveType(type.elementType, forDomain)}>"
+            "List<${resolveType(type.elementType, forDomain)}>"
 
         is SwaggerType.MapType ->
-            "kotlin.collections.Map<kotlin.String, ${resolveType(type.valueType, forDomain)}>"
+            "Map<String, ${resolveType(type.valueType, forDomain)}>"
 
-        SwaggerType.Unknown -> "kotlinx.serialization.json.JsonElement"
+        SwaggerType.Unknown -> "JsonElement"
+    }
+
+    /**
+     * Import lines (FQNs) required for [resolveType] when used in a file in [currentPackage].
+     * Same-package model refs omit imports.
+     */
+    fun importsForType(type: SwaggerType, forDomain: Boolean, currentPackage: String? = null): Set<String> =
+        when (type) {
+            is SwaggerType.Primitive -> emptySet()
+            is SwaggerType.ModelRef -> {
+                val pkg = if (forDomain) domainModelPackage else dataModelPackage
+                val simple = if (forDomain) domainModelName(type.name) else dataModelName(type.name)
+                if (currentPackage != null && pkg == currentPackage) {
+                    emptySet()
+                } else {
+                    setOf("$pkg.$simple")
+                }
+            }
+            is SwaggerType.ListType -> importsForType(type.elementType, forDomain, currentPackage)
+            is SwaggerType.MapType -> importsForType(type.valueType, forDomain, currentPackage)
+            SwaggerType.Unknown -> setOf("kotlinx.serialization.json.JsonElement")
+        }
+
+    /** Imports for Ktorfit return type (NetworkResult / CommonResult + body). */
+    fun importsForServiceReturnType(responseBody: SwaggerType?): Set<String> {
+        val inner = importsForType(responseBody ?: SwaggerType.Unknown, forDomain = false, currentPackage = null)
+        if (!hasResultWrappers()) return inner
+        val net = mutableSetOf<String>()
+        template.apiResultClass?.let { net.add(it) }
+        template.commonResultClass?.let { net.add(it) }
+        return net + inner
+    }
+
+    /** Imports for repository / use case return `Result<T>`. */
+    fun importsForRepositoryReturnType(responseBody: SwaggerType?): Set<String> {
+        val inner = importsForType(responseBody ?: SwaggerType.Unknown, forDomain = true, currentPackage = null)
+        if (template.baseClassPackages.resultClass != null && hasResultWrappers()) {
+            return inner + buildSet { template.baseClassPackages.resultClass?.let { add(it) } }
+        }
+        return inner
     }
 
     fun ktorfitMethodAnnotationImport(method: String): String = when (method.uppercase()) {

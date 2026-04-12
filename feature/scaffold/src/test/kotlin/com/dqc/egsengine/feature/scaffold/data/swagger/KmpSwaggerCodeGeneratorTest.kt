@@ -42,12 +42,12 @@ class KmpSwaggerCodeGeneratorTest {
 
         assertTrue(
             paths.any {
-                it == "feature/todo/src/commonMain/kotlin/org/example/feature/todo/generate/GeneratedDataModule.kt"
+                it == "feature/todo/src/commonMain/kotlin/org/example/feature/todo/generate/di/GeneratedDataModule.kt"
             },
         )
         assertTrue(
             paths.any {
-                it == "feature/todo/src/commonMain/kotlin/org/example/feature/todo/generate/GeneratedDomainModule.kt"
+                it == "feature/todo/src/commonMain/kotlin/org/example/feature/todo/generate/di/GeneratedDomainModule.kt"
             },
         )
         assertTrue(

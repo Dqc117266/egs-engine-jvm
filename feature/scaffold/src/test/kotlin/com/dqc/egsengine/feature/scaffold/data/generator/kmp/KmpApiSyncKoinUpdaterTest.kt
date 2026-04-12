@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
 
-class KmpGeneratedModuleWireUpdaterTest {
+class KmpApiSyncKoinUpdaterTest {
 
     @Test
     fun `wire is idempotent`() {
@@ -16,18 +16,15 @@ class KmpGeneratedModuleWireUpdaterTest {
         val pkg = "org.mifos.feature.todolist"
         val pkgPath = pkg.replace('.', '/')
         val kt = root.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/TodolistModule.kt",
+            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/di/TodolistModule.kt",
         )
         kt.parentFile.mkdirs()
         kt.writeText(
             """
-            package $pkg
+            package $pkg.di
 
             import org.koin.core.module.Module
             import org.koin.dsl.module
-            import $pkg.data.dataModule
-            import $pkg.domain.domainModule
-            import $pkg.presentation.presentationModule
 
             val featureTodolistModules: List<Module> = listOf(
                 dataModule,
@@ -48,15 +45,15 @@ class KmpGeneratedModuleWireUpdaterTest {
             conventionPluginId = "org.convention.cmp.feature",
         )
 
-        val updater = KmpGeneratedModuleWireUpdater()
-        updater.wireIfNeeded(root, moduleName, config)
+        val updater = KmpApiSyncKoinUpdater()
+        updater.applyAfterSync(root, moduleName, config)
         val once = kt.readText()
-        updater.wireIfNeeded(root, moduleName, config)
+        updater.applyAfterSync(root, moduleName, config)
         val twice = kt.readText()
 
         assertEquals(once, twice)
         assertTrue(once.contains("generatedDataModule,"))
         assertTrue(once.contains("generatedDomainModule,"))
-        assertTrue(once.contains("import $pkg.generate.generatedDataModule"))
+        assertTrue(once.contains("import $pkg.generate.di.generatedDataModule"))
     }
 }

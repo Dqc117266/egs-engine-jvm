@@ -1,6 +1,8 @@
 package ${packageName}
 
-import ${repositoryPackage}.${repositoryName}
+<#list imports as imp>
+import ${imp}
+</#list>
 
 internal class ${useCaseName}(
     private val repository: ${repositoryName},

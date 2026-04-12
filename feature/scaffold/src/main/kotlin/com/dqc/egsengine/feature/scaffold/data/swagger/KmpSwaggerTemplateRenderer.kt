@@ -35,16 +35,21 @@ class KmpSwaggerTemplateRenderer(
                 "toDataExpr" to ctx.toDataExpression(prop.type, "this.${prop.name}", !prop.required),
             )
         }
+        val imports = buildSet {
+            schema.properties.forEach { prop ->
+                addAll(ctx.importsForType(prop.type, forDomain = false, currentPackage = ctx.dataModelPackage))
+            }
+            add("${ctx.domainModelPackage}.$domainSimpleName")
+        }.sorted()
         return engine.render(
             "kmp/swagger/KmpDataModel.kt.ftl",
             mapOf(
                 "packageName" to ctx.dataModelPackage,
                 "className" to className,
                 "domainSimpleName" to domainSimpleName,
-                "domainClassName" to domainClassName,
                 "props" to props,
                 "hasToData" to isRequestSchema,
-                "domainModelPackage" to ctx.domainModelPackage,
+                "imports" to imports,
             ),
             projectRoot,
         )
@@ -60,12 +65,18 @@ class KmpSwaggerTemplateRenderer(
                 "nullable" to (!prop.required),
             )
         }
+        val imports = buildSet {
+            schema.properties.forEach { prop ->
+                addAll(ctx.importsForType(prop.type, forDomain = true, currentPackage = ctx.domainModelPackage))
+            }
+        }.sorted()
         return engine.render(
             "kmp/swagger/DomainModel.kt.ftl",
             mapOf(
                 "packageName" to ctx.domainModelPackage,
                 "className" to className,
                 "props" to props,
+                "imports" to imports,
             ),
             projectRoot,
         )
@@ -102,7 +113,19 @@ class KmpSwaggerTemplateRenderer(
                 "methodAnnotationSimple" to ctx.ktorfitMethodAnnotationSimple(op.method),
             )
         }
+        val typeImports = buildSet {
+            spec.operations.forEach { op ->
+                op.params.forEach { param ->
+                    addAll(ctx.importsForType(param.type, forDomain = false, currentPackage = ctx.servicePackage))
+                }
+                op.requestBody?.let { body ->
+                    addAll(ctx.importsForType(body, forDomain = false, currentPackage = ctx.servicePackage))
+                }
+                addAll(ctx.importsForServiceReturnType(op.responseBody))
+            }
+        }
         val imports = buildSet {
+            addAll(typeImports)
             if (operations.any { it["hasBody"] as Boolean }) {
                 add("de.jensklingenberg.ktorfit.http.Body")
             }
@@ -119,14 +142,14 @@ class KmpSwaggerTemplateRenderer(
                     )
                 }
             }
-        }
+        }.sorted()
         return engine.render(
             "kmp/swagger/KtorfitApiService.kt.ftl",
             mapOf(
                 "packageName" to ctx.servicePackage,
                 "serviceName" to ctx.serviceName,
                 "operations" to operations,
-                "imports" to imports.sorted(),
+                "imports" to imports,
             ),
             projectRoot,
         )
@@ -135,7 +158,7 @@ class KmpSwaggerTemplateRenderer(
     fun renderRepositoryInterface(spec: SwaggerSpec, ctx: KmpSwaggerGeneratorContext, projectRoot: File? = null): String {
         val operations = spec.operations.map { op ->
             val params = op.params.map { param ->
-                val type = ctx.resolveType(param.type, forDomain = false)
+                val type = ctx.resolveType(param.type, forDomain = true)
                     .let { if (!param.required) "$it?" else it }
                 mapOf(
                     "name" to param.name.toSafeIdentifier(),
@@ -151,12 +174,24 @@ class KmpSwaggerTemplateRenderer(
                 "bodyType" to bodyType,
             )
         }
+        val imports = buildSet {
+            spec.operations.forEach { op ->
+                op.params.forEach { param ->
+                    addAll(ctx.importsForType(param.type, forDomain = true, currentPackage = ctx.domainRepositoryPackage))
+                }
+                op.requestBody?.let { body ->
+                    addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainRepositoryPackage))
+                }
+                addAll(ctx.importsForRepositoryReturnType(op.responseBody))
+            }
+        }.sorted()
         return engine.render(
             "kmp/swagger/Repository.kt.ftl",
             mapOf(
                 "packageName" to ctx.domainRepositoryPackage,
                 "repositoryName" to ctx.repositoryName,
                 "operations" to operations,
+                "imports" to imports,
             ),
             projectRoot,
         )
@@ -168,7 +203,7 @@ class KmpSwaggerTemplateRenderer(
             val params = op.params.map { param ->
                 val name = param.name.toSafeIdentifier()
                 callArgs.add(name)
-                val type = ctx.resolveType(param.type, forDomain = false)
+                val type = ctx.resolveType(param.type, forDomain = true)
                     .let { if (!param.required) "$it?" else it }
                 mapOf("name" to name, "type" to type)
             }
@@ -204,23 +239,40 @@ class KmpSwaggerTemplateRenderer(
         val needsToDataImport = spec.operations.any { it.requestBody != null }
         val needsToResult = ctx.hasResultWrappers()
         val toResultPackage = ctx.template.toResultPackage ?: ""
-        val resultClassFqn = ctx.template.baseClassPackages.resultClass ?: ""
+        val imports = buildSet {
+            spec.operations.forEach { op ->
+                op.params.forEach { param ->
+                    addAll(ctx.importsForType(param.type, forDomain = true, currentPackage = ctx.dataRepositoryPackage))
+                }
+                op.requestBody?.let { body ->
+                    addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.dataRepositoryPackage))
+                }
+                addAll(ctx.importsForRepositoryReturnType(op.responseBody))
+            }
+            add("${ctx.servicePackage}.${ctx.serviceName}")
+            add("${ctx.domainRepositoryPackage}.${ctx.repositoryName}")
+            if (needsToResult && ctx.template.baseClassPackages.resultClass != null) {
+                add(ctx.template.baseClassPackages.resultClass!!)
+            }
+            if (needsToResult && toResultPackage.isNotBlank()) {
+                add("$toResultPackage.toResult")
+            }
+            if (needsToDomainImport) {
+                add("${ctx.dataModelPackage}.toDomain")
+            }
+            if (needsToDataImport) {
+                add("${ctx.dataModelPackage}.toData")
+            }
+        }.sorted()
         return engine.render(
             "kmp/swagger/GeneratedRepositorySupport.kt.ftl",
             mapOf(
                 "packageName" to ctx.dataRepositoryPackage,
                 "repositoryImplName" to ctx.repositoryImplName,
                 "repositoryName" to ctx.repositoryName,
-                "servicePackage" to ctx.servicePackage,
                 "serviceName" to ctx.serviceName,
-                "domainRepositoryPackage" to ctx.domainRepositoryPackage,
-                "dataModelPackage" to ctx.dataModelPackage,
-                "needsToDomainImport" to needsToDomainImport,
-                "needsToDataImport" to needsToDataImport,
-                "needsToResult" to needsToResult,
-                "toResultPackage" to toResultPackage,
-                "resultClassFqn" to resultClassFqn,
                 "operations" to operations,
+                "imports" to imports,
             ),
             projectRoot,
         )
@@ -230,7 +282,7 @@ class KmpSwaggerTemplateRenderer(
         engine.render(
             "kmp/swagger/GeneratedDataModule.kt.ftl",
             mapOf(
-                "generateRootPackage" to ctx.generateRootPackage,
+                "generateDiPackage" to ctx.generateDiPackage,
                 "pascalModuleName" to ctx.pascalModuleName,
                 "servicePackage" to ctx.servicePackage,
                 "serviceName" to ctx.serviceName,
@@ -248,7 +300,7 @@ class KmpSwaggerTemplateRenderer(
         return engine.render(
             "kmp/swagger/GeneratedDomainModule.kt.ftl",
             mapOf(
-                "generateRootPackage" to ctx.generateRootPackage,
+                "generateDiPackage" to ctx.generateDiPackage,
                 "useCases" to useCases,
             ),
             projectRoot,
@@ -261,7 +313,7 @@ class KmpSwaggerTemplateRenderer(
         val params = op.params.map { param ->
             val name = param.name.toSafeIdentifier()
             args.add(name)
-            val type = ctx.resolveType(param.type, forDomain = false)
+            val type = ctx.resolveType(param.type, forDomain = true)
                 .let { if (!param.required) "$it?" else it }
             mapOf("name" to name, "type" to type)
         }
@@ -269,12 +321,21 @@ class KmpSwaggerTemplateRenderer(
             args.add("body")
         }
         val bodyType = op.requestBody?.let { ctx.resolveType(it, forDomain = true) }
+        val imports = buildSet {
+            op.params.forEach { param ->
+                addAll(ctx.importsForType(param.type, forDomain = true, currentPackage = ctx.domainUseCasePackage))
+            }
+            op.requestBody?.let { body ->
+                addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainUseCasePackage))
+            }
+            addAll(ctx.importsForRepositoryReturnType(op.responseBody))
+            add("${ctx.domainRepositoryPackage}.${ctx.repositoryName}")
+        }.sorted()
         return engine.render(
             "kmp/swagger/UseCase.kt.ftl",
             mapOf(
                 "packageName" to ctx.domainUseCasePackage,
                 "useCaseName" to useCaseName,
-                "repositoryPackage" to ctx.domainRepositoryPackage,
                 "repositoryName" to ctx.repositoryName,
                 "returnType" to ctx.repositoryReturnType(op.responseBody),
                 "params" to params,
@@ -282,6 +343,7 @@ class KmpSwaggerTemplateRenderer(
                 "bodyType" to bodyType,
                 "operationId" to op.operationId,
                 "callArgs" to args.joinToString(", "),
+                "imports" to imports,
             ),
             projectRoot,
         )

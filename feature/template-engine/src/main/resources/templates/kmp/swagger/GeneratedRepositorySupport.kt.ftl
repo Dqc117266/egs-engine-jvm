@@ -1,19 +1,8 @@
 package ${packageName}
 
-<#if needsToResult && resultClassFqn?has_content>
-import ${resultClassFqn}
-</#if>
-<#if needsToResult>
-import ${toResultPackage}.toResult
-</#if>
-<#if needsToDomainImport>
-import ${dataModelPackage}.toDomain
-</#if>
-<#if needsToDataImport>
-import ${dataModelPackage}.toData
-</#if>
-import ${domainRepositoryPackage}.${repositoryName}
-import ${servicePackage}.${serviceName}
+<#list imports as imp>
+import ${imp}
+</#list>
 
 internal open class ${repositoryImplName}(
     private val service: ${serviceName},

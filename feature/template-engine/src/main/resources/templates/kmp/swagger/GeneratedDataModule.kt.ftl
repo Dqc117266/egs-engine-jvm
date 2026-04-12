@@ -1,4 +1,4 @@
-package ${generateRootPackage}
+package ${generateDiPackage}
 
 import de.jensklingenberg.ktorfit.Ktorfit
 import org.koin.dsl.module
