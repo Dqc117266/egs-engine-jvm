@@ -71,6 +71,9 @@ class KmpDatabaseCodeGenerator(
                     "daoClassName" to t.daoClassName,
                     "table" to mapOf("tableName" to t.table.tableName),
                     "orderByColumn" to t.orderByColumnName,
+                    "pkColumnName" to t.pkColumnName,
+                    "pkPropertyName" to t.pkPropertyName,
+                    "pkKotlinType" to t.pkKotlinType,
                 ),
                 projectRoot,
             )
@@ -116,10 +119,16 @@ class KmpDatabaseCodeGenerator(
                 "databasePackageName" to databasePackageName,
                 "moduleDatabaseName" to moduleDatabaseName,
                 "tables" to tableModels.map { tm ->
+                    val prefixPascal = SqlNaming.snakeToPascal(tm.table.tableName)
                     mapOf(
+                        "entityPackageName" to entityPackageName,
+                        "entityClassName" to tm.entityClassName,
                         "daoPackageName" to daoPackageName,
                         "daoClassName" to tm.daoClassName,
                         "daoPropertyName" to tm.daoPropertyName,
+                        "prefixPascal" to prefixPascal,
+                        "pkPropertyName" to tm.pkPropertyName,
+                        "pkKotlinType" to tm.pkKotlinType,
                     )
                 },
             ),
@@ -144,6 +153,11 @@ class KmpDatabaseCodeGenerator(
         val daoClassName: String,
         val daoPropertyName: String,
         val orderByColumnName: String,
+        /** SQL column name for primary key (WHERE clause). */
+        val pkColumnName: String,
+        /** Kotlin property name for primary key. */
+        val pkPropertyName: String,
+        val pkKotlinType: String,
         val entityColumns: List<Map<String, Any?>>,
     )
 
@@ -157,6 +171,7 @@ class KmpDatabaseCodeGenerator(
 
         val sorted = sortColumns(table)
         val pkCol = sorted.firstOrNull { it.isPrimaryKey } ?: sorted.first()
+        val pkPropertyName = SqlNaming.snakeToLowerCamel(pkCol.name)
         val entityColumns = sorted.map { col ->
             val autoGen = col.isAutoIncrement && col.kotlinType in setOf("Long", "Int")
             mapOf(
@@ -175,6 +190,9 @@ class KmpDatabaseCodeGenerator(
             daoClassName = daoClassName,
             daoPropertyName = daoPropertyName,
             orderByColumnName = pkCol.name,
+            pkColumnName = pkCol.name,
+            pkPropertyName = pkPropertyName,
+            pkKotlinType = pkCol.kotlinType,
             entityColumns = entityColumns,
         )
     }

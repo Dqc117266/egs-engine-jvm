@@ -52,5 +52,20 @@ class KmpDatabaseCodeGeneratorTest {
         val userEntity = files.first { it.path.endsWith("/entity/UserEntity.kt") }.content!!
         assertFalse("""\)\s*\n\s*,""".toRegex().containsMatchIn(userEntity), "entity ctor: comma should not be on its own line after ')'")
         assertTrue(userEntity.contains("val id: Long,"), "comma stays on same line as property when more columns follow")
+
+        val userDao = files.first { it.path.endsWith("/dao/UserDao.kt") }.content!!
+        assertTrue(userDao.contains("suspend fun getById("), "standard CRUD: getById")
+        assertTrue(userDao.contains("suspend fun insert(entity:"), "standard CRUD: insert")
+        assertTrue(userDao.contains("suspend fun insertAll("), "standard CRUD: insertAll")
+        assertTrue(userDao.contains("suspend fun update("), "standard CRUD: update")
+        assertTrue(userDao.contains("suspend fun delete(entity:"), "standard CRUD: delete")
+        assertTrue(userDao.contains("suspend fun deleteById("), "standard CRUD: deleteById")
+        assertTrue(userDao.contains("suspend fun deleteAll("), "standard CRUD: deleteAll")
+
+        val dataSource = files.first { it.path.endsWith("/StorageDatabaseDataSource.kt") }.content!!
+        assertTrue(dataSource.contains("suspend fun getUserAll()"), "DataSource delegates getAll")
+        assertTrue(dataSource.contains("suspend fun getUserById("), "DataSource delegates getById")
+        assertTrue(dataSource.contains("suspend fun getUserSessionAll()"), "DataSource second table delegates")
+        assertTrue(dataSource.contains("= userDao."), "forwards to userDao")
     }
 }
