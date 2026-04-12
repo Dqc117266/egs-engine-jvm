@@ -17,9 +17,7 @@ data class ${entityClassName}(
 <#else>
     @ColumnInfo(name = "${col.name}")
 </#if>
-    val ${col.kotlinPropertyName}: ${col.kotlinType}${col.nullableMark}
-<#sep>,
+    val ${col.kotlinPropertyName}: ${col.kotlinType}${col.nullableMark}<#if col?has_next>,</#if>
 
-</#sep>
 </#list>
 )

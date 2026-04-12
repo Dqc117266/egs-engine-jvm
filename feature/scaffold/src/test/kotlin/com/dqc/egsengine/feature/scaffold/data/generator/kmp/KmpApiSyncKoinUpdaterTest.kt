@@ -45,7 +45,7 @@ class KmpApiSyncKoinUpdaterTest {
             conventionPluginId = "org.convention.cmp.feature",
         )
 
-        val updater = KmpApiSyncKoinUpdater()
+        val updater = KmpApiSyncKoinUpdater(KmpFeatureBuildGradleUpdater())
         updater.applyAfterSync(root, moduleName, config)
         val once = kt.readText()
         updater.applyAfterSync(root, moduleName, config)

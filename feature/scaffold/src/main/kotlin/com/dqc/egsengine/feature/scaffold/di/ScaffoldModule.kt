@@ -14,6 +14,8 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGe
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCodeGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGeneratedDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
@@ -49,7 +51,9 @@ val featureScaffoldModule = module {
     single { KmpSwaggerTemplateRenderer(get()) }
     single { KmpSwaggerCodeGenerator(get()) }
     single { KmpDatabaseCodeGenerator(get()) }
-    single { KmpApiSyncKoinUpdater() }
+    single { KmpFeatureBuildGradleUpdater() }
+    single { KmpDatabaseGeneratedDataModuleUpdater() }
+    single { KmpApiSyncKoinUpdater(get()) }
     single { AndroidApiSyncKoinUpdater() }
     single { UseCaseScanner() }
     single { FeatureDiUpdater() }
@@ -99,6 +103,6 @@ val featureScaffoldModule = module {
     single { SwaggerApiScaffolder(get(), get(), get()) }
     single { PageScaffolder(get(), get(), get(), get()) }
     single { ApiSyncScaffolder(get(), get(), get(named("platformApiGenerators")), get(), get()) }
-    single { KmpDatabaseScaffolder(get(), get(), get()) }
+    single { KmpDatabaseScaffolder(get(), get(), get(), get(), get()) }
     single { EntityScaffolder(get(), get(), get()) }
 }

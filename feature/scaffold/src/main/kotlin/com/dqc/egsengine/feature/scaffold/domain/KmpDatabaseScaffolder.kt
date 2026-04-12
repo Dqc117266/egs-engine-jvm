@@ -10,6 +10,8 @@ import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCodeGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGeneratedDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -20,6 +22,8 @@ class KmpDatabaseScaffolder(
     private val ddlParser: DdlParser,
     private val kmpDatabaseCodeGenerator: KmpDatabaseCodeGenerator,
     private val workspaceConfigResolver: WorkspaceConfigResolver,
+    private val kmpFeatureBuildGradleUpdater: KmpFeatureBuildGradleUpdater,
+    private val kmpDatabaseGeneratedDataModuleUpdater: KmpDatabaseGeneratedDataModuleUpdater,
 ) {
     private val logger = LoggerFactory.getLogger(KmpDatabaseScaffolder::class.java)
 
@@ -46,6 +50,8 @@ class KmpDatabaseScaffolder(
                 file.content?.let { target.writeText(it) }
                 logger.debug("Wrote {}", file.path)
             }
+            kmpFeatureBuildGradleUpdater.applyAfterDatabaseGen(subProjectRoot, moduleName)
+            kmpDatabaseGeneratedDataModuleUpdater.apply(subProjectRoot, moduleName, template, tables)
             logger.info(
                 "KMP database scaffold: {} table(s) -> module '{}' ({} files)",
                 tables.size,

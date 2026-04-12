@@ -5,6 +5,7 @@ import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.template.TemplateEngine
 import com.dqc.egsengine.template.TemplateRegistry
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -47,5 +48,9 @@ class KmpDatabaseCodeGeneratorTest {
                 it.startsWith("feature/storage/src/commonMain/kotlin/org/example/feature/storage/generate/data/datasource/database")
             },
         )
+
+        val userEntity = files.first { it.path.endsWith("/entity/UserEntity.kt") }.content!!
+        assertFalse("""\)\s*\n\s*,""".toRegex().containsMatchIn(userEntity), "entity ctor: comma should not be on its own line after ')'")
+        assertTrue(userEntity.contains("val id: Long,"), "comma stays on same line as property when more columns follow")
     }
 }

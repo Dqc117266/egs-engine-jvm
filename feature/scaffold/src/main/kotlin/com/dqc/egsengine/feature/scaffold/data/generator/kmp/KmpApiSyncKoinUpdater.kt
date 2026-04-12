@@ -15,7 +15,9 @@ import java.io.File
  * After `client api sync` for KMP: handwritten [data.repository] impl, incremental Koin wiring,
  * and [generate.di] module integration.
  */
-class KmpApiSyncKoinUpdater {
+class KmpApiSyncKoinUpdater(
+    private val kmpFeatureBuildGradleUpdater: KmpFeatureBuildGradleUpdater,
+) {
 
     private val logger = LoggerFactory.getLogger(KmpApiSyncKoinUpdater::class.java)
 
@@ -34,6 +36,7 @@ class KmpApiSyncKoinUpdater {
         writeRepositoryImplIfAllowed(subProjectRoot, packageName, pascal, pkgPath, moduleName)
         wireRootFeatureModule(subProjectRoot, packageName, pascal, pkgPath, moduleName)
         patchDataModuleRepositoryImport(subProjectRoot, packageName, pascal, pkgPath, moduleName)
+        kmpFeatureBuildGradleUpdater.applyAfterApiSync(subProjectRoot, moduleName)
     }
 
     private fun writeRepositoryImplIfAllowed(

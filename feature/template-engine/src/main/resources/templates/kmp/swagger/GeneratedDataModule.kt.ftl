@@ -6,4 +6,8 @@ import ${servicePackage}.create${serviceName}
 
 internal val generatedDataModule = module {
     single { get<Ktorfit>().create${serviceName}() }
+
+    // egs-gen:database-begin
+
+    // egs-gen:database-end
 }
