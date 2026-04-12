@@ -18,11 +18,16 @@ class KmpDatabaseGeneratedDataModuleUpdater {
 
     private val logger = LoggerFactory.getLogger(KmpDatabaseGeneratedDataModuleUpdater::class.java)
 
+    /**
+     * @param includeDbRepositorySupport Register [Generated*DbRepositorySupport] in Koin only when
+     * `gen database --repo` actually emits that class (omit when generating Room/DAO only, or when `--cached` runs without repo slice).
+     */
     fun apply(
         subProjectRoot: File,
         moduleName: String,
         template: ModuleTemplate,
         tables: List<TableSchema>,
+        includeDbRepositorySupport: Boolean = true,
     ) {
         val pkg = template.packageName
         val pkgPath = pkg.replace('.', '/')
@@ -44,8 +49,16 @@ class KmpDatabaseGeneratedDataModuleUpdater {
             daoClassName to daoPropertyName
         }
 
-        val body = buildDatabaseBody(moduleDatabaseName, dataSourceClassName, tableModels)
+        val dbRepositorySupportName = "Generated${modulePascal}DbRepositorySupport"
 
+        val body = buildDatabaseBody(
+            moduleDatabaseName,
+            dataSourceClassName,
+            tableModels,
+            dbRepositorySupportName,
+            includeDbRepositorySupport,
+        )
+        val repositoryPkg = "$pkg.generate.data.repository"
         val importsToEnsure = buildList {
             add("import org.koin.core.module.dsl.singleOf")
             add("import $CORE_BASE_DB_PKG.AppRoomDatabase")
@@ -53,6 +66,9 @@ class KmpDatabaseGeneratedDataModuleUpdater {
             add("import $CORE_BASE_DB_PKG.create")
             add("import $databasePkg.$moduleDatabaseName")
             add("import $databasePkg.$dataSourceClassName")
+            if (includeDbRepositorySupport) {
+                add("import $repositoryPkg.$dbRepositorySupportName")
+            }
             for ((daoClassName, _) in tableModels) {
                 add("import $daoPkg.$daoClassName")
             }
@@ -71,6 +87,9 @@ class KmpDatabaseGeneratedDataModuleUpdater {
         }
         text = replaceDatabaseBlock(text, body)
         text = mergeImports(text, importsToEnsure)
+        if (!includeDbRepositorySupport) {
+            text = removeDbRepositorySupportImport(text, dbRepositorySupportName)
+        }
         file.writeText(text)
         logger.info("Updated database bindings in {}", file.path)
     }
@@ -79,6 +98,8 @@ class KmpDatabaseGeneratedDataModuleUpdater {
         moduleDatabaseName: String,
         dataSourceClassName: String,
         tableModels: List<Pair<String, String>>,
+        dbRepositorySupportName: String,
+        includeDbRepositorySupport: Boolean,
     ): String = buildString {
         appendLine("    single<$moduleDatabaseName> {")
         appendLine("        get<DatabaseBuilderFactory>().create<$moduleDatabaseName>(AppRoomDatabase.FILE_NAME)")
@@ -87,6 +108,9 @@ class KmpDatabaseGeneratedDataModuleUpdater {
             appendLine("    single { get<$moduleDatabaseName>().$daoProp() }")
         }
         appendLine("    singleOf(::$dataSourceClassName)")
+        if (includeDbRepositorySupport) {
+            appendLine("    singleOf(::$dbRepositorySupportName)")
+        }
     }.trimEnd()
 
     private fun renderStandaloneModule(
@@ -142,6 +166,14 @@ class KmpDatabaseGeneratedDataModuleUpdater {
         return pattern.replace(text) {
             "// egs-gen:database-begin\n$body\n    // egs-gen:database-end"
         }
+    }
+
+    private fun removeDbRepositorySupportImport(text: String, simpleClassName: String): String {
+        val lines = text.lines().filterNot { line ->
+            val t = line.trim()
+            t.startsWith("import ") && t.endsWith(simpleClassName)
+        }
+        return lines.joinToString("\n").trimEnd() + "\n"
     }
 
     private fun mergeImports(text: String, importsToEnsure: List<String>): String {

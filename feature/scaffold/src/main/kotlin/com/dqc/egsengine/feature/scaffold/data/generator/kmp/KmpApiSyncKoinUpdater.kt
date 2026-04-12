@@ -49,7 +49,7 @@ class KmpApiSyncKoinUpdater(
         val file = subProjectRoot.resolve(
             "feature/$moduleName/src/commonMain/kotlin/$pkgPath/data/repository/${pascal}RepositoryImpl.kt",
         )
-        val newContent = renderHandwrittenRepositoryImpl(packageName, pascal)
+        val newContent = renderDelegationRepositoryImpl(packageName, pascal)
         if (!file.exists()) {
             file.parentFile.mkdirs()
             file.writeText(newContent)
@@ -72,33 +72,31 @@ class KmpApiSyncKoinUpdater(
 
     private fun shouldOverwriteRepositoryImpl(text: String, pascal: String): Boolean {
         if (text.contains("override suspend fun sample(")) return true
+        if (text.contains("egs-codegen: scaffold-repository-impl-delegation")) return true
         if (text.contains("egs-codegen: scaffold-repository-impl")) return true
-        val gen = "Generated${pascal}RepositorySupport"
-        if (!text.contains(gen)) return false
-        val m = Regex(
-            """class\s+${Regex.escape(pascal)}RepositoryImpl\s*\(\s*([\s\S]*?)\)\s*:\s*${Regex.escape(gen)}""",
-            RegexOption.MULTILINE,
-        ).find(text) ?: return false
-        val params = m.groupValues[1].trim()
-        if (params.isEmpty()) return true
-        return !params.contains(',')
+        if (text.contains("egs-codegen: db-only-repository-impl")) return true
+        val legacy = "Generated${pascal}RepositorySupport"
+        if (text.contains(legacy)) return true
+        return false
     }
 
-    private fun renderHandwrittenRepositoryImpl(packageName: String, pascal: String): String =
+    private fun renderDelegationRepositoryImpl(packageName: String, pascal: String): String =
         """
         /*
-         * Hand-written repository: extends generated API support.
-         * egs-codegen: scaffold-repository-impl
-         * Add // egs-sync:freeze on its own line to prevent api sync from overwriting this file.
+         * Hand-written repository: delegates to generated API support.
+         * egs-codegen: scaffold-repository-impl-delegation
+         * Add $FREEZE_MARKER on its own line to prevent api sync from overwriting this file.
          */
         package $packageName.data.repository
 
-        import $packageName.generate.data.datasource.api.service.${pascal}KtorfitService
-        import $packageName.generate.data.repository.Generated${pascal}RepositorySupport
+        import $packageName.generate.data.repository.Generated${pascal}ApiRepositorySupport
+        import $packageName.generate.domain.repository.${pascal}ApiRepository
+        import $packageName.generate.domain.repository.${pascal}Repository
 
         internal class ${pascal}RepositoryImpl(
-            service: ${pascal}KtorfitService,
-        ) : Generated${pascal}RepositorySupport(service) {
+            apiSupport: Generated${pascal}ApiRepositorySupport,
+        ) : ${pascal}Repository,
+            ${pascal}ApiRepository by apiSupport {
         }
         """.trimIndent() + "\n"
 

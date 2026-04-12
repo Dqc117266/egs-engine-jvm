@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 class KmpDatabaseRepositoryGeneratorTest {
 
     @Test
-    fun `generates DB-only repository interface support and impl`() {
+    fun `generates DB-only repository slice interface and support`() {
         val url = javaClass.classLoader.getResource("ddl/user.sql")
             ?: error("ddl/user.sql not on test classpath")
         val tables = DdlParser().parseFile(java.io.File(url.toURI()))
@@ -36,20 +36,15 @@ class KmpDatabaseRepositoryGeneratorTest {
         val files = gen.generateDbOnlyRepository(template, tables, projectRoot = null)
         val paths = files.map { it.path }
 
-        assertTrue(paths.any { it.endsWith("/StorageRepository.kt") })
-        assertTrue(paths.any { it.endsWith("/GeneratedStorageRepositorySupport.kt") })
-        assertTrue(paths.any { it.endsWith("/StorageRepositoryImpl.kt") })
+        assertTrue(paths.any { it.endsWith("/StorageDbRepository.kt") })
+        assertTrue(paths.any { it.endsWith("/GeneratedStorageDbRepositorySupport.kt") })
 
-        val repo = files.first { it.path.endsWith("/StorageRepository.kt") }.content!!
-        assertTrue(repo.contains("interface StorageRepository"))
+        val repo = files.first { it.path.endsWith("/StorageDbRepository.kt") }.content!!
+        assertTrue(repo.contains("interface StorageDbRepository"))
         assertTrue(repo.contains("suspend fun getUserAll()"))
 
-        val support = files.first { it.path.endsWith("/GeneratedStorageRepositorySupport.kt") }.content!!
-        assertTrue(support.contains("class GeneratedStorageRepositorySupport"))
+        val support = files.first { it.path.endsWith("/GeneratedStorageDbRepositorySupport.kt") }.content!!
+        assertTrue(support.contains("class GeneratedStorageDbRepositorySupport"))
         assertTrue(support.contains("dbDataSource.getUserAll()"))
-
-        val impl = files.first { it.path.endsWith("/StorageRepositoryImpl.kt") }.content!!
-        assertTrue(impl.contains("class StorageRepositoryImpl"))
-        assertTrue(impl.contains("StorageDatabaseDataSource"))
     }
 }

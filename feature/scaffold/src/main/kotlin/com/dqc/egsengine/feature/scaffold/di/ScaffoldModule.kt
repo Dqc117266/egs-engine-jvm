@@ -13,14 +13,15 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncK
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCachedRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpCombinedRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseDbOnlyDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseEntityMapperGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
@@ -54,13 +55,14 @@ val featureScaffoldModule = module {
     single { SwaggerTemplateRenderer(get()) }
     single { SwaggerCodeGenerator(get()) }
     single { KmpSwaggerTemplateRenderer(get()) }
-    single { KmpSwaggerCodeGenerator(get()) }
+    single { KmpCombinedRepositoryGenerator() }
+    single { KmpRepositoryImplGenerator() }
+    single { KmpSwaggerCodeGenerator(get(), get(), get()) }
     single { KmpDatabaseCodeGenerator(get()) }
     single { KmpDatabaseRepositoryGenerator(get()) }
     single { KmpDatabaseDbOnlyDataModuleUpdater() }
-    single { KmpDatabaseRepositoryUpdater() }
     single { KmpDatabaseEntityMapperGenerator(get()) }
-    single { KmpDatabaseCachedRepositoryGenerator(get(), get()) }
+    single { KmpDatabaseUseCaseGenerator(get()) }
     single { KmpFeatureBuildGradleUpdater() }
     single { KmpDatabaseGeneratedDataModuleUpdater() }
     single { KmpApiSyncKoinUpdater(get()) }

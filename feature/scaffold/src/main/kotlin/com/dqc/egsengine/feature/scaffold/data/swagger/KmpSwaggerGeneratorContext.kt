@@ -27,8 +27,15 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
     val domainUseCasePackage = "$generateRootPackage.domain.usecase"
 
     val serviceName = "${pascalModuleName}KtorfitService"
-    val repositoryName = "${pascalModuleName}Repository"
-    val repositoryImplName = "Generated${pascalModuleName}RepositorySupport"
+
+    /** Swagger/API slice: `TodoApiRepository`. */
+    val apiRepositoryName = "${pascalModuleName}ApiRepository"
+
+    /** `GeneratedTodoApiRepositorySupport` (Ktorfit delegation). */
+    val apiRepositorySupportName = "Generated${pascalModuleName}ApiRepositorySupport"
+
+    /** Combined domain contract: `TodoRepository` (extends API/DB sub-interfaces). */
+    val combinedRepositoryName = "${pascalModuleName}Repository"
 
     fun dataModelName(rawName: String): String = "${rawName.toSafePascal()}ApiModel"
     fun domainModelName(rawName: String): String = rawName.toSafePascal()

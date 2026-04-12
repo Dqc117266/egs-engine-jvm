@@ -186,10 +186,10 @@ class KmpSwaggerTemplateRenderer(
             }
         }.sorted()
         return engine.render(
-            "kmp/swagger/Repository.kt.ftl",
+            "kmp/swagger/ApiRepository.kt.ftl",
             mapOf(
                 "packageName" to ctx.domainRepositoryPackage,
-                "repositoryName" to ctx.repositoryName,
+                "apiRepositoryName" to ctx.apiRepositoryName,
                 "operations" to operations,
                 "imports" to imports,
             ),
@@ -223,12 +223,10 @@ class KmpSwaggerTemplateRenderer(
         }
     }
 
-    fun renderGeneratedRepositorySupport(
+    fun renderApiRepositorySupport(
         spec: SwaggerSpec,
         ctx: KmpSwaggerGeneratorContext,
         projectRoot: File? = null,
-        includeDbDataSource: Boolean = false,
-        dbDataSourceClass: String = "",
         statementOverride: (SwaggerOperation, String) -> String = { _, stmt -> stmt },
         extraImports: Set<String> = emptySet(),
     ): String {
@@ -264,7 +262,7 @@ class KmpSwaggerTemplateRenderer(
                 addAll(ctx.importsForRepositoryReturnType(op.responseBody))
             }
             add("${ctx.servicePackage}.${ctx.serviceName}")
-            add("${ctx.domainRepositoryPackage}.${ctx.repositoryName}")
+            add("${ctx.domainRepositoryPackage}.${ctx.apiRepositoryName}")
             if (needsToResult && ctx.template.baseClassPackages.resultClass != null) {
                 add(ctx.template.baseClassPackages.resultClass!!)
             }
@@ -277,20 +275,15 @@ class KmpSwaggerTemplateRenderer(
             if (needsToDataImport) {
                 add("${ctx.dataModelPackage}.toData")
             }
-            if (includeDbDataSource && dbDataSourceClass.isNotBlank()) {
-                add("${ctx.rootPackage}.generate.data.datasource.database.$dbDataSourceClass")
-            }
             addAll(extraImports)
         }.sorted()
         return engine.render(
-            "kmp/swagger/GeneratedRepositorySupport.kt.ftl",
+            "kmp/swagger/ApiRepositorySupport.kt.ftl",
             mapOf(
                 "packageName" to ctx.dataRepositoryPackage,
-                "repositoryImplName" to ctx.repositoryImplName,
-                "repositoryName" to ctx.repositoryName,
+                "apiRepositorySupportName" to ctx.apiRepositorySupportName,
+                "apiRepositoryName" to ctx.apiRepositoryName,
                 "serviceName" to ctx.serviceName,
-                "includeDbDataSource" to includeDbDataSource,
-                "dbDataSourceClass" to dbDataSourceClass,
                 "operations" to operations,
                 "imports" to imports,
             ),
@@ -306,22 +299,37 @@ class KmpSwaggerTemplateRenderer(
                 "pascalModuleName" to ctx.pascalModuleName,
                 "servicePackage" to ctx.servicePackage,
                 "serviceName" to ctx.serviceName,
+                "dataRepositoryPackage" to ctx.dataRepositoryPackage,
+                "apiRepositorySupportName" to ctx.apiRepositorySupportName,
             ),
             projectRoot,
         )
 
-    fun renderGeneratedDomainModule(spec: SwaggerSpec, ctx: KmpSwaggerGeneratorContext, projectRoot: File? = null): String {
-        val useCases = spec.operations.map { op ->
+    fun renderGeneratedDomainModule(
+        spec: SwaggerSpec,
+        ctx: KmpSwaggerGeneratorContext,
+        preservedDbUseCaseClassNames: List<String> = emptyList(),
+        projectRoot: File? = null,
+    ): String {
+        val swaggerUseCases = spec.operations.map { op ->
             mapOf(
                 "useCaseClass" to "${op.operationId.toSafePascal()}UseCase",
                 "domainUseCasePackage" to ctx.domainUseCasePackage,
             )
         }
+        val dbUseCases = preservedDbUseCaseClassNames.map { simpleName ->
+            mapOf("useCaseClass" to simpleName)
+        }
+        val dbUseCaseImports = preservedDbUseCaseClassNames.map { simpleName ->
+            "${ctx.domainUseCasePackage}.$simpleName"
+        }
         return engine.render(
             "kmp/swagger/GeneratedDomainModule.kt.ftl",
             mapOf(
                 "generateDiPackage" to ctx.generateDiPackage,
-                "useCases" to useCases,
+                "swaggerUseCases" to swaggerUseCases,
+                "dbUseCases" to dbUseCases,
+                "dbUseCaseImports" to dbUseCaseImports,
             ),
             projectRoot,
         )
@@ -349,14 +357,14 @@ class KmpSwaggerTemplateRenderer(
                 addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainUseCasePackage))
             }
             addAll(ctx.importsForRepositoryReturnType(op.responseBody))
-            add("${ctx.domainRepositoryPackage}.${ctx.repositoryName}")
+            add("${ctx.domainRepositoryPackage}.${ctx.combinedRepositoryName}")
         }.sorted()
         return engine.render(
             "kmp/swagger/UseCase.kt.ftl",
             mapOf(
                 "packageName" to ctx.domainUseCasePackage,
                 "useCaseName" to useCaseName,
-                "repositoryName" to ctx.repositoryName,
+                "repositoryName" to ctx.combinedRepositoryName,
                 "returnType" to ctx.repositoryReturnType(op.responseBody),
                 "params" to params,
                 "hasBody" to (op.requestBody != null),

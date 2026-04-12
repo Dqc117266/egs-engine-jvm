@@ -32,7 +32,7 @@ class KmpApiGenerator(
         config: SubProjectConfig,
     ): List<GeneratedFile> {
         val template = config.toKmpSwaggerModuleTemplate(moduleName)
-        return kmpSwaggerCodeGenerator.generateToCommon(template, spec)
+        return kmpSwaggerCodeGenerator.generateToCommon(template, spec, projectRoot)
     }
 }
 

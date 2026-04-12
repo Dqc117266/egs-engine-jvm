@@ -10,15 +10,15 @@ import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCachedRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpCombinedRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseDbOnlyDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseEntityMapperGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
-import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerCodeGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -34,11 +34,11 @@ class KmpDatabaseScaffolder(
     private val kmpDatabaseGeneratedDataModuleUpdater: KmpDatabaseGeneratedDataModuleUpdater,
     private val kmpDatabaseRepositoryGenerator: KmpDatabaseRepositoryGenerator,
     private val kmpDatabaseDbOnlyDataModuleUpdater: KmpDatabaseDbOnlyDataModuleUpdater,
-    private val kmpDatabaseRepositoryUpdater: KmpDatabaseRepositoryUpdater,
     private val kmpDatabaseEntityMapperGenerator: KmpDatabaseEntityMapperGenerator,
-    private val kmpDatabaseCachedRepositoryGenerator: KmpDatabaseCachedRepositoryGenerator,
-    private val kmpSwaggerCodeGenerator: KmpSwaggerCodeGenerator,
+    private val kmpDatabaseUseCaseGenerator: KmpDatabaseUseCaseGenerator,
     private val swaggerParser: SwaggerParser,
+    private val kmpCombinedRepositoryGenerator: KmpCombinedRepositoryGenerator,
+    private val kmpRepositoryImplGenerator: KmpRepositoryImplGenerator,
 ) {
     private val logger = LoggerFactory.getLogger(KmpDatabaseScaffolder::class.java)
 
@@ -60,35 +60,72 @@ class KmpDatabaseScaffolder(
         val generated = kmpDatabaseCodeGenerator.generate(template, tables, projectRoot).toMutableList()
 
         val subProjectRoot = projectRoot.resolve(clientConfig.path)
-        val pkgPath = template.packageName.replace('.', '/')
         val modulePascal = SqlNaming.moduleNameToPascal(moduleName)
-        val supportFile = subProjectRoot.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}RepositorySupport.kt",
+        val pkgPath = template.packageName.replace('.', '/')
+        val apiSupportFile = subProjectRoot.resolve(
+            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}ApiRepositorySupport.kt",
         )
-        val hasApi = supportFile.exists()
+        val hasApi = apiSupportFile.exists()
 
         val effectiveRepo = repo || cached
         if (cached) {
             require(hasApi) {
-                "client gen database --cached requires an existing API sync (Generated${modulePascal}RepositorySupport.kt not found)."
+                "client gen database --cached requires an existing API sync (Generated${modulePascal}ApiRepositorySupport.kt not found)."
             }
+        }
+
+        if (cached && hasApi) {
+            logger.warn(
+                "--cached is deprecated: cache-aside belongs in {}RepositoryImpl overrides (delegation model).",
+                modulePascal,
+            )
+            val spec = swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
+            generated += kmpDatabaseEntityMapperGenerator.generate(template, tables, spec, projectRoot)
         }
 
         if (effectiveRepo) {
             when {
-                cached && hasApi -> {
-                    val spec = swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
-                    generated += kmpDatabaseEntityMapperGenerator.generate(template, tables, spec, projectRoot)
-                    kmpDatabaseCachedRepositoryGenerator.generateCachedRepositorySupport(
-                        template,
-                        tables,
-                        kmpSwaggerCodeGenerator.adjustSpecForKmp(spec),
-                        projectRoot,
+                !cached && hasApi -> {
+                    generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(template, tables, projectRoot)
+                    generated += kmpDatabaseUseCaseGenerator.generate(
+                        template = template,
+                        tables = tables,
+                        projectRoot = projectRoot,
+                        subProjectRoot = subProjectRoot,
+                    )
+                    kmpCombinedRepositoryGenerator.generate(
+                        template = template,
+                        subProjectRoot = subProjectRoot,
+                        includeApi = true,
+                        includeDb = true,
+                    )?.let { generated += it }
+                    kmpRepositoryImplGenerator.generateOrMerge(
+                        template = template,
+                        subProjectRoot = subProjectRoot,
+                        includeApi = true,
+                        includeDb = true,
                     )?.let { generated += it }
                 }
-                !cached && hasApi -> Unit
                 !cached && !hasApi -> {
                     generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(template, tables, projectRoot)
+                    generated += kmpDatabaseUseCaseGenerator.generate(
+                        template = template,
+                        tables = tables,
+                        projectRoot = projectRoot,
+                        subProjectRoot = subProjectRoot,
+                    )
+                    kmpCombinedRepositoryGenerator.generate(
+                        template = template,
+                        subProjectRoot = subProjectRoot,
+                        includeApi = false,
+                        includeDb = true,
+                    )?.let { generated += it }
+                    kmpRepositoryImplGenerator.generateOrMerge(
+                        template = template,
+                        subProjectRoot = subProjectRoot,
+                        includeApi = false,
+                        includeDb = true,
+                    )?.let { generated += it }
                 }
             }
         }
@@ -101,9 +138,16 @@ class KmpDatabaseScaffolder(
                 logger.debug("Wrote {}", file.path)
             }
             kmpFeatureBuildGradleUpdater.applyAfterDatabaseGen(subProjectRoot, moduleName)
-            kmpDatabaseGeneratedDataModuleUpdater.apply(subProjectRoot, moduleName, template, tables)
+            val includeDbRepositorySupport = effectiveRepo && !cached
+            kmpDatabaseGeneratedDataModuleUpdater.apply(
+                subProjectRoot,
+                moduleName,
+                template,
+                tables,
+                includeDbRepositorySupport = includeDbRepositorySupport,
+            )
             if (effectiveRepo && hasApi) {
-                kmpDatabaseRepositoryUpdater.apply(subProjectRoot, moduleName, template)
+                // DB bindings already merged into GeneratedDataModule; no Mode B repository patcher.
             }
             if (effectiveRepo && !hasApi) {
                 kmpDatabaseDbOnlyDataModuleUpdater.apply(subProjectRoot, moduleName, template)

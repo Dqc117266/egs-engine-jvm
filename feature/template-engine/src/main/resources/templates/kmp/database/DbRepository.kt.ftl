@@ -10,9 +10,9 @@ import ${imp}
 </#list>
 
 /**
- * DB-only repository contract (Mode A). Methods mirror [${moduleDatabaseName}DataSource] delegates per table.
+ * DB repository slice. Methods mirror [${moduleDatabaseName}DataSource] delegates per table.
  */
-internal interface ${repositoryName} {
+internal interface ${dbRepositoryName} {
 <#list tables as t>
     // --- ${t.sqlTableName} ---
     suspend fun get${t.prefixPascal}All(): List<${t.entityClassName}>

@@ -2,12 +2,23 @@ package ${generateDiPackage}
 
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
-<#list useCases as uc>
+<#list swaggerUseCases as uc>
 import ${uc.domainUseCasePackage}.${uc.useCaseClass}
+</#list>
+<#list dbUseCaseImports as imp>
+import ${imp}
 </#list>
 
 internal val generatedDomainModule = module {
-<#list useCases as uc>
+    // egs-gen:swagger-usecases-begin
+<#list swaggerUseCases as uc>
     singleOf(::${uc.useCaseClass})
 </#list>
+    // egs-gen:swagger-usecases-end
+
+    // egs-gen:db-usecases-begin
+<#list dbUseCases as uc>
+    singleOf(::${uc.useCaseClass})
+</#list>
+    // egs-gen:db-usecases-end
 }

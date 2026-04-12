@@ -1,5 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.data.swagger
 
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpCombinedRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.template.TemplateEngine
@@ -13,7 +15,11 @@ class KmpSwaggerCodeGeneratorTest {
     fun `kmp swagger codegen uses commonMain and generate package paths`() {
         val engine = TemplateEngine(TemplateRegistry())
         val renderer = KmpSwaggerTemplateRenderer(engine)
-        val gen = KmpSwaggerCodeGenerator(renderer)
+        val gen = KmpSwaggerCodeGenerator(
+            renderer,
+            KmpCombinedRepositoryGenerator(),
+            KmpRepositoryImplGenerator(),
+        )
 
         val template = ModuleTemplate(
             name = "todo",
@@ -53,6 +59,21 @@ class KmpSwaggerCodeGeneratorTest {
         assertTrue(
             paths.any {
                 it.contains("generate/data/datasource/api/service/TodoKtorfitService.kt")
+            },
+        )
+        assertTrue(
+            paths.any {
+                it.contains("generate/domain/repository/TodoApiRepository.kt")
+            },
+        )
+        assertTrue(
+            paths.any {
+                it.contains("generate/domain/repository/TodoRepository.kt")
+            },
+        )
+        assertTrue(
+            paths.any {
+                it.contains("data/repository/TodoRepositoryImpl.kt")
             },
         )
     }

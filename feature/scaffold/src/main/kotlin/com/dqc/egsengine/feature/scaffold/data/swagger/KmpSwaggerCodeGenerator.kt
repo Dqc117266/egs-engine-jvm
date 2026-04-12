@@ -7,22 +7,28 @@ package com.dqc.egsengine.feature.scaffold.data.swagger
 
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpCombinedRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpGeneratedDomainModuleIo
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import org.slf4j.LoggerFactory
+import java.io.File
 
 /**
  * Swagger codegen for KMP `commonMain` under `feature/<module>/.../generate/`.
  */
 class KmpSwaggerCodeGenerator(
     private val renderer: KmpSwaggerTemplateRenderer,
+    private val combinedRepositoryGenerator: KmpCombinedRepositoryGenerator,
+    private val repositoryImplGenerator: KmpRepositoryImplGenerator,
 ) {
     private val logger = LoggerFactory.getLogger(KmpSwaggerCodeGenerator::class.java)
 
-    fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec): List<GeneratedFile> =
-        generate(template, spec).map { GeneratedFile(it.path, it.content) }
+    fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec, projectRoot: File? = null): List<GeneratedFile> =
+        generate(template, spec, projectRoot).map { GeneratedFile(it.path, it.content) }
 
     /**
-     * Applies the same wrapper unwrap and header filtering as [generate], for use by cached repository generation.
+     * Applies the same wrapper unwrap and header filtering as [generate].
      */
     fun adjustSpecForKmp(spec: SwaggerSpec): SwaggerSpec {
         val (wrapperSchemas, _) = spec.schemas.partition { isCommonResultWrapper(it) }
@@ -39,7 +45,11 @@ class KmpSwaggerCodeGenerator(
         )
     }
 
-    fun generate(template: ModuleTemplate, spec: SwaggerSpec): List<ModuleGenerator.GeneratedFile> {
+    fun generate(
+        template: ModuleTemplate,
+        spec: SwaggerSpec,
+        projectRoot: File? = null,
+    ): List<ModuleGenerator.GeneratedFile> {
         val moduleDir = "feature/${template.name}"
         val files = mutableListOf<ModuleGenerator.GeneratedFile>()
         val ctx = KmpSwaggerGeneratorContext(template)
@@ -75,26 +85,37 @@ class KmpSwaggerCodeGenerator(
         files.addCommonMain(
             moduleDir,
             ctx.domainRepositoryPackage,
-            ctx.repositoryName,
+            ctx.apiRepositoryName,
             renderer.renderRepositoryInterface(adjustedSpec, ctx),
         )
         files.addCommonMain(
             moduleDir,
             ctx.dataRepositoryPackage,
-            ctx.repositoryImplName,
-            renderer.renderGeneratedRepositorySupport(adjustedSpec, ctx),
+            ctx.apiRepositorySupportName,
+            renderer.renderApiRepositorySupport(adjustedSpec, ctx),
         )
+        val renderedDataModule = renderer.renderGeneratedDataModule(ctx)
+        val mergedDataModule = projectRoot?.let { root ->
+            val existingPath = root.resolve(
+                "$moduleDir/src/commonMain/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDataModule.kt",
+            )
+            val existing = if (existingPath.exists()) existingPath.readText() else null
+            KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, renderedDataModule)
+        } ?: renderedDataModule
         files.addCommonMain(
             moduleDir,
             ctx.generateDiPackage,
             "GeneratedDataModule",
-            renderer.renderGeneratedDataModule(ctx),
+            mergedDataModule,
         )
+        val preservedDb = projectRoot?.let { root ->
+            KmpGeneratedDomainModuleIo.extractDbUseCaseClassNames(root, template.name, template)
+        }.orEmpty()
         files.addCommonMain(
             moduleDir,
             ctx.generateDiPackage,
             "GeneratedDomainModule",
-            renderer.renderGeneratedDomainModule(adjustedSpec, ctx),
+            renderer.renderGeneratedDomainModule(adjustedSpec, ctx, preservedDb),
         )
 
         adjustedSpec.operations.forEach { op ->
@@ -106,6 +127,23 @@ class KmpSwaggerCodeGenerator(
                 renderer.renderUseCase(op, ctx),
             )
         }
+
+        val includeDb = projectRoot?.let { root ->
+            combinedRepositoryGenerator.detectSlices(root, template.name, template).second
+        } ?: false
+        combinedRepositoryGenerator.generate(
+            template = template,
+            subProjectRoot = projectRoot,
+            includeApi = true,
+            includeDb = includeDb,
+        )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
+
+        repositoryImplGenerator.generateOrMerge(
+            template = template,
+            subProjectRoot = projectRoot,
+            includeApi = true,
+            includeDb = includeDb,
+        )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
 
         logger.info("Generated ${files.size} KMP swagger scaffold files for module ${template.name}")
         return files

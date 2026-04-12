@@ -6,17 +6,17 @@
 package ${repositorySupportPackageName}
 
 import ${databasePackageName}.${moduleDatabaseName}DataSource
-import ${repositoryPackageName}.${repositoryName}
+import ${repositoryPackageName}.${dbRepositoryName}
 <#list entityImports as imp>
 import ${imp}
 </#list>
 
 /**
- * Generated support for [${repositoryName}]: delegates to [${moduleDatabaseName}DataSource].
+ * Generated support for [${dbRepositoryName}]: delegates to [${moduleDatabaseName}DataSource].
  */
-internal open class ${repositorySupportName}(
-    protected val dbDataSource: ${moduleDatabaseName}DataSource,
-) : ${repositoryName} {
+internal class ${dbRepositorySupportName}(
+    private val dbDataSource: ${moduleDatabaseName}DataSource,
+) : ${dbRepositoryName} {
 <#list tables as t>
 
     override suspend fun get${t.prefixPascal}All() = dbDataSource.get${t.prefixPascal}All()

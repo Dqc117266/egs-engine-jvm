@@ -4,10 +4,9 @@ package ${packageName}
 import ${imp}
 </#list>
 
-internal open class ${repositoryImplName}(
-    private val service: ${serviceName},<#if includeDbDataSource>
-    protected val dbDataSource: ${dbDataSourceClass},</#if>
-) : ${repositoryName} {
+internal class ${apiRepositorySupportName}(
+    private val service: ${serviceName},
+) : ${apiRepositoryName} {
 <#list operations as op>
     override suspend fun ${op.operationId}(
 <#list op.params as param>
