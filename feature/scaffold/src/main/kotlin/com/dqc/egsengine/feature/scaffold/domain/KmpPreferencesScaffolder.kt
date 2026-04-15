@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
- * `egs client gen prefs` — TypedPreferenceStore datasource, keys, optional snapshot model, prefs repository slice,
+ * `egs client gen prefs` ? TypedPreferenceStore datasource, keys, optional snapshot model, prefs repository slice,
  * combined [TodoRepository] + [TodoRepositoryImpl], and [GeneratedDataModule] prefs block.
  *
  * **MVP snapshot policy:** reusing the same `--key` without `--force` fails if the snapshot model file or key const
@@ -181,8 +181,14 @@ class KmpPreferencesScaffolder(
          */
         package $modelPkg
 
-        $body
+        ${body.trim()}
         """.trimIndent() + "\n"
+
+    /** Indents a generated block for `object Scalar` / `Snapshot` bodies (keys file). */
+    private fun indentPrefsKeysBlock(text: String): String = text.prependIndent("        ")
+
+    /** Indents generated members inside `internal class` / `internal interface` (4 spaces). */
+    private fun indentClassMemberBlock(text: String): String = text.trimEnd().prependIndent("    ")
 
     private fun mergeOrCreatePrefsKeys(
         file: File,
@@ -211,7 +217,7 @@ class KmpPreferencesScaffolder(
                             text,
                             KmpPreferencesBlockMerger.SCALAR_KEYS_BEGIN,
                             KmpPreferencesBlockMerger.SCALAR_KEYS_END,
-                            chunk,
+                            indentPrefsKeysBlock(chunk),
                             shouldSkipAppend = { false },
                         )
                     }
@@ -239,7 +245,7 @@ class KmpPreferencesScaffolder(
                             text,
                             KmpPreferencesBlockMerger.SNAPSHOT_KEYS_BEGIN,
                             KmpPreferencesBlockMerger.SNAPSHOT_KEYS_END,
-                            chunk,
+                            indentPrefsKeysBlock(chunk),
                             shouldSkipAppend = { false },
                         )
                     }
@@ -254,12 +260,14 @@ class KmpPreferencesScaffolder(
             """const val $upper = \"[^\"]*\"\s*\n\s*const val ${upper}_DEFAULT = [^\n]+""",
             RegexOption.MULTILINE,
         )
-        return pattern.replace(text) { newChunk.trim() }
+        return pattern.replace(text) {
+            newChunk.prependIndent("        ")
+        }
     }
 
     private fun replaceSnapshotKeyLine(text: String, upper: String, newLine: String): String {
         val pattern = Regex("""const val $upper = \"[^\"]*\"""")
-        return pattern.replace(text, newLine.trim())
+        return pattern.replace(text, newLine.prependIndent("        "))
     }
 
     private fun renderPrefsKeysFull(
@@ -267,30 +275,36 @@ class KmpPreferencesScaffolder(
         prefsKeysObject: String,
         scalarInner: String,
         snapshotInner: String,
-    ): String =
-        """
-        /*
-         * Copyright 2026 Mifos Initiative
-         *
-         * SPDX-License-Identifier: MPL-2.0
-         */
-        package $modelPkg
-
-        internal object $prefsKeysObject {
-
-            object Scalar {
-                ${KmpPreferencesBlockMerger.SCALAR_KEYS_BEGIN}
-        $scalarInner
-                ${KmpPreferencesBlockMerger.SCALAR_KEYS_END}
+    ): String {
+        val scalarBlock = if (scalarInner.isBlank()) "" else indentPrefsKeysBlock(scalarInner)
+        val snapshotBlock = if (snapshotInner.isBlank()) "" else indentPrefsKeysBlock(snapshotInner)
+        return buildString {
+            appendLine("/*")
+            appendLine(" * Copyright 2026 Mifos Initiative")
+            appendLine(" *")
+            appendLine(" * SPDX-License-Identifier: MPL-2.0")
+            appendLine(" */")
+            appendLine("package $modelPkg")
+            appendLine()
+            appendLine("internal object $prefsKeysObject {")
+            appendLine("    object Scalar {")
+            appendLine("        ${KmpPreferencesBlockMerger.SCALAR_KEYS_BEGIN}")
+            if (scalarBlock.isNotBlank()) {
+                appendLine(scalarBlock)
             }
-
-            object Snapshot {
-                ${KmpPreferencesBlockMerger.SNAPSHOT_KEYS_BEGIN}
-        $snapshotInner
-                ${KmpPreferencesBlockMerger.SNAPSHOT_KEYS_END}
+            appendLine("        ${KmpPreferencesBlockMerger.SCALAR_KEYS_END}")
+            appendLine("    }")
+            appendLine()
+            appendLine("    object Snapshot {")
+            appendLine("        ${KmpPreferencesBlockMerger.SNAPSHOT_KEYS_BEGIN}")
+            if (snapshotBlock.isNotBlank()) {
+                appendLine(snapshotBlock)
             }
-        }
-        """.trimIndent() + "\n"
+            appendLine("        ${KmpPreferencesBlockMerger.SNAPSHOT_KEYS_END}")
+            appendLine("    }")
+            appendLine("}")
+        }.trimEnd() + "\n"
+    }
 
     @Suppress("LongParameterList")
     private fun mergeOrCreateDataSource(
@@ -324,32 +338,40 @@ class KmpPreferencesScaffolder(
             } else {
                 ""
             }
-            return """
-            /*
-             * Copyright 2026 Mifos Initiative
-             *
-             * SPDX-License-Identifier: MPL-2.0
-             */
-            package $prefsPkg
-
-            $flowImport
-            $keysImport
-            $snapImport
-            $storeImport
-
-            internal class $dataSourceClass(
-                private val store: TypedPreferenceStore,
-            ) {
-
-                ${KmpPreferencesBlockMerger.SCALAR_DATASOURCE_BEGIN}
-        ${if (mode is PrefsGenerationMode.Scalar) chunk else ""}
-                ${KmpPreferencesBlockMerger.SCALAR_DATASOURCE_END}
-
-                ${KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_BEGIN}
-        ${if (mode is PrefsGenerationMode.Snapshot) chunk else ""}
-                ${KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_END}
-            }
-            """.trimIndent() + "\n"
+            val scalarBody = if (mode is PrefsGenerationMode.Scalar) chunk else ""
+            val snapshotBody = if (mode is PrefsGenerationMode.Snapshot) chunk else ""
+            return buildString {
+                appendLine("/*")
+                appendLine(" * Copyright 2026 Mifos Initiative")
+                appendLine(" *")
+                appendLine(" * SPDX-License-Identifier: MPL-2.0")
+                appendLine(" */")
+                appendLine("package $prefsPkg")
+                appendLine()
+                appendLine(flowImport)
+                appendLine(keysImport)
+                if (snapImport.isNotBlank()) appendLine(snapImport)
+                appendLine(storeImport)
+                appendLine()
+                appendLine("internal class $dataSourceClass(")
+                appendLine("    private val store: TypedPreferenceStore,")
+                appendLine(") {")
+                appendLine()
+                appendLine("    ${KmpPreferencesBlockMerger.SCALAR_DATASOURCE_BEGIN}")
+                if (scalarBody.isNotBlank()) {
+                    append(indentClassMemberBlock(scalarBody))
+                    append('\n')
+                }
+                appendLine("    ${KmpPreferencesBlockMerger.SCALAR_DATASOURCE_END}")
+                appendLine()
+                appendLine("    ${KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_BEGIN}")
+                if (snapshotBody.isNotBlank()) {
+                    append(indentClassMemberBlock(snapshotBody))
+                    append('\n')
+                }
+                appendLine("    ${KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_END}")
+                appendLine("}")
+            }.trimEnd() + "\n"
         }
 
         var text = existingFile.readText()
@@ -380,7 +402,7 @@ class KmpPreferencesScaffolder(
             text,
             markerPair.first,
             markerPair.second,
-            chunk,
+            indentClassMemberBlock(chunk),
             shouldSkipAppend = { inner -> inner.contains(methodPrefix) },
         )
         if (!text.contains(keysImport)) {
@@ -413,20 +435,25 @@ class KmpPreferencesScaffolder(
                 KmpPreferencesKotlinEmitter.snapshotRepositoryMethods(mode.snapshotClassName)
         }
         if (!file.exists()) {
-            return """
-            /*
-             * Copyright 2026 Mifos Initiative
-             *
-             * SPDX-License-Identifier: MPL-2.0
-             */
-            package $domainRepoPkg
-
-            internal interface $prefsRepoName {
-                ${KmpPreferencesBlockMerger.REPOSITORY_BEGIN}
-        $chunk
-                ${KmpPreferencesBlockMerger.REPOSITORY_END}
-            }
-            """.trimIndent() + "\n"
+            return buildString {
+                appendLine("/*")
+                appendLine(" * Copyright 2026 Mifos Initiative")
+                appendLine(" *")
+                appendLine(" * SPDX-License-Identifier: MPL-2.0")
+                appendLine(" */")
+                appendLine("package $domainRepoPkg")
+                appendLine()
+                appendLine("import kotlinx.coroutines.flow.Flow")
+                appendLine()
+                appendLine("internal interface $prefsRepoName {")
+                appendLine("    ${KmpPreferencesBlockMerger.REPOSITORY_BEGIN}")
+                if (chunk.isNotBlank()) {
+                    append(indentClassMemberBlock(chunk))
+                    append('\n')
+                }
+                appendLine("    ${KmpPreferencesBlockMerger.REPOSITORY_END}")
+                appendLine("}")
+            }.trimEnd() + "\n"
         }
         val text = file.readText()
         val sig = when (mode) {
@@ -440,7 +467,7 @@ class KmpPreferencesScaffolder(
             text,
             KmpPreferencesBlockMerger.REPOSITORY_BEGIN,
             KmpPreferencesBlockMerger.REPOSITORY_END,
-            chunk,
+            indentClassMemberBlock(chunk),
             shouldSkipAppend = { inner -> inner.contains(sig) },
         )
     }
@@ -462,25 +489,28 @@ class KmpPreferencesScaffolder(
                 KmpPreferencesKotlinEmitter.snapshotSupportDelegates(mode.snapshotClassName, dataSourceClass)
         }
         if (!file.exists()) {
-            return """
-            /*
-             * Copyright 2026 Mifos Initiative
-             *
-             * SPDX-License-Identifier: MPL-2.0
-             */
-            package $dataRepoPkg
-
-            import $prefsPkg.$dataSourceClass
-            import $domainRepoPkg.$prefsRepoName
-
-            internal class $prefsSupportName(
-                private val prefs: $dataSourceClass,
-            ) : $prefsRepoName {
-                ${KmpPreferencesBlockMerger.SUPPORT_BEGIN}
-        $chunk
-                ${KmpPreferencesBlockMerger.SUPPORT_END}
-            }
-            """.trimIndent() + "\n"
+            return buildString {
+                appendLine("/*")
+                appendLine(" * Copyright 2026 Mifos Initiative")
+                appendLine(" *")
+                appendLine(" * SPDX-License-Identifier: MPL-2.0")
+                appendLine(" */")
+                appendLine("package $dataRepoPkg")
+                appendLine()
+                appendLine("import $prefsPkg.$dataSourceClass")
+                appendLine("import $domainRepoPkg.$prefsRepoName")
+                appendLine()
+                appendLine("internal class $prefsSupportName(")
+                appendLine("    private val prefs: $dataSourceClass,")
+                appendLine(") : $prefsRepoName {")
+                appendLine("    ${KmpPreferencesBlockMerger.SUPPORT_BEGIN}")
+                if (chunk.isNotBlank()) {
+                    append(indentClassMemberBlock(chunk))
+                    append('\n')
+                }
+                appendLine("    ${KmpPreferencesBlockMerger.SUPPORT_END}")
+                appendLine("}")
+            }.trimEnd() + "\n"
         }
         val text = file.readText()
         val sig = when (mode) {
@@ -494,7 +524,7 @@ class KmpPreferencesScaffolder(
             text,
             KmpPreferencesBlockMerger.SUPPORT_BEGIN,
             KmpPreferencesBlockMerger.SUPPORT_END,
-            chunk,
+            indentClassMemberBlock(chunk),
             shouldSkipAppend = { inner -> inner.contains(sig) },
         )
     }
