@@ -4,6 +4,7 @@ import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
@@ -92,6 +93,7 @@ class ClientGenCommand : CliktCommand(name = "gen") {
         fun withSubcommands(): ClientGenCommand =
             ClientGenCommand().subcommands(
                 ClientGenDatabaseCommand(),
+                ClientGenPrefsCommand(),
             )
     }
 }
@@ -156,6 +158,72 @@ class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent 
             echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
         } catch (e: Exception) {
             echo(CliFormatter.formatError("Database codegen failed: ${e.message}"), err = true)
+        }
+    }
+}
+
+/**
+ * `egs client gen prefs --module=X --fields=... [--key=Y]`
+ */
+class ClientGenPrefsCommand : CliktCommand(name = "prefs"), KoinComponent {
+
+    private val scaffolder: KmpPreferencesScaffolder by inject()
+
+    private val moduleName by option(
+        "--module",
+        "-m",
+        help = "Target KMP feature module name (under feature/<module>)",
+    ).required()
+
+    private val fields by option(
+        "--fields",
+        "--feilds",
+        help = "Comma-separated fields: name:type (String, Boolean/bool, Int, Long)",
+    ).required()
+
+    private val key by option(
+        "--key",
+        "-k",
+        help = "Logical key: for a single field, names preference consts; for multiple fields, snapshot key + model name",
+    )
+
+    private val projectPath by option("--project", "-p", help = "Workspace root path")
+        .default(".")
+
+    private val dryRun by option("--dry-run", help = "Preview without writing files").flag()
+
+    private val force by option(
+        "--force",
+        help = "Overwrite snapshot model / duplicate keys (MVP: snapshot should usually be generated once per --key)",
+    ).flag()
+
+    override fun run() {
+        try {
+            val dir = ProjectRootResolver.resolve(projectPath)
+            val result = scaffolder.scaffoldPrefs(
+                projectRoot = dir,
+                moduleName = moduleName,
+                fieldsArg = fields,
+                keyArg = key,
+                dryRun = dryRun,
+                force = force,
+            )
+            if (result.dryRun) {
+                echo(CliFormatter.formatInfo("Dry run — KMP preferences codegen preview:"))
+                echo("  Module: ${result.moduleName}")
+                echo("  Files:")
+                result.files.forEach { echo("    ${it.path}") }
+            } else {
+                echo(CliFormatter.formatSuccess("Generated preferences for module '${result.moduleName}'"))
+                echo("  ${result.files.size} files")
+                result.files.forEach { echo("    ${it.path}") }
+            }
+        } catch (e: IllegalArgumentException) {
+            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
+        } catch (e: IllegalStateException) {
+            echo(CliFormatter.formatError(e.message ?: "Invalid state"), err = true)
+        } catch (e: Exception) {
+            echo(CliFormatter.formatError("Preferences codegen failed: ${e.message}"), err = true)
         }
     }
 }

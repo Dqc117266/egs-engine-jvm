@@ -27,8 +27,9 @@ class KmpRepositoryImplGenerator {
         subProjectRoot: File?,
         includeApi: Boolean,
         includeDb: Boolean,
+        includePrefs: Boolean = false,
     ): GeneratedFile? {
-        if (!includeApi && !includeDb) return null
+        if (!includeApi && !includeDb && !includePrefs) return null
         val ctx = KmpSwaggerGeneratorContext(template)
         val pascal = ctx.pascalModuleName
         val pkg = ctx.rootPackage
@@ -36,7 +37,7 @@ class KmpRepositoryImplGenerator {
         val pkgPath = pkg.replace('.', '/')
         val path = "$moduleDir/src/commonMain/kotlin/$pkgPath/data/repository/${pascal}RepositoryImpl.kt"
 
-        val content = renderContent(ctx, includeApi, includeDb)
+        val content = renderContent(ctx, includeApi, includeDb, includePrefs)
 
         if (subProjectRoot != null) {
             val file = subProjectRoot.resolve(path)
@@ -50,6 +51,19 @@ class KmpRepositoryImplGenerator {
         }
 
         return GeneratedFile(path, content)
+    }
+
+    /**
+     * Kotlin source for [renderContent]; used by API sync when refreshing delegation wiring.
+     */
+    fun renderDelegationRepositoryImpl(
+        template: ModuleTemplate,
+        includeApi: Boolean,
+        includeDb: Boolean,
+        includePrefs: Boolean,
+    ): String {
+        val ctx = KmpSwaggerGeneratorContext(template)
+        return renderContent(ctx, includeApi, includeDb, includePrefs)
     }
 
     fun shouldPatchForDelegation(existingText: String, pascal: String): Boolean {
@@ -66,6 +80,7 @@ class KmpRepositoryImplGenerator {
         ctx: KmpSwaggerGeneratorContext,
         includeApi: Boolean,
         includeDb: Boolean,
+        includePrefs: Boolean,
     ): String {
         val pascal = ctx.pascalModuleName
         val pkg = ctx.rootPackage
@@ -86,12 +101,17 @@ class KmpRepositoryImplGenerator {
             ctorParams.add("dbSupport: Generated${pascal}DbRepositorySupport")
             delegates.add("${dbRepositoryName(pascal)} by dbSupport")
         }
+        if (includePrefs) {
+            imports.add("$pkg.generate.data.repository.Generated${pascal}PrefsRepositorySupport")
+            ctorParams.add("prefsSupport: Generated${pascal}PrefsRepositorySupport")
+            delegates.add("${prefsRepositoryName(pascal)} by prefsSupport")
+        }
         val importsBlock = imports.sorted().joinToString("\n") { "import $it" }
         val ctorBlock = ctorParams.joinToString(",\n    ")
         val delegateBlock = delegates.joinToString(",\n    ")
         return """
         /*
-         * Hand-written repository: delegates to generated API/DB support classes.
+         * Hand-written repository: delegates to generated API/DB/Prefs support classes.
          * egs-codegen: scaffold-repository-impl-delegation
          * Add $FREEZE_MARKER on its own line to prevent overwrites.
          */
@@ -108,4 +128,6 @@ class KmpRepositoryImplGenerator {
     }
 
     private fun dbRepositoryName(pascal: String): String = "${pascal}DbRepository"
+
+    private fun prefsRepositoryName(pascal: String): String = "${pascal}PrefsRepository"
 }

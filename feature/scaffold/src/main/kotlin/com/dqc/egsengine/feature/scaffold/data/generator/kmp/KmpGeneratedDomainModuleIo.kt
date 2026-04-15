@@ -40,19 +40,34 @@ object KmpGeneratedDomainModuleIo {
         RegexOption.MULTILINE,
     )
 
+    private val dataModulePrefsPattern = Regex(
+        """//\s*egs-gen:prefs-begin\s*\n([\s\S]*?)\n\s*//\s*egs-gen:prefs-end""",
+        RegexOption.MULTILINE,
+    )
+
     /**
      * When API sync runs after `gen database`, keep Room/DAO/DataSource bindings inside [GeneratedDataModule].
+     * When API sync runs after `gen prefs`, keep prefs Koin bindings.
      */
     fun mergeGeneratedDataModulePreservingDatabaseBlock(
         existingContent: String?,
         generatedContent: String,
     ): String {
         val existing = existingContent ?: return generatedContent
-        val existingDb = dataModuleDbPattern.find(existing)?.groupValues?.get(1)?.trim() ?: return generatedContent
-        if (existingDb.isBlank()) return generatedContent
-        return dataModuleDbPattern.replace(generatedContent) {
-            "// egs-gen:database-begin\n$existingDb\n    // egs-gen:database-end"
+        var result = generatedContent
+        val existingDb = dataModuleDbPattern.find(existing)?.groupValues?.get(1)?.trim()
+        if (!existingDb.isNullOrBlank()) {
+            result = dataModuleDbPattern.replace(result) {
+                "// egs-gen:database-begin\n$existingDb\n    // egs-gen:database-end"
+            }
         }
+        val existingPrefs = dataModulePrefsPattern.find(existing)?.groupValues?.get(1)?.trim()
+        if (!existingPrefs.isNullOrBlank()) {
+            result = dataModulePrefsPattern.replace(result) {
+                "// egs-gen:prefs-begin\n$existingPrefs\n    // egs-gen:prefs-end"
+            }
+        }
+        return result
     }
 
     fun replaceDbUseCasesBlock(

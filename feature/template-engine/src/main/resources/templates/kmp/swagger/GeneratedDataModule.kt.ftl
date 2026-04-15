@@ -14,4 +14,8 @@ internal val generatedDataModule = module {
     // egs-gen:database-begin
 
     // egs-gen:database-end
+
+    // egs-gen:prefs-begin
+
+    // egs-gen:prefs-end
 }

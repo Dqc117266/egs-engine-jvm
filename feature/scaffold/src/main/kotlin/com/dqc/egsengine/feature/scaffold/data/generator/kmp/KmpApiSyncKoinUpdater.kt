@@ -7,6 +7,7 @@ package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
 import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
+import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.feature.scaffold.domain.toModuleTemplate
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -17,6 +18,7 @@ import java.io.File
  */
 class KmpApiSyncKoinUpdater(
     private val kmpFeatureBuildGradleUpdater: KmpFeatureBuildGradleUpdater,
+    private val kmpRepositoryImplGenerator: KmpRepositoryImplGenerator,
 ) {
 
     private val logger = LoggerFactory.getLogger(KmpApiSyncKoinUpdater::class.java)
@@ -33,7 +35,7 @@ class KmpApiSyncKoinUpdater(
         val pascal = moduleName.kmpModulePascalCase()
         val pkgPath = packageName.replace('.', '/')
 
-        writeRepositoryImplIfAllowed(subProjectRoot, packageName, pascal, pkgPath, moduleName)
+        writeRepositoryImplIfAllowed(subProjectRoot, template, pascal, pkgPath, moduleName)
         wireRootFeatureModule(subProjectRoot, packageName, pascal, pkgPath, moduleName)
         patchDataModuleRepositoryImport(subProjectRoot, packageName, pascal, pkgPath, moduleName)
         kmpFeatureBuildGradleUpdater.applyAfterApiSync(subProjectRoot, moduleName)
@@ -41,15 +43,33 @@ class KmpApiSyncKoinUpdater(
 
     private fun writeRepositoryImplIfAllowed(
         subProjectRoot: File,
-        packageName: String,
+        template: ModuleTemplate,
         pascal: String,
         pkgPath: String,
         moduleName: String,
     ) {
+        val packageName = template.packageName
         val file = subProjectRoot.resolve(
             "feature/$moduleName/src/commonMain/kotlin/$pkgPath/data/repository/${pascal}RepositoryImpl.kt",
         )
-        val newContent = renderDelegationRepositoryImpl(packageName, pascal)
+        val hasDb = generatedSupportExists(
+            subProjectRoot,
+            moduleName,
+            packageName,
+            "Generated${pascal}DbRepositorySupport.kt",
+        )
+        val hasPrefs = generatedSupportExists(
+            subProjectRoot,
+            moduleName,
+            packageName,
+            "Generated${pascal}PrefsRepositorySupport.kt",
+        )
+        val newContent = kmpRepositoryImplGenerator.renderDelegationRepositoryImpl(
+            template = template,
+            includeApi = true,
+            includeDb = hasDb,
+            includePrefs = hasPrefs,
+        )
         if (!file.exists()) {
             file.parentFile.mkdirs()
             file.writeText(newContent)
@@ -80,25 +100,17 @@ class KmpApiSyncKoinUpdater(
         return false
     }
 
-    private fun renderDelegationRepositoryImpl(packageName: String, pascal: String): String =
-        """
-        /*
-         * Hand-written repository: delegates to generated API support.
-         * egs-codegen: scaffold-repository-impl-delegation
-         * Add $FREEZE_MARKER on its own line to prevent api sync from overwriting this file.
-         */
-        package $packageName.data.repository
-
-        import $packageName.generate.data.repository.Generated${pascal}ApiRepositorySupport
-        import $packageName.generate.domain.repository.${pascal}ApiRepository
-        import $packageName.generate.domain.repository.${pascal}Repository
-
-        internal class ${pascal}RepositoryImpl(
-            apiSupport: Generated${pascal}ApiRepositorySupport,
-        ) : ${pascal}Repository,
-            ${pascal}ApiRepository by apiSupport {
-        }
-        """.trimIndent() + "\n"
+    private fun generatedSupportExists(
+        subProjectRoot: File,
+        moduleName: String,
+        packageName: String,
+        fileName: String,
+    ): Boolean {
+        val pkgPath = packageName.replace('.', '/')
+        return subProjectRoot.resolve(
+            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/data/repository/$fileName",
+        ).isFile
+    }
 
     private fun wireRootFeatureModule(
         subProjectRoot: File,

@@ -12,7 +12,7 @@ import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import java.io.File
 
 /**
- * Emits combined `TodoRepository : TodoApiRepository, TodoDbRepository` from existing sub-interface files.
+ * Emits combined `TodoRepository : TodoApiRepository, TodoDbRepository, TodoPrefsRepository` from existing sub-interface files.
  */
 class KmpCombinedRepositoryGenerator {
 
@@ -21,8 +21,9 @@ class KmpCombinedRepositoryGenerator {
         subProjectRoot: File?,
         includeApi: Boolean,
         includeDb: Boolean,
+        includePrefs: Boolean = false,
     ): GeneratedFile? {
-        if (!includeApi && !includeDb) return null
+        if (!includeApi && !includeDb && !includePrefs) return null
         val ctx = KmpSwaggerGeneratorContext(template)
         val pascal = ctx.pascalModuleName
         val domainPkg = ctx.domainRepositoryPackage
@@ -35,11 +36,15 @@ class KmpCombinedRepositoryGenerator {
         val hasDb = includeDb || (
             subProjectRoot != null && dbRepositoryFile(subProjectRoot, template, pascal).exists()
             )
-        if (!hasApi && !hasDb) return null
+        val hasPrefs = includePrefs || (
+            subProjectRoot != null && prefsRepositoryFile(subProjectRoot, template, pascal).exists()
+            )
+        if (!hasApi && !hasDb && !hasPrefs) return null
 
         val extends = buildList {
             if (hasApi) add(ctx.apiRepositoryName)
             if (hasDb) add(dbRepositoryName(pascal))
+            if (hasPrefs) add(prefsRepositoryName(pascal))
         }
         val content = buildString {
             appendLine("package $domainPkg")
@@ -54,6 +59,15 @@ class KmpCombinedRepositoryGenerator {
     }
 
     private fun dbRepositoryName(pascal: String): String = "${pascal}DbRepository"
+
+    private fun prefsRepositoryName(pascal: String): String = "${pascal}PrefsRepository"
+
+    fun prefsRepositoryFile(root: File, template: ModuleTemplate, pascal: String): File {
+        val pkgPath = template.packageName.replace('.', '/')
+        return root.resolve(
+            "feature/${template.name}/src/commonMain/kotlin/$pkgPath/generate/domain/repository/${pascal}PrefsRepository.kt",
+        )
+    }
 
     private fun apiRepositoryFile(root: File, template: ModuleTemplate, pascal: String): File {
         val pkgPath = template.packageName.replace('.', '/')
@@ -70,16 +84,18 @@ class KmpCombinedRepositoryGenerator {
     }
 
     /**
-     * Resolves whether API / DB slices exist on disk (for orchestration).
+     * Resolves whether API / DB / Prefs slices exist on disk (for orchestration).
      */
     fun detectSlices(
         subProjectRoot: File,
         moduleName: String,
         template: ModuleTemplate,
-    ): Pair<Boolean, Boolean> {
+    ): KmpRepositorySlices {
         val pascal = SqlNaming.moduleNameToPascal(moduleName)
         val api = apiRepositoryFile(subProjectRoot, template, pascal).exists()
         val db = dbRepositoryFile(subProjectRoot, template, pascal).exists()
-        return api to db
+        val prefs = prefsRepositoryFile(subProjectRoot, template, pascal).exists()
+        return KmpRepositorySlices(hasApi = api, hasDb = db, hasPrefs = prefs)
     }
+
 }

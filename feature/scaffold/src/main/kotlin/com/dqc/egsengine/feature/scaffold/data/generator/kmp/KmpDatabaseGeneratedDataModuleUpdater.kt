@@ -40,7 +40,6 @@ class KmpDatabaseGeneratedDataModuleUpdater {
         val moduleDatabaseName = "${modulePascal}Database"
         val dataSourceClassName = "${moduleDatabaseName}DataSource"
         val databasePkg = "$pkg.generate.data.datasource.database"
-        val daoPkg = "$databasePkg.dao"
 
         val tableModels: List<Pair<String, String>> = tables.map { table ->
             val base = SqlNaming.snakeToPascal(table.tableName)
@@ -68,9 +67,6 @@ class KmpDatabaseGeneratedDataModuleUpdater {
             add("import $databasePkg.$dataSourceClassName")
             if (includeDbRepositorySupport) {
                 add("import $repositoryPkg.$dbRepositorySupportName")
-            }
-            for ((daoClassName, _) in tableModels) {
-                add("import $daoPkg.$daoClassName")
             }
         }
 

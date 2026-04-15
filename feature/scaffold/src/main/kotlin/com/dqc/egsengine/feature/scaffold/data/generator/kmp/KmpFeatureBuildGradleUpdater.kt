@@ -34,6 +34,21 @@ class KmpFeatureBuildGradleUpdater {
         }
     }
 
+    fun applyAfterPrefsGen(subProjectRoot: File, moduleName: String) {
+        val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
+        var text = file.readText()
+        val original = text
+        text = ensureKotlinBlockWithDependencies(
+            text,
+            gradleProjectRef = "projects.coreBase.preferences",
+            depLine = "implementation(projects.coreBase.preferences)",
+        )
+        if (text != original) {
+            file.writeText(text)
+            logger.info("Updated {} for coreBase.preferences", file.path)
+        }
+    }
+
     fun applyAfterDatabaseGen(subProjectRoot: File, moduleName: String) {
         val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
         var text = file.readText()

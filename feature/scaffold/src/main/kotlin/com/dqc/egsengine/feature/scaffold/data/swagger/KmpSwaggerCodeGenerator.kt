@@ -128,14 +128,17 @@ class KmpSwaggerCodeGenerator(
             )
         }
 
-        val includeDb = projectRoot?.let { root ->
-            combinedRepositoryGenerator.detectSlices(root, template.name, template).second
-        } ?: false
+        val slices = projectRoot?.let { root ->
+            combinedRepositoryGenerator.detectSlices(root, template.name, template)
+        }
+        val includeDb = slices?.hasDb ?: false
+        val includePrefs = slices?.hasPrefs ?: false
         combinedRepositoryGenerator.generate(
             template = template,
             subProjectRoot = projectRoot,
             includeApi = true,
             includeDb = includeDb,
+            includePrefs = includePrefs,
         )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
 
         repositoryImplGenerator.generateOrMerge(
@@ -143,6 +146,7 @@ class KmpSwaggerCodeGenerator(
             subProjectRoot = projectRoot,
             includeApi = true,
             includeDb = includeDb,
+            includePrefs = includePrefs,
         )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
 
         logger.info("Generated ${files.size} KMP swagger scaffold files for module ${template.name}")

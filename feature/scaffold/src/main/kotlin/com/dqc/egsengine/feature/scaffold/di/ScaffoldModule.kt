@@ -18,6 +18,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseCodeGene
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseDbOnlyDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseEntityMapperGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGeneratedDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpPrefsGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
@@ -38,6 +39,7 @@ import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
 import com.dqc.egsengine.template.di.featureTemplateEngineModule
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.PageScaffolder
@@ -65,7 +67,8 @@ val featureScaffoldModule = module {
     single { KmpDatabaseUseCaseGenerator(get()) }
     single { KmpFeatureBuildGradleUpdater() }
     single { KmpDatabaseGeneratedDataModuleUpdater() }
-    single { KmpApiSyncKoinUpdater(get()) }
+    single { KmpPrefsGeneratedDataModuleUpdater() }
+    single { KmpApiSyncKoinUpdater(get(), get()) }
     single { AndroidApiSyncKoinUpdater() }
     single { UseCaseScanner() }
     single { FeatureDiUpdater() }
@@ -124,6 +127,15 @@ val featureScaffoldModule = module {
             get(),
             get(),
             get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single {
+        KmpPreferencesScaffolder(
             get(),
             get(),
             get(),

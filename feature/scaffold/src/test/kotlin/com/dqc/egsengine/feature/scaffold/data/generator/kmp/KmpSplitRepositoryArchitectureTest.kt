@@ -143,4 +143,29 @@ class KmpSplitRepositoryArchitectureTest {
         assertTrue(impl.content!!.contains("TodoApiRepository by apiSupport"))
         assertTrue(impl.content!!.contains("TodoDbRepository by dbSupport"))
     }
+
+    @Test
+    fun `combined repository extends Prefs when includePrefs only`() {
+        val gen = KmpCombinedRepositoryGenerator()
+        val combined = gen.generate(
+            template = template,
+            subProjectRoot = null,
+            includeApi = false,
+            includeDb = false,
+            includePrefs = true,
+        )!!
+        assertTrue(combined.content!!.contains("interface TodoRepository : TodoPrefsRepository"))
+    }
+
+    @Test
+    fun `repository impl generator emits prefs delegation`() {
+        val impl = KmpRepositoryImplGenerator().generateOrMerge(
+            template = template,
+            subProjectRoot = null,
+            includeApi = false,
+            includeDb = false,
+            includePrefs = true,
+        )!!
+        assertTrue(impl.content!!.contains("TodoPrefsRepository by prefsSupport"))
+    }
 }

@@ -93,17 +93,24 @@ class KmpDatabaseScaffolder(
                         projectRoot = projectRoot,
                         subProjectRoot = subProjectRoot,
                     )
+                    val prefsSlice = kmpCombinedRepositoryGenerator.detectSlices(
+                        subProjectRoot,
+                        moduleName,
+                        template,
+                    ).hasPrefs
                     kmpCombinedRepositoryGenerator.generate(
                         template = template,
                         subProjectRoot = subProjectRoot,
                         includeApi = true,
                         includeDb = true,
+                        includePrefs = prefsSlice,
                     )?.let { generated += it }
                     kmpRepositoryImplGenerator.generateOrMerge(
                         template = template,
                         subProjectRoot = subProjectRoot,
                         includeApi = true,
                         includeDb = true,
+                        includePrefs = prefsSlice,
                     )?.let { generated += it }
                 }
                 !cached && !hasApi -> {
@@ -114,17 +121,24 @@ class KmpDatabaseScaffolder(
                         projectRoot = projectRoot,
                         subProjectRoot = subProjectRoot,
                     )
+                    val prefsSlice = kmpCombinedRepositoryGenerator.detectSlices(
+                        subProjectRoot,
+                        moduleName,
+                        template,
+                    ).hasPrefs
                     kmpCombinedRepositoryGenerator.generate(
                         template = template,
                         subProjectRoot = subProjectRoot,
                         includeApi = false,
                         includeDb = true,
+                        includePrefs = prefsSlice,
                     )?.let { generated += it }
                     kmpRepositoryImplGenerator.generateOrMerge(
                         template = template,
                         subProjectRoot = subProjectRoot,
                         includeApi = false,
                         includeDb = true,
+                        includePrefs = prefsSlice,
                     )?.let { generated += it }
                 }
             }
