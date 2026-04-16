@@ -31,14 +31,14 @@ class CreateCommandsIntegrationTest {
             ),
         )
 
-        // 验证：应该生�? NavigationRoute
+        // Expect NavigationRoute to be generated
         assertTrue(
             projectRoot.resolve(
                 "feature/uiStructureEngine/src/main/kotlin/com/dqc/example/feature/uiStructureEngine/presentation/UiStructureEngineNavigationRoute.kt"
             ).exists()
         )
 
-        // 验证：不应该生成 XML 文件
+        // Expect no XML files
         assertFalse(
             projectRoot.resolve("feature/uiStructureEngine/src/main/res/layout/fragment_ui_structure_engine.xml")
                 .exists()

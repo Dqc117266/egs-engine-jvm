@@ -12,10 +12,9 @@ import org.koin.core.context.stopKoin
 import java.io.File
 
 /**
- * Compose UI 迁移后的集成测试
- * 验证：
- * 1. create module 生成 NavigationRoute，不生成 XML Layout/NavGraph
- * 2. create page 生成 Compose Screen，不生成 Fragment/XML Layout
+ * Integration tests after Compose UI migration:
+ * 1. create module generates NavigationRoute, not XML layout/nav graph
+ * 2. create page generates Compose screen, not fragment/XML layout
  */
 class ComposeMigrationIntegrationTest {
 
@@ -38,37 +37,37 @@ class ComposeMigrationIntegrationTest {
             ),
         )
 
-        // 验证：应该生成 NavigationRoute
+        // Expect NavigationRoute
         val navRoutePath = projectRoot.resolve(
             "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/TestModuleNavigationRoute.kt"
         )
-        assertTrue(navRoutePath.exists(), "应该生成 NavigationRoute 文件")
+        assertTrue(navRoutePath.exists(), "expected NavigationRoute file")
         val navRouteContent = navRoutePath.readText()
-        assertTrue(navRouteContent.contains("sealed interface TestModuleNavigationRoute"), "NavigationRoute 应该是密封接口")
-        assertTrue(navRouteContent.contains("@Serializable"), "NavigationRoute 应该有 @Serializable 注解")
-        assertTrue(navRouteContent.contains("object TestModule"), "应该包含默认路由对象")
+        assertTrue(navRouteContent.contains("sealed interface TestModuleNavigationRoute"), "NavigationRoute should be sealed interface")
+        assertTrue(navRouteContent.contains("@Serializable"), "NavigationRoute should have @Serializable")
+        assertTrue(navRouteContent.contains("object TestModule"), "should contain default route object")
 
-        // 验证：不应该生成 XML Layout
+        // Expect no XML layout
         val layoutPath = projectRoot.resolve("feature/testModule/src/main/res/layout/fragment_test_module.xml")
-        assertFalse(layoutPath.exists(), "不应该生成 XML Layout 文件")
+        assertFalse(layoutPath.exists(), "expected no XML layout file")
 
-        // 验证：不应该生成 NavGraph XML
+        // Expect no NavGraph XML
         val navGraphPath = projectRoot.resolve("feature/testModule/src/main/res/navigation/test_module_nav_graph.xml")
-        assertFalse(navGraphPath.exists(), "不应该生成 NavGraph XML 文件")
+        assertFalse(navGraphPath.exists(), "expected no NavGraph XML file")
 
-        // 验证：不应该生成 Fragment
+        // Expect no Fragment
         val fragmentPath = projectRoot.resolve(
             "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleFragment.kt"
         )
-        assertFalse(fragmentPath.exists(), "不应该生成 Fragment 文件")
+        assertFalse(fragmentPath.exists(), "expected no Fragment file")
 
-        // 验证：应该生成其他必要文件
+        // Expect other required files
         assertTrue(projectRoot.resolve(
             "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleContract.kt"
-        ).exists(), "应该生成 Contract")
+        ).exists(), "expected Contract")
         assertTrue(projectRoot.resolve(
             "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleViewModel.kt"
-        ).exists(), "应该生成 ViewModel")
+        ).exists(), "expected ViewModel")
     }
 
     @Test
@@ -76,7 +75,7 @@ class ComposeMigrationIntegrationTest {
         startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
 
-        // 先创建模块
+        // Create module first
         CreateCommand.withSubcommands().main(
             listOf(
                 "module",
@@ -86,7 +85,7 @@ class ComposeMigrationIntegrationTest {
             ),
         )
 
-        // 再创建页面
+        // Then create page
         CreateCommand.withSubcommands().main(
             listOf(
                 "page",
@@ -99,37 +98,37 @@ class ComposeMigrationIntegrationTest {
             ),
         )
 
-        // 验证：应该生成 Compose Screen
+        // Expect Compose Screen
         val screenPath = projectRoot.resolve(
             "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeScreen.kt"
         )
-        assertTrue(screenPath.exists(), "应该生成 Compose Screen 文件")
+        assertTrue(screenPath.exists(), "expected Compose Screen file")
         val screenContent = screenPath.readText()
-        assertTrue(screenContent.contains("@Composable"), "Screen 应该有 @Composable 注解")
-        assertTrue(screenContent.contains("fun HomeScreen("), "应该有 HomeScreen 函数")
-        assertTrue(screenContent.contains("koinViewModel()"), "应该使用 koinViewModel 注入")
-        assertTrue(screenContent.contains("collectAsStateWithLifecycle()"), "应该使用 collectAsStateWithLifecycle 收集状态")
-        assertTrue(screenContent.contains("LaunchedEffect(Unit)"), "应该有 LaunchedEffect 处理 Effect")
-        assertTrue(screenContent.contains("Column("), "应该有 Column 布局")
-        assertTrue(screenContent.contains("when {"), "应该有 when 判断 loading/error/content")
+        assertTrue(screenContent.contains("@Composable"), "Screen should have @Composable")
+        assertTrue(screenContent.contains("fun HomeScreen("), "should define HomeScreen")
+        assertTrue(screenContent.contains("koinViewModel()"), "should use koinViewModel")
+        assertTrue(screenContent.contains("collectAsStateWithLifecycle()"), "should use collectAsStateWithLifecycle")
+        assertTrue(screenContent.contains("LaunchedEffect(Unit)"), "should use LaunchedEffect for effects")
+        assertTrue(screenContent.contains("Column("), "should use Column layout")
+        assertTrue(screenContent.contains("when {"), "should use when for loading/error/content")
 
-        // 验证：不应该生成 Fragment
+        // Expect no Fragment
         val fragmentPath = projectRoot.resolve(
             "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeFragment.kt"
         )
-        assertFalse(fragmentPath.exists(), "不应该生成 Fragment 文件")
+        assertFalse(fragmentPath.exists(), "expected no Fragment file")
 
-        // 验证：不应该生成 XML Layout
+        // Expect no XML layout
         val layoutPath = projectRoot.resolve("feature/home/src/main/res/layout/fragment_home.xml")
-        assertFalse(layoutPath.exists(), "不应该生成 XML Layout 文件")
+        assertFalse(layoutPath.exists(), "expected no XML layout file")
 
-        // 验证：应该生成 Contract 和 ViewModel
+        // Expect Contract and ViewModel
         assertTrue(projectRoot.resolve(
             "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeContract.kt"
-        ).exists(), "应该生成 Contract")
+        ).exists(), "expected Contract")
         assertTrue(projectRoot.resolve(
             "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeViewModel.kt"
-        ).exists(), "应该生成 ViewModel")
+        ).exists(), "expected ViewModel")
     }
 
     @Test
@@ -138,7 +137,6 @@ class ComposeMigrationIntegrationTest {
         val projectRoot = createProjectFixture()
         createUseCaseFixture(projectRoot)
 
-        // 先创建模块
         CreateCommand.withSubcommands().main(
             listOf(
                 "module",
@@ -148,7 +146,6 @@ class ComposeMigrationIntegrationTest {
             ),
         )
 
-        // 创建带有 UseCase 的页面
         CreateCommand.withSubcommands().main(
             listOf(
                 "page",
@@ -163,13 +160,11 @@ class ComposeMigrationIntegrationTest {
             ),
         )
 
-        // 验证：应该生成 Compose Screen
         val screenPath = projectRoot.resolve(
             "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListScreen.kt"
         )
-        assertTrue(screenPath.exists(), "应该生成 Compose Screen 文件")
+        assertTrue(screenPath.exists(), "expected Compose Screen file")
 
-        // 验证 ViewModel 包含 use case 处理
         val vmPath = projectRoot.resolve(
             "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListViewModel.kt",
         )
@@ -177,7 +172,6 @@ class ComposeMigrationIntegrationTest {
         val vmContent = vmPath.readText()
         assertTrue(vmContent.contains("handleTopicUpdateTopic("))
 
-        // 验证：不应该生成 Fragment 和 Layout
         assertFalse(projectRoot.resolve(
             "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListFragment.kt"
         ).exists())
@@ -216,7 +210,6 @@ class ComposeMigrationIntegrationTest {
     }
 
     private fun createUseCaseFixture(projectRoot: File) {
-        // 先创建 task 模块目录结构
         val useCaseFile = projectRoot.resolve(
             "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/usecase/TopicUpdateTopicUseCase.kt",
         )

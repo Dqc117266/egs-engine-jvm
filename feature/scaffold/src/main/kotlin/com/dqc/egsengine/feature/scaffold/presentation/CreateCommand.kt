@@ -23,7 +23,7 @@ class CreateCommand : CliktCommand(name = "create") {
                 CreateModuleCommand(),
                 CreateApiCommand(),
                 CreateScreenCommand(),
-                CreatePageCommand(),  // 保留向后兼容
+                CreatePageCommand(), // backward compatibility
             )
     }
 }

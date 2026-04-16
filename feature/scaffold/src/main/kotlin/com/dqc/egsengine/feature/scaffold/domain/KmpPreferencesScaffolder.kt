@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
- * `egs client gen prefs` ? TypedPreferenceStore datasource, keys, optional snapshot model, prefs repository slice,
+ * `egs client gen prefs` generates TypedPreferenceStore datasource, keys, optional snapshot model, prefs repository slice,
  * combined [TodoRepository] + [TodoRepositoryImpl], and [GeneratedDataModule] prefs block.
  *
  * **MVP snapshot policy:** reusing the same `--key` without `--force` fails if the snapshot model file or key const

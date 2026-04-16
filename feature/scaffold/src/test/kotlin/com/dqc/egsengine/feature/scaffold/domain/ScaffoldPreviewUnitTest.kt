@@ -41,10 +41,10 @@ class ScaffoldPreviewUnitTest {
         )
 
         assertTrue(result.dryRun)
-        // 验证：应该生�? NavigationRoute，而不�? XML
-        assertTrue(result.files.any { it.endsWith("UiStructureEngineNavigationRoute.kt") }, "应该生成 NavigationRoute")
-        assertFalse(result.files.any { it.endsWith("fragment_ui_structure_engine.xml") }, "不应该生�? XML Layout")
-        assertFalse(result.files.any { it.endsWith("ui_structure_engine_nav_graph.xml") }, "不应该生�? NavGraph XML")
+        // Expect NavigationRoute in the dry-run file list, not XML
+        assertTrue(result.files.any { it.endsWith("UiStructureEngineNavigationRoute.kt") }, "expected NavigationRoute")
+        assertFalse(result.files.any { it.endsWith("fragment_ui_structure_engine.xml") }, "expected no XML layout")
+        assertFalse(result.files.any { it.endsWith("ui_structure_engine_nav_graph.xml") }, "expected no NavGraph XML")
         assertFalse(projectRoot.resolve("feature/uiStructureEngine").exists())
     }
 
@@ -74,10 +74,10 @@ class ScaffoldPreviewUnitTest {
         )
 
         assertTrue(result.dryRun)
-        // 验证：应该生�? Compose Screen �? Contract，而不�? Fragment/XML
-        assertTrue(result.files.any { it.path.endsWith("TaskDetailScreen.kt") }, "应该生成 Screen")
-        assertTrue(result.files.any { it.path.endsWith("TaskDetailContract.kt") }, "应该生成 Contract")
-        assertFalse(result.files.any { it.path.endsWith("fragment_task_detail.xml") }, "不应该生�? XML Layout")
+        // Expect Compose Screen and Contract in the dry-run list, not Fragment/XML
+        assertTrue(result.files.any { it.path.endsWith("TaskDetailScreen.kt") }, "expected Screen")
+        assertTrue(result.files.any { it.path.endsWith("TaskDetailContract.kt") }, "expected Contract")
+        assertFalse(result.files.any { it.path.endsWith("fragment_task_detail.xml") }, "expected no XML layout")
         assertFalse(
             projectRoot.resolve(
                 "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/taskdetail",

@@ -21,38 +21,38 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
     private val packageNameOption by option(
         "--package",
-        help = "基础包名，例如: com.dqc.workflow",
+        help = "Base package name, e.g. com.dqc.workflow",
     )
 
     private val typeOption by option(
         "--type",
-        help = "项目类型，仅支持: android",
+        help = "Project type; only android is supported",
     )
 
     private val outputPath by option(
         "--output",
         "-o",
-        help = "项目输出目录，默认当前目录",
+        help = "Output directory; defaults to the current directory",
     ).default(".")
 
     private val templateSourceOption by option(
         "--template",
-        help = "模板 Git 地址（支持 HTTPS/SSH）",
+        help = "Template Git URL (HTTPS or SSH)",
     ).default(Template.ANDROID_URL)
 
     private val authOption by option(
         "--auth",
-        help = "拉取认证方式: none, login, token",
+        help = "Clone authentication: none, login, token",
     ).default("none")
 
     private val githubTokenOption by option(
         "--token",
-        help = "GitHub Token（--auth token 时必填；也可读取环境变量 GITHUB_TOKEN）",
+        help = "GitHub token (required with --auth token; may use GITHUB_TOKEN env)",
     )
 
     private val githubUsernameOption by option(
         "--username",
-        help = "GitHub 用户名（--auth token 使用，默认 x-access-token）",
+        help = "GitHub username for token HTTPS clone (default: x-access-token)",
     ).default("x-access-token")
 
     override fun run() {
@@ -70,12 +70,12 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
             if (!outputDir.exists()) {
                 outputDir.mkdirs()
             }
-            require(outputDir.isDirectory) { "输出路径不是目录: ${outputDir.absolutePath}" }
+            require(outputDir.isDirectory) { "Output path is not a directory: ${outputDir.absolutePath}" }
 
             val targetDir = outputDir.resolve(projectName)
             ensureTargetDirectory(targetDir)
 
-            echo(CliFormatter.formatInfo("正在拉取模板: $templateSourceOption (auth=${authMode.value})"))
+            echo(CliFormatter.formatInfo("Cloning template: $templateSourceOption (auth=${authMode.value})"))
             cloneTemplate(
                 templateUrl = templateSourceOption,
                 targetDir = targetDir,
@@ -84,31 +84,31 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
                 githubToken = githubToken,
             )
 
-            echo(CliFormatter.formatInfo("正在替换项目名称和包名..."))
+            echo(CliFormatter.formatInfo("Replacing project name and package..."))
             customizeTemplate(targetDir, projectName, packageName)
 
-            echo(CliFormatter.formatInfo("正在初始化 .egs 配置..."))
+            echo(CliFormatter.formatInfo("Initializing .egs config..."))
             val config = initializer.initialize(targetDir)
 
             echo()
-            echo(CliFormatter.formatSuccess("项目创建完成"))
-            echo("  路径: ${targetDir.absolutePath}")
-            echo("  类型: $type")
-            echo("  名称: $projectName")
-            echo("  包名: $packageName")
+            echo(CliFormatter.formatSuccess("Project created"))
+            echo("  Path: ${targetDir.absolutePath}")
+            echo("  Type: $type")
+            echo("  Name: $projectName")
+            echo("  Package: $packageName")
             echo("  .egs: ${targetDir.resolve(".egs/config.json").absolutePath}")
-            echo("  识别类型: ${config.projectType}")
+            echo("  Detected type: ${config.projectType}")
         } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "参数错误"), err = true)
+            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
         } catch (e: Exception) {
-            echo(CliFormatter.formatError("创建项目失败: ${e.message}"), err = true)
+            echo(CliFormatter.formatError("Create project failed: ${e.message}"), err = true)
         }
     }
 
     private fun resolveProjectType(): String {
         val value = typeOption?.trim()?.takeIf { it.isNotBlank() } ?: "android"
         require(value.equals("android", ignoreCase = true)) {
-            "当前仅支持 android 类型，收到: $value"
+            "Only android is supported; got: $value"
         }
         return "android"
     }
@@ -121,7 +121,7 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
     private fun resolveCloneAuthMode(): CloneAuthMode =
         CloneAuthMode.from(authOption)
-            ?: throw IllegalArgumentException("不支持的 --auth: $authOption，可选: none, login, token")
+            ?: throw IllegalArgumentException("Unsupported --auth: $authOption (use: none, login, token)")
 
     private fun resolveGitHubToken(mode: CloneAuthMode): String? {
         if (mode != CloneAuthMode.TOKEN) {
@@ -132,22 +132,22 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
             ?: System.getenv("GITHUB_TOKEN")?.trim()?.takeIf { it.isNotBlank() }
 
         require(!token.isNullOrBlank()) {
-            "--auth token 时必须提供 --token，或设置环境变量 GITHUB_TOKEN"
+            "--auth token requires --token or GITHUB_TOKEN"
         }
 
         return token
     }
 
     private fun promptProjectName(): String {
-        print("? 项目名称 (Project Name): ")
+        print("? Project name: ")
         val value = readLine()?.trim().orEmpty()
-        require(value.isNotBlank()) { "项目名称不能为空" }
+        require(value.isNotBlank()) { "Project name cannot be empty" }
         return value
     }
 
     private fun promptPackageName(): String {
         val defaultPackage = "com.dqc.example"
-        print("? 基础包名 (Package Name) [$defaultPackage]: ")
+        print("? Package name [$defaultPackage]: ")
         val value = readLine()?.trim().orEmpty()
         return if (value.isBlank()) defaultPackage else value
     }
@@ -155,14 +155,14 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
     private fun validateProjectName(projectName: String) {
         val nameRegex = Regex("^[A-Za-z][A-Za-z0-9_-]*$")
         require(nameRegex.matches(projectName)) {
-            "项目名称不合法: $projectName（需以字母开头，仅支持字母、数字、-、_）"
+            "Invalid project name: $projectName (must start with a letter; only letters, digits, - and _)"
         }
     }
 
     private fun validatePackageName(packageName: String) {
         val packageRegex = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$")
         require(packageRegex.matches(packageName)) {
-            "包名不合法: $packageName（示例: com.dqc.workflow）"
+            "Invalid package name: $packageName (example: com.dqc.workflow)"
         }
     }
 
@@ -170,9 +170,9 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         if (!targetDir.exists()) {
             return
         }
-        require(targetDir.isDirectory) { "目标路径已存在且不是目录: ${targetDir.absolutePath}" }
+        require(targetDir.isDirectory) { "Target path exists and is not a directory: ${targetDir.absolutePath}" }
         require(targetDir.listFiles().isNullOrEmpty()) {
-            "目标目录已存在且非空: ${targetDir.absolutePath}"
+            "Target directory exists and is not empty: ${targetDir.absolutePath}"
         }
     }
 
@@ -204,7 +204,7 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
             CloneAuthMode.TOKEN -> {
                 val env = mutableMapOf("GIT_TERMINAL_PROMPT" to "0")
                 if (isGitHubHttpsUrl(templateUrl)) {
-                    val token = githubToken ?: error("githubToken 不能为空")
+                    val token = githubToken ?: error("githubToken must not be null")
                     val raw = "$githubUsername:$token"
                     val encoded = Base64.getEncoder().encodeToString(raw.toByteArray())
                     env["GIT_HTTP_EXTRAHEADER"] = "Authorization: Basic $encoded"
@@ -220,7 +220,7 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
         if (result.exitCode != 0) {
             throw IllegalStateException(
-                "模板拉取失败: ${result.output.ifBlank { "git clone exitCode=${result.exitCode}" }}",
+                "Template clone failed: ${result.output.ifBlank { "git clone exitCode=${result.exitCode}" }}",
             )
         }
 
@@ -404,24 +404,24 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
         val ghVersion = exec(listOf("gh", "--version"), workDir = workDir)
         require(ghVersion.exitCode == 0) {
-            "--auth login 需要安装 GitHub CLI(gh)；请先安装或改用 --auth token"
+            "--auth login requires GitHub CLI (gh); install it or use --auth token"
         }
 
         val status = exec(listOf("gh", "auth", "status"), workDir = workDir)
         if (status.exitCode != 0) {
-            echo(CliFormatter.formatInfo("检测到未登录 GitHub，正在启动 gh auth login..."))
+            echo(CliFormatter.formatInfo("Not logged in to GitHub; starting gh auth login..."))
             val loginExitCode = execInteractive(
                 command = listOf("gh", "auth", "login"),
                 workDir = workDir,
             )
             require(loginExitCode == 0) {
-                "GitHub 登录失败，请重试或改用 --auth token"
+                "GitHub login failed; retry or use --auth token"
             }
         }
 
         val setup = exec(listOf("gh", "auth", "setup-git"), workDir = workDir)
         require(setup.exitCode == 0) {
-            "gh auth setup-git 失败: ${setup.output.ifBlank { "exitCode=${setup.exitCode}" }}"
+            "gh auth setup-git failed: ${setup.output.ifBlank { "exitCode=${setup.exitCode}" }}"
         }
     }
 

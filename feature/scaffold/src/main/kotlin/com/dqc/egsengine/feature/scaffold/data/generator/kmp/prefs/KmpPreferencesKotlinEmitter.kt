@@ -9,7 +9,7 @@ import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 
 internal object KmpPreferencesKotlinEmitter {
 
-    /** `userId` / `user_id` ? `UserId` for `getUserId` / `observeUserId`. */
+    /** Maps `userId` / `user_id` to `UserId` for `getUserId` / `observeUserId`. */
     fun kotlinPropertyToPascal(name: String): String =
         name.split('_').filter { it.isNotBlank() }
             .joinToString("") { it.replaceFirstChar { c -> c.uppercase() } }

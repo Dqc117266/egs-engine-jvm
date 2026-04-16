@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
- * Merges `// egs-gen:prefs-begin` бн `// egs-gen:prefs-end` inside [GeneratedDataModule.kt].
+ * Merges `// egs-gen:prefs-begin` through `// egs-gen:prefs-end` inside [GeneratedDataModule.kt].
  */
 class KmpPrefsGeneratedDataModuleUpdater {
 
