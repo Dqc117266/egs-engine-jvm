@@ -5,6 +5,7 @@ import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
+import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
@@ -25,6 +26,7 @@ class ClientCommand : CliktCommand(name = "client") {
         fun withSubcommands(): ClientCommand =
             ClientCommand().subcommands(
                 ClientModuleCommand.withSubcommands(),
+                ClientListCommand.withSubcommands(),
                 ClientApiCommand.withSubcommands(),
                 ClientGenCommand.withSubcommands(),
             )
@@ -80,6 +82,95 @@ class ClientModuleCreateCommand : CliktCommand(name = "create"), KoinComponent {
             echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
         } catch (e: Exception) {
             echo(CliFormatter.formatError("Failed to create client module: ${e.message}"), err = true)
+        }
+    }
+}
+
+// -- client list --
+
+class ClientListCommand : CliktCommand(name = "list") {
+    override fun run() = Unit
+
+    companion object {
+        fun withSubcommands(): ClientListCommand =
+            ClientListCommand().subcommands(
+                ClientListUsecasesCommand(),
+            )
+    }
+}
+
+/**
+ * `egs-engine client list usecases [--module=X] [--project=P]`
+ *
+ * Lists `*UseCase.kt` under each `feature/<module>`, grouped by module (git-status style).
+ */
+class ClientListUsecasesCommand : CliktCommand(name = "usecases"), KoinComponent {
+
+    private val scanner: UseCaseScanner by inject()
+
+    private val module by option(
+        "-m",
+        "--module",
+        help = "Only list use cases in this feature module",
+    )
+
+    private val projectPath by option("--project", "-p", help = "Workspace or Gradle project root")
+        .default(".")
+
+    override fun run() {
+        try {
+            val workspaceRoot = ProjectRootResolver.resolve(projectPath)
+            val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
+
+            if (module != null) {
+                val target = module!!
+                val modules = scanner.listModules(clientRoot)
+                require(modules.contains(target)) {
+                    "Module '$target' not found. Available: ${modules.joinToString(", ").ifEmpty { "(none)" }}"
+                }
+                val useCases = scanner.scanByModule(clientRoot, target)
+                echo(CliFormatter.formatInfo("Client root: ${clientRoot.absolutePath}"))
+                echo()
+                if (useCases.isEmpty()) {
+                    echo("feature/$target")
+                    echo("  (no *UseCase.kt files)")
+                    return
+                }
+                echo("feature/$target")
+                useCases.forEach { uc ->
+                    echo("  ${uc.name}")
+                    echo("    ${uc.path}")
+                }
+                return
+            }
+
+            val modules = scanner.listModules(clientRoot)
+            echo(CliFormatter.formatInfo("Client root: ${clientRoot.absolutePath}"))
+            echo()
+            if (modules.isEmpty()) {
+                echo("(no feature modules under feature/)")
+                return
+            }
+
+            var anyPrinted = false
+            for (m in modules) {
+                val useCases = scanner.scanByModule(clientRoot, m)
+                if (useCases.isEmpty()) continue
+                anyPrinted = true
+                echo("feature/$m")
+                useCases.forEach { uc ->
+                    echo("  ${uc.name}")
+                    echo("    ${uc.path}")
+                }
+                echo()
+            }
+            if (!anyPrinted) {
+                echo("(no *UseCase.kt files in any feature module)")
+            }
+        } catch (e: IllegalArgumentException) {
+            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
+        } catch (e: Exception) {
+            echo(CliFormatter.formatError("Failed to list use cases: ${e.message}"), err = true)
         }
     }
 }

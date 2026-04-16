@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.data
 
+import com.dqc.egsengine.feature.init.data.GradleSourceRoots
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
 import org.slf4j.LoggerFactory
@@ -21,13 +22,16 @@ class UseCaseScanner {
             return emptyList()
         }
 
-        val useCaseDir = moduleDir.resolve("src/main/kotlin")
-        if (!useCaseDir.exists()) {
-            logger.warn("Kotlin source directory not found in module: $moduleName")
+        val kotlinRoots = GradleSourceRoots.orderedKotlinRoots(moduleDir)
+        if (kotlinRoots.isEmpty()) {
+            logger.warn("No Kotlin source roots in module: $moduleName")
             return emptyList()
         }
 
-        return scanDirectory(useCaseDir, projectRoot)
+        return kotlinRoots
+            .flatMap { scanDirectory(it, projectRoot) }
+            .distinctBy { it.path }
+            .sortedBy { it.name }
     }
 
     /**

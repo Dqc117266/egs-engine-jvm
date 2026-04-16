@@ -52,4 +52,24 @@ object ProjectRootResolver {
     private fun isGradleProjectRoot(dir: File): Boolean =
         dir.resolve("settings.gradle.kts").exists() ||
             dir.resolve("settings.gradle").exists()
+
+    /**
+     * Resolves the Gradle subproject root that contains `feature/<name>` modules.
+     *
+     * Multi-repo EGS workspaces keep the KMP/Android app under `client/` while the
+     * workspace root only has `.egs/workspace.json`. Single-repo projects place
+     * `feature/` directly under the Gradle root.
+     */
+    fun resolveGradleClientRoot(resolvedRoot: File): File {
+        val client = resolvedRoot.resolve("client")
+        val clientFeature = client.resolve("feature")
+        val rootFeature = resolvedRoot.resolve("feature")
+        return when {
+            clientFeature.isDirectory -> client
+            rootFeature.isDirectory -> resolvedRoot
+            client.isDirectory &&
+                (client.resolve("settings.gradle.kts").exists() || client.resolve("settings.gradle").exists()) -> client
+            else -> resolvedRoot
+        }
+    }
 }

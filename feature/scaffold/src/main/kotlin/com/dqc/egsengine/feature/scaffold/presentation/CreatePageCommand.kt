@@ -59,12 +59,13 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
 
     override fun run() {
         try {
-            val projectRoot = ProjectRootResolver.resolve(projectPath)
+            val workspaceRoot = ProjectRootResolver.resolve(projectPath)
+            val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
 
             if (module != null && pageName != null) {
-                runCommandMode(projectRoot)
+                runCommandMode(workspaceRoot, clientRoot)
             } else {
-                runInteractiveMode(projectRoot)
+                runInteractiveMode(workspaceRoot, clientRoot)
             }
         } catch (e: IllegalArgumentException) {
             echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
@@ -76,16 +77,16 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         }
     }
 
-    private fun runCommandMode(projectRoot: java.io.File) {
+    private fun runCommandMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
         val targetModule = module!!
         val name = pageName!!
 
-        val modules = useCaseScanner.listModules(projectRoot)
+        val modules = useCaseScanner.listModules(clientRoot)
         require(modules.contains(targetModule)) {
             "Module '$targetModule' not found. Available: ${modules.joinToString(", ")}"
         }
 
-        val allUseCases = useCaseScanner.scanByModule(projectRoot, targetModule)
+        val allUseCases = useCaseScanner.scanByModule(clientRoot, targetModule)
         val selectedUseCases = if (apis.isNotEmpty()) {
             apis.map { apiName ->
                 allUseCases.find { it.name == apiName || it.name == "${apiName}UseCase" }
@@ -96,21 +97,22 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         }
 
         val result = pageScaffolder.scaffold(
-            projectRoot = projectRoot,
+            projectRoot = clientRoot,
             moduleName = targetModule,
             pageName = name,
             useCases = selectedUseCases,
             dryRun = dryRun,
+            workspaceRoot = workspaceRoot,
         )
 
         printResult(result)
     }
 
-    private fun runInteractiveMode(projectRoot: java.io.File) {
+    private fun runInteractiveMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
         echo(CliFormatter.formatInfo("Create new page"))
         echo()
 
-        val modules = useCaseScanner.listModules(projectRoot)
+        val modules = useCaseScanner.listModules(clientRoot)
         if (modules.isEmpty()) {
             throw IllegalArgumentException("No feature modules found; create a module first")
         }
@@ -138,7 +140,7 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         }
         echo()
 
-        val availableUseCases = useCaseScanner.scanByModule(projectRoot, selectedModule)
+        val availableUseCases = useCaseScanner.scanByModule(clientRoot, selectedModule)
         val selectedUseCases = if (availableUseCases.isNotEmpty()) {
             selectUseCasesInteractively(availableUseCases)
         } else {
@@ -165,11 +167,12 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         echo(CliFormatter.formatInfo("Generating..."))
 
         val result = pageScaffolder.scaffold(
-            projectRoot = projectRoot,
+            projectRoot = clientRoot,
             moduleName = selectedModule,
             pageName = name,
             useCases = selectedUseCases,
             dryRun = dryRun,
+            workspaceRoot = workspaceRoot,
         )
 
         printResult(result)

@@ -29,3 +29,20 @@ data class SwaggerSyncConfig(
     val baseUrl: String = "http://localhost:8080",
     val docPath: String = "/v3/api-docs",
 )
+
+/**
+ * Maps workspace client config to legacy [EgsConfig] for scaffold commands that still read [EgsConfig].
+ */
+fun SubProjectConfig.toEgsConfig(projectName: String): EgsConfig = EgsConfig(
+    projectName = projectName,
+    projectType = platform.name,
+    rootPath = path,
+    conventionPluginId = conventionPluginId,
+    basePackage = basePackage,
+    moduleStructure = moduleStructure ?: ModuleStructure(
+        layers = listOf("data", "domain", "presentation"),
+        hasRes = false,
+    ),
+    baseClasses = baseClasses,
+    scaffoldOverrides = scaffoldOverrides,
+)

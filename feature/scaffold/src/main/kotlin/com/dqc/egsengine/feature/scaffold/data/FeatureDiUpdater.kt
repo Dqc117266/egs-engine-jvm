@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.data
 
+import com.dqc.egsengine.feature.init.data.GradleSourceRoots
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -19,11 +20,20 @@ class FeatureDiUpdater {
         modulePackage: String,
         pageName: String,
         useCases: List<UseCaseInfo>,
+        kotlinRootRel: String = "src/main/kotlin",
+        /** KMP uses `presentation.<pageCamel>`; Android legacy uses `presentation.fragment.<pageCamel>`. */
+        useKmpPresentationLayout: Boolean = false,
     ): Boolean {
         val presentationModuleFile = findPresentationModuleFile(projectRoot, moduleName, modulePackage)
-            ?: createPresentationModuleFile(projectRoot, moduleName, modulePackage)
+            ?: createPresentationModuleFile(projectRoot, moduleName, modulePackage, kotlinRootRel)
 
-        return updateModuleFile(presentationModuleFile, pageName, useCases, modulePackage)
+        return updateModuleFile(
+            presentationModuleFile,
+            pageName,
+            useCases,
+            modulePackage,
+            useKmpPresentationLayout,
+        )
     }
 
     /**
@@ -34,17 +44,20 @@ class FeatureDiUpdater {
         moduleName: String,
         modulePackage: String,
     ): File? {
-        val moduleDir = projectRoot.resolve("feature/$moduleName/src/main/kotlin")
-        if (!moduleDir.exists()) return null
+        val moduleDir = projectRoot.resolve("feature/$moduleName")
+        val kotlinRoots = GradleSourceRoots.orderedKotlinRoots(moduleDir)
+        val roots = if (kotlinRoots.isNotEmpty()) kotlinRoots else listOf(moduleDir.resolve("src/main/kotlin"))
 
-        // 尝试在不同位置查找
-        val possiblePaths = listOf(
-            moduleDir.resolve(modulePackage.replace(".", "/") + "/presentation/PresentationModule.kt"),
-            moduleDir.resolve(modulePackage.replace(".", "/") + "/di/PresentationModule.kt"),
-            moduleDir.resolve("com/dqc/egsengine/feature/$moduleName/presentation/PresentationModule.kt"),
-        )
-
-        return possiblePaths.firstOrNull { it.exists() }
+        for (kotlinRoot in roots) {
+            val possiblePaths = listOf(
+                kotlinRoot.resolve(modulePackage.replace(".", "/") + "/presentation/PresentationModule.kt"),
+                kotlinRoot.resolve(modulePackage.replace(".", "/") + "/di/PresentationModule.kt"),
+                kotlinRoot.resolve("com/dqc/egsengine/feature/$moduleName/presentation/PresentationModule.kt"),
+            )
+            val found = possiblePaths.firstOrNull { it.exists() }
+            if (found != null) return found
+        }
+        return null
     }
 
     /**
@@ -54,10 +67,12 @@ class FeatureDiUpdater {
         projectRoot: File,
         moduleName: String,
         modulePackage: String,
+        kotlinRootRel: String,
     ): File {
-        val moduleDir = projectRoot.resolve("feature/$moduleName/src/main/kotlin")
+        val moduleDir = projectRoot.resolve("feature/$moduleName")
+        val kotlinRoot = moduleDir.resolve(kotlinRootRel)
         val pkgPath = modulePackage.replace(".", "/")
-        val file = moduleDir.resolve("$pkgPath/presentation/PresentationModule.kt")
+        val file = kotlinRoot.resolve("$pkgPath/presentation/PresentationModule.kt")
 
         file.parentFile.mkdirs()
 
@@ -85,6 +100,7 @@ class FeatureDiUpdater {
         pageName: String,
         useCases: List<UseCaseInfo>,
         modulePackage: String,
+        useKmpPresentationLayout: Boolean,
     ): Boolean {
         val content = file.readText()
         val pascalName = pageName.replaceFirstChar { it.uppercase() }
@@ -97,7 +113,11 @@ class FeatureDiUpdater {
         }
 
         // 添加 import
-        val viewModelImport = "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
+        val viewModelImport = if (useKmpPresentationLayout) {
+            "import $modulePackage.presentation.$camelName.${pascalName}ViewModel"
+        } else {
+            "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
+        }
         val viewModelOfImport = "import org.koin.core.module.dsl.viewModelOf"
         var updatedContent = content
         if (!updatedContent.contains(viewModelImport)) {
@@ -146,15 +166,21 @@ class FeatureDiUpdater {
         modulePackage: String,
         pageName: String,
         useCases: List<UseCaseInfo>,
+        useKmpPresentationLayout: Boolean = false,
     ): String {
         val pascalName = pageName.replaceFirstChar { it.uppercase() }
         val camelName = pageName.replaceFirstChar { it.lowercase() }
 
         val binding = "viewModelOf(::$pascalName" + "ViewModel)"
+        val importLine = if (useKmpPresentationLayout) {
+            "import $modulePackage.presentation.$camelName.${pascalName}ViewModel"
+        } else {
+            "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
+        }
 
         return """
             // 将添加到 PresentationModule.kt:
-            import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel
+            $importLine
             
             internal val presentationModule: Module = module {
                 $binding

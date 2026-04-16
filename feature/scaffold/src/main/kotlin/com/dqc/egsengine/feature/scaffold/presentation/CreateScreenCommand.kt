@@ -73,12 +73,13 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
 
     override fun run() {
         try {
-            val projectRoot = ProjectRootResolver.resolve(projectPath)
+            val workspaceRoot = ProjectRootResolver.resolve(projectPath)
+            val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
 
             if (module != null) {
-                runCommandMode(projectRoot)
+                runCommandMode(workspaceRoot, clientRoot)
             } else {
-                runInteractiveMode(projectRoot)
+                runInteractiveMode(workspaceRoot, clientRoot)
             }
         } catch (e: IllegalArgumentException) {
             echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
@@ -90,16 +91,16 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         }
     }
 
-    private fun runCommandMode(projectRoot: java.io.File) {
+    private fun runCommandMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
         val targetModule = module!!
         val name = validateScreenName(screenName)
 
-        val modules = useCaseScanner.listModules(projectRoot)
+        val modules = useCaseScanner.listModules(clientRoot)
         require(modules.contains(targetModule)) {
             "Module '$targetModule' not found. Available: ${modules.joinToString(", ")}"
         }
 
-        val allUseCases = useCaseScanner.scanByModule(projectRoot, targetModule)
+        val allUseCases = useCaseScanner.scanByModule(clientRoot, targetModule)
         val selectedUseCases = parseUseCases(useCases, allUseCases, targetModule)
 
         val screenParams = parseParams(params)
@@ -114,17 +115,18 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         echo()
 
         val result = pageScaffolder.scaffold(
-            projectRoot = projectRoot,
+            projectRoot = clientRoot,
             moduleName = targetModule,
             pageName = name,
             useCases = selectedUseCases,
             dryRun = dryRun,
+            workspaceRoot = workspaceRoot,
         )
 
         printResult(result)
     }
 
-    private fun runInteractiveMode(projectRoot: java.io.File) {
+    private fun runInteractiveMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
         echo(CliFormatter.formatInfo("Create new screen"))
         echo()
 
@@ -132,7 +134,7 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         val name = validateScreenName(screenName)
         echo()
 
-        val modules = useCaseScanner.listModules(projectRoot)
+        val modules = useCaseScanner.listModules(clientRoot)
         if (modules.isEmpty()) {
             throw IllegalArgumentException("No feature modules found; create a module first")
         }
@@ -151,7 +153,7 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         val selectedModule = modules[moduleIndex]
         echo()
 
-        val availableUseCases = useCaseScanner.scanByModule(projectRoot, selectedModule)
+        val availableUseCases = useCaseScanner.scanByModule(clientRoot, selectedModule)
         val selectedUseCases = if (availableUseCases.isNotEmpty()) {
             selectUseCasesInteractively(availableUseCases)
         } else {
@@ -183,11 +185,12 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         echo(CliFormatter.formatInfo("Generating..."))
 
         val result = pageScaffolder.scaffold(
-            projectRoot = projectRoot,
+            projectRoot = clientRoot,
             moduleName = selectedModule,
             pageName = name,
             useCases = selectedUseCases,
             dryRun = dryRun,
+            workspaceRoot = workspaceRoot,
         )
 
         printResult(result)

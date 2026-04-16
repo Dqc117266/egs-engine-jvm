@@ -85,6 +85,42 @@ class ScaffoldPreviewUnitTest {
         )
     }
 
+    @Test
+    fun `page dry run KMP uses presentation path and kmp templates`() {
+        val projectRoot = createKmpProjectFixture()
+        val pageScaffolder = PageScaffolder(
+            configReader = EgsConfigReader(),
+            useCaseScanner = UseCaseScanner(),
+            diUpdater = FeatureDiUpdater(),
+            templateEngine = TemplateEngine(TemplateRegistry()),
+        )
+
+        val result = pageScaffolder.scaffold(
+            projectRoot = projectRoot,
+            moduleName = "task",
+            pageName = "TaskDetail",
+            useCases = listOf(
+                UseCaseInfo(
+                    name = "TopicUpdateTopicUseCase",
+                    packageName = "com.dqc.example.feature.task.domain.usecase",
+                    path = "feature/task/src/commonMain/kotlin/com/dqc/example/feature/task/domain/usecase/TopicUpdateTopicUseCase.kt",
+                    returnType = "template.core.base.network.domain.Result<Boolean>",
+                ),
+            ),
+            dryRun = true,
+        )
+
+        assertTrue(result.dryRun)
+        val paths = result.files.map { it.path }
+        assertTrue(paths.any { it.contains("presentation/taskDetail/TaskDetailScreen.kt") }, "expected KMP screen path")
+        assertTrue(paths.any { it.contains("TaskDetailContract.kt") }, "expected Contract")
+        val contractContent = result.files.first { it.path.endsWith("TaskDetailContract.kt") }.content
+        assertTrue(contractContent.contains("template.core.base.ui.UiState"), "expected KMP contract imports")
+        val vmContent = result.files.first { it.path.endsWith("TaskDetailViewModel.kt") }.content
+        assertTrue(vmContent.contains("template.core.base.ui.BaseViewModel"), "expected KMP BaseViewModel")
+        assertTrue(vmContent.contains("template.core.base.network.domain.Result"), "expected network Result")
+    }
+
     private fun createProjectFixture(): File {
         val root = kotlin.io.path.createTempDirectory("scaffold-preview-unit-test").toFile()
         root.resolve(".egs").mkdirs()
@@ -107,6 +143,37 @@ class ScaffoldPreviewUnitTest {
         root.resolve("settings.gradle.kts").writeText(
             """
             rootProject.name = "fixture"
+            include(
+                ":feature:base",
+                ":feature:common",
+            )
+            """.trimIndent(),
+        )
+        return root
+    }
+
+    private fun createKmpProjectFixture(): File {
+        val root = kotlin.io.path.createTempDirectory("scaffold-preview-kmp-unit-test").toFile()
+        root.resolve(".egs").mkdirs()
+        root.resolve(".egs/config.json").writeText(
+            """
+            {
+              "projectName": "fixture-kmp",
+              "projectType": "KMP",
+              "rootPath": "${root.absolutePath.replace("\\", "\\\\")}",
+              "conventionPluginId": "com.dqc.example.convention.feature",
+              "basePackage": "com.dqc.example",
+              "moduleStructure": {
+                "layers": ["data", "domain", "presentation"],
+                "hasRes": false
+              },
+              "baseClasses": []
+            }
+            """.trimIndent(),
+        )
+        root.resolve("settings.gradle.kts").writeText(
+            """
+            rootProject.name = "fixture-kmp"
             include(
                 ":feature:base",
                 ":feature:common",

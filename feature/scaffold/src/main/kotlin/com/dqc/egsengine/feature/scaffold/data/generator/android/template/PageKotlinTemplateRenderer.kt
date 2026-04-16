@@ -13,6 +13,8 @@ import java.io.File
 class PageKotlinTemplateRenderer(
     private val engine: TemplateEngine,
     private val template: PageTemplate,
+    /** e.g. `src/main/kotlin` or `src/commonMain/kotlin` (KMP). */
+    private val kotlinRootRel: String = "src/main/kotlin",
 ) {
     private val m: PageTemplateModel = template.toPageTemplateModel()
 
@@ -26,11 +28,11 @@ class PageKotlinTemplateRenderer(
         engine.render("android/page/PageScreen.kt.ftl", m, projectRoot)
 
     fun pathContract(): String =
-        "src/main/kotlin/${m.screenPkg.replace(".", "/")}/${m.pascalName}Contract.kt"
+        "$kotlinRootRel/${m.screenPkg.replace(".", "/")}/${m.pascalName}Contract.kt"
 
     fun pathViewModel(): String =
-        "src/main/kotlin/${m.screenPkg.replace(".", "/")}/${m.pascalName}ViewModel.kt"
+        "$kotlinRootRel/${m.screenPkg.replace(".", "/")}/${m.pascalName}ViewModel.kt"
 
     fun pathScreen(): String =
-        "src/main/kotlin/${m.screenDirPkg.replace(".", "/")}/${m.pascalName}Screen.kt"
+        "$kotlinRootRel/${m.screenDirPkg.replace(".", "/")}/${m.pascalName}Screen.kt"
 }
