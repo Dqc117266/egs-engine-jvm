@@ -38,6 +38,8 @@ class PageScaffolder(
     ): PageScaffoldResult {
         logger.info("Scaffolding page '$pageName' in module '$moduleName'")
 
+        val resolvedUseCases = useCaseScanner.enrichReturnTypesIfMissing(projectRoot, useCases)
+
         val config = configReader.readForScaffold(projectRoot, workspaceRoot)
         val basePackage = config.effectiveBasePackage()
 
@@ -49,18 +51,21 @@ class PageScaffolder(
 
         val baseClasses = config.resolveScaffoldBaseClasses(includeRetrofitProvider = true)
 
+        val moduleDir = projectRoot.resolve("feature/$moduleName")
+        val kotlinRootRel = kotlinSourceRootRelative(moduleDir)
+        val useKmpPageTemplates = useKmpPageTemplates(config, kotlinRootRel)
+        // KMP pages use `template.core.base.network.domain.Result` (mapper default); ignore `feature.base` Result from config.
+        val pageBaseClasses =
+            if (useKmpPageTemplates) baseClasses.copy(resultClass = null) else baseClasses
+
         val template = PageTemplate(
             pageName = pageName.replaceFirstChar { it.uppercase() },
             moduleName = moduleName,
             modulePackage = modulePackage,
-            useCases = useCases,
+            useCases = resolvedUseCases,
             basePackage = basePackage,
-            baseClassPackages = baseClasses,
+            baseClassPackages = pageBaseClasses,
         )
-
-        val moduleDir = projectRoot.resolve("feature/$moduleName")
-        val kotlinRootRel = kotlinSourceRootRelative(moduleDir)
-        val useKmpPageTemplates = useKmpPageTemplates(config, kotlinRootRel)
         val previewFiles = previewFiles(template, projectRoot, kotlinRootRel, useKmpPageTemplates)
 
         if (dryRun) {
@@ -73,8 +78,7 @@ class PageScaffolder(
         }
 
         val camelName = template.pageName.replaceFirstChar { it.lowercase() }
-        val presentationSegment =
-            if (useKmpPageTemplates) "presentation/$camelName" else "presentation/screen/$camelName"
+        val presentationSegment = "presentation/screen/$camelName"
         val screenDir = projectRoot.resolve(
             "feature/$moduleName/$kotlinRootRel/${modulePackage.replace(".", "/")}/$presentationSegment",
         )
@@ -115,7 +119,7 @@ class PageScaffolder(
             moduleName = moduleName,
             modulePackage = modulePackage,
             pageName = template.pageName,
-            useCases = useCases,
+            useCases = resolvedUseCases,
             kotlinRootRel = kotlinRootRel,
             useKmpPresentationLayout = useKmpPageTemplates,
         )

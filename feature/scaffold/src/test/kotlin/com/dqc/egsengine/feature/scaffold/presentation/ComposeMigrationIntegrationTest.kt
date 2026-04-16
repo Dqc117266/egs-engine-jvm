@@ -171,6 +171,11 @@ class ComposeMigrationIntegrationTest {
         assertTrue(vmPath.exists())
         val vmContent = vmPath.readText()
         assertTrue(vmContent.contains("handleTopicUpdateTopic("))
+        assertTrue(vmContent.contains("is Result.Success"), "expected Result-based handler")
+        assertFalse(
+            vmContent.contains("// TODO: map result to State"),
+            "expected no placeholder Result TODO",
+        )
 
         assertFalse(projectRoot.resolve(
             "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListFragment.kt"

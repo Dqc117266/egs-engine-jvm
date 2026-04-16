@@ -21,7 +21,7 @@ class FeatureDiUpdater {
         pageName: String,
         useCases: List<UseCaseInfo>,
         kotlinRootRel: String = "src/main/kotlin",
-        /** KMP uses `presentation.<pageCamel>`; Android legacy uses `presentation.fragment.<pageCamel>`. */
+        /** KMP uses `presentation.screen.<pageCamel>`; Android legacy uses `presentation.fragment.<pageCamel>`. */
         useKmpPresentationLayout: Boolean = false,
     ): Boolean {
         val presentationModuleFile = findPresentationModuleFile(projectRoot, moduleName, modulePackage)
@@ -114,7 +114,7 @@ class FeatureDiUpdater {
 
         // 添加 import
         val viewModelImport = if (useKmpPresentationLayout) {
-            "import $modulePackage.presentation.$camelName.${pascalName}ViewModel"
+            "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
         } else {
             "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
         }
@@ -173,7 +173,7 @@ class FeatureDiUpdater {
 
         val binding = "viewModelOf(::$pascalName" + "ViewModel)"
         val importLine = if (useKmpPresentationLayout) {
-            "import $modulePackage.presentation.$camelName.${pascalName}ViewModel"
+            "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
         } else {
             "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
         }

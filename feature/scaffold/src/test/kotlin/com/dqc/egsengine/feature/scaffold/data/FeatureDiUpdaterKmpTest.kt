@@ -37,6 +37,6 @@ class FeatureDiUpdaterKmpTest {
         )
 
         val text = pm.readText()
-        assertTrue(text.contains("import com.example.feature.task.presentation.todoDetail.TodoDetailViewModel"))
+        assertTrue(text.contains("import com.example.feature.task.presentation.screen.todoDetail.TodoDetailViewModel"))
     }
 }

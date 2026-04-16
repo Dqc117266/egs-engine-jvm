@@ -4,7 +4,7 @@
 package ${screenPkg}
 
 import template.core.base.ui.BaseViewModel
-import ${resultPackage}.Result
+import ${resultClassFqn}
 <#list useCases as uc>
 import ${uc.packageName}.${uc.name}
 </#list>
@@ -61,14 +61,24 @@ internal class ${pascalName}ViewModel(
 <#elseif h.flowBased>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launch {
-            // TODO: collect Flow from ${uc.name}
+<#if uc.parameters?has_content>
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
+<#else>
+            ${h.useCaseCamel}()
+</#if>
+            // TODO: collect Flow and update State
         }
     }
 
 <#else>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launchRequest {
-            // TODO: wire ${uc.name}
+<#if uc.parameters?has_content>
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
+<#else>
+            ${h.useCaseCamel}()
+</#if>
+            // TODO: map result to State (or add Result return type to UseCase)
         }
     }
 

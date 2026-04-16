@@ -38,6 +38,7 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
     val stateFields = buildList {
         useCases.forEach { uc ->
             val rt = uc.returnType ?: return@forEach
+            if (looksLikeFlowReturn(rt)) return@forEach
             val propName = uc.camelName
             val typeStr = resolveStatePropertyTypeString(rt, modelPackage)
             add(PageStateFieldModel(propName, typeStr, nullable = true))
@@ -116,8 +117,19 @@ private fun UseCaseInfo.toPageUseCaseModel(modelPackage: String): PageUseCaseMod
     )
 }
 
+private fun looksLikeFlowReturn(returnType: String): Boolean {
+    if (returnType.isBlank()) return false
+    if (returnType.contains("kotlinx.coroutines.flow")) return true
+    return FLOW_TYPE_REGEX.containsMatchIn(returnType)
+}
+
+private val FLOW_TYPE_REGEX =
+    Regex("""\b(Flow|StateFlow|SharedFlow|MutableStateFlow|MutableSharedFlow)\s*<""")
+
 private fun resolveStatePropertyTypeString(returnType: String, modelPackage: String): String {
-    val innerType = Regex("""Result<([^>]+)>""").find(returnType)?.groupValues?.get(1) ?: returnType
+    val innerType = extractResultInnerType(returnType)
+        ?: Regex("""Result<([^>]+)>""").find(returnType)?.groupValues?.get(1)
+        ?: returnType
     val simpleType = innerType.substringAfterLast(".")
     val typePackage = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
     return resolveBasicTypeString(simpleType, typePackage, modelPackage)
@@ -177,6 +189,23 @@ private fun resolveParamTypeString(typeStr: String, modelPackage: String): Strin
         }
     }
     return if (nullable) "$typeName?" else typeName
+}
+
+private fun extractResultInnerType(returnType: String): String? {
+    val idx = returnType.indexOf("Result<")
+    if (idx < 0) return null
+    val start = idx + "Result<".length
+    var depth = 1
+    var i = start
+    while (i < returnType.length && depth > 0) {
+        when (returnType[i]) {
+            '<' -> depth++
+            '>' -> depth--
+        }
+        i++
+    }
+    if (depth != 0) return null
+    return returnType.substring(start, i - 1).trim()
 }
 
 internal fun buildParamTypeForTemplate(param: com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam, modelPackage: String): String =

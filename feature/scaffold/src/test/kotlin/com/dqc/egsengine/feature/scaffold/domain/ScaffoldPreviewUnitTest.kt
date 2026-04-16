@@ -112,13 +112,16 @@ class ScaffoldPreviewUnitTest {
 
         assertTrue(result.dryRun)
         val paths = result.files.map { it.path }
-        assertTrue(paths.any { it.contains("presentation/taskDetail/TaskDetailScreen.kt") }, "expected KMP screen path")
+        assertTrue(paths.any { it.contains("presentation/screen/taskDetail/TaskDetailScreen.kt") }, "expected KMP screen path")
         assertTrue(paths.any { it.contains("TaskDetailContract.kt") }, "expected Contract")
         val contractContent = result.files.first { it.path.endsWith("TaskDetailContract.kt") }.content
         assertTrue(contractContent.contains("template.core.base.ui.UiState"), "expected KMP contract imports")
         val vmContent = result.files.first { it.path.endsWith("TaskDetailViewModel.kt") }.content
         assertTrue(vmContent.contains("template.core.base.ui.BaseViewModel"), "expected KMP BaseViewModel")
-        assertTrue(vmContent.contains("template.core.base.network.domain.Result"), "expected network Result")
+        assertTrue(
+            vmContent.contains("template.core.base.network.domain.Result"),
+            "expected template core network Result import for KMP page",
+        )
     }
 
     private fun createProjectFixture(): File {

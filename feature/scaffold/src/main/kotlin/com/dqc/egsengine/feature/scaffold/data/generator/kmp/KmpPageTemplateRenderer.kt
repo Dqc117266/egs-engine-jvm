@@ -11,7 +11,7 @@ import java.io.File
 
 /**
  * Renders KMP screen sources using FreeMarker under `templates/kmp/page/`.
- * Layout: `src/commonMain/kotlin/<pkg>/presentation/<camelPage>/бн`
+ * Layout: `src/commonMain/kotlin/<pkg>/presentation/screen/<camelPage>/бн`
  */
 internal class KmpPageTemplateRenderer(
     private val engine: TemplateEngine,
@@ -33,11 +33,11 @@ internal class KmpPageTemplateRenderer(
         engine.render("kmp/page/PageScreen.kt.ftl", m, projectRoot)
 
     fun pathContract(): String =
-        "$kotlinRootRel/$pkgPath/presentation/$camelPage/${pascalPage}Contract.kt"
+        "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}Contract.kt"
 
     fun pathViewModel(): String =
-        "$kotlinRootRel/$pkgPath/presentation/$camelPage/${pascalPage}ViewModel.kt"
+        "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}ViewModel.kt"
 
     fun pathScreen(): String =
-        "$kotlinRootRel/$pkgPath/presentation/$camelPage/${pascalPage}Screen.kt"
+        "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}Screen.kt"
 }
