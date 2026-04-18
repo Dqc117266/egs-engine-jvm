@@ -69,7 +69,9 @@ class AndroidApiSyncKoinUpdater {
     private fun shouldOverwriteRepositoryImpl(text: String, pascal: String): Boolean {
         if (text.contains("override suspend fun getData(")) return true
         if (text.contains("egs-codegen: scaffold-repository-impl")) return true
-        val gen = "Generated${pascal}RepositorySupport"
+        val legacyGen = "Generated${pascal}RepositorySupport"
+        if (text.contains(legacyGen)) return true
+        val gen = "Generated${pascal}ApiRepositorySupport"
         if (!text.contains(gen)) return false
         val m = Regex(
             """class\s+${Regex.escape(pascal)}RepositoryImpl\s*\(\s*([\s\S]*?)\)\s*:\s*${Regex.escape(gen)}""",
@@ -90,11 +92,11 @@ class AndroidApiSyncKoinUpdater {
         package $packageName.data.repository
 
         import $packageName.generate.data.datasource.api.service.${pascal}RetrofitService
-        import $packageName.generate.data.repository.Generated${pascal}RepositorySupport
+        import $packageName.generate.data.repository.Generated${pascal}ApiRepositorySupport
 
         internal class ${pascal}RepositoryImpl(
             service: ${pascal}RetrofitService,
-        ) : Generated${pascal}RepositorySupport(service) {
+        ) : Generated${pascal}ApiRepositorySupport(service) {
         }
         """.trimIndent() + "\n"
 

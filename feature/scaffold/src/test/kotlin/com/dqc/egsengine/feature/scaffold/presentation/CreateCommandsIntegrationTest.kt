@@ -140,25 +140,33 @@ class CreateCommandsIntegrationTest {
             ),
         )
 
-        val repositoryPath = projectRoot.resolve(
+        val apiRepositoryPath = projectRoot.resolve(
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskApiRepository.kt",
+        )
+        val combinedRepositoryPath = projectRoot.resolve(
             "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskRepository.kt",
         )
         val repositoryImplPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskRepositorySupport.kt",
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskApiRepositorySupport.kt",
         )
         val useCasePath = projectRoot.resolve(
             "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/TopicUpdateTopicUseCase.kt",
         )
 
-        assertTrue(repositoryPath.exists())
+        assertTrue(apiRepositoryPath.exists())
+        assertTrue(combinedRepositoryPath.exists())
         assertTrue(repositoryImplPath.exists())
         assertTrue(useCasePath.exists())
 
-        val repositoryText = repositoryPath.readText().replace("\\s+".toRegex(), " ")
-        assertTrue(repositoryText.contains("suspend fun topicUpdateTopic"))
-        assertTrue(repositoryText.contains("body:"))
-        assertTrue(repositoryText.contains("TopicSaveReqVO"))
-        assertTrue(repositoryText.contains("Result<") && repositoryText.contains("Boolean"))
+        val apiRepositoryText = apiRepositoryPath.readText().replace("\\s+".toRegex(), " ")
+        assertTrue(apiRepositoryText.contains("suspend fun topicUpdateTopic"))
+        assertTrue(apiRepositoryText.contains("body:"))
+        assertTrue(apiRepositoryText.contains("TopicSaveReqVO"))
+        assertTrue(apiRepositoryText.contains("Result<") && apiRepositoryText.contains("Boolean"))
+
+        val combinedText = combinedRepositoryPath.readText().replace("\\s+".toRegex(), " ")
+        assertTrue(combinedText.contains("interface TaskRepository"))
+        assertTrue(combinedText.contains("TaskApiRepository"))
 
         assertTrue(
             repositoryImplPath.readText()

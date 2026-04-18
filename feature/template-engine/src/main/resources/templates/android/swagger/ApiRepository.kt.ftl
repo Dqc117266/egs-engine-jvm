@@ -4,7 +4,7 @@ package ${packageName}
 import ${imp}
 </#list>
 
-internal interface ${repositoryName} {
+internal interface ${apiRepositoryName} {
 <#list operations as op>
     suspend fun ${op.operationId}(
 <#list op.params as param>

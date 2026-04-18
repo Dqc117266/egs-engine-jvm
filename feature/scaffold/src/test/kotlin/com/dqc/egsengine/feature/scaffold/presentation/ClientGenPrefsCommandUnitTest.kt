@@ -1,6 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
+import com.dqc.egsengine.feature.scaffold.domain.ClientPrefsScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import com.github.ajalt.clikt.core.main
 import io.mockk.every
@@ -22,7 +23,7 @@ class ClientGenPrefsCommandUnitTest {
 
     @Test
     fun `client gen prefs passes module fields project dry-run and key`() {
-        val scaffolder = mockk<KmpPreferencesScaffolder>()
+        val scaffolder = mockk<ClientPrefsScaffolder>()
         every {
             scaffolder.scaffoldPrefs(any(), any(), any(), any(), any(), any())
         } returns KmpPreferencesScaffolder.KmpPreferencesScaffoldResult(
@@ -71,7 +72,7 @@ class ClientGenPrefsCommandUnitTest {
 
     @Test
     fun `alias --feilds maps to fields`() {
-        val scaffolder = mockk<KmpPreferencesScaffolder>()
+        val scaffolder = mockk<ClientPrefsScaffolder>()
         every {
             scaffolder.scaffoldPrefs(any(), any(), any(), any(), any(), any())
         } returns KmpPreferencesScaffolder.KmpPreferencesScaffoldResult(

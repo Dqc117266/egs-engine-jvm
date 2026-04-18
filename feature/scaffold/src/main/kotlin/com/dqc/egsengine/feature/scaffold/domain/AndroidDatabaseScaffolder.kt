@@ -61,14 +61,14 @@ class AndroidDatabaseScaffolder(
         val modulePascal = SqlNaming.moduleNameToPascal(moduleName)
         val pkgPath = template.packageName.replace('.', '/')
         val androidApiSupport = subProjectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}RepositorySupport.kt",
+            "feature/$moduleName/src/main/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}ApiRepositorySupport.kt",
         )
         val hasApi = androidApiSupport.exists()
 
         val effectiveRepo = repo || cached
         if (cached) {
             require(hasApi) {
-                "client gen database --cached requires an existing API sync (Generated${modulePascal}RepositorySupport.kt not found)."
+                "client gen database --cached requires an existing API sync (Generated${modulePascal}ApiRepositorySupport.kt not found)."
             }
         }
 

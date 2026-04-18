@@ -6,7 +6,7 @@ import ${imp}
 
 internal open class ${repositoryImplName}(
     private val service: ${serviceName},
-) : ${repositoryName} {
+) : ${apiRepositoryName} {
 <#list operations as op>
     override suspend fun ${op.operationId}(
 <#list op.params as param>

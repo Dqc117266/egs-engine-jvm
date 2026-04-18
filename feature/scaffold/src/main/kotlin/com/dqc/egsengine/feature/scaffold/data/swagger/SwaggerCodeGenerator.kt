@@ -6,19 +6,29 @@
 package com.dqc.egsengine.feature.scaffold.data.swagger
 
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidCombinedRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpGeneratedDomainModuleIo
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import org.slf4j.LoggerFactory
+import java.io.File
 
 class SwaggerCodeGenerator(
     private val renderer: SwaggerTemplateRenderer,
+    private val androidCombinedRepositoryGenerator: AndroidCombinedRepositoryGenerator,
+    private val androidDbOnlyRepositoryImplGenerator: AndroidDbOnlyRepositoryImplGenerator,
 ) {
     private val logger = LoggerFactory.getLogger(SwaggerCodeGenerator::class.java)
 
-    fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec): List<GeneratedFile> =
-        generate(template, spec).map { GeneratedFile(it.path, it.content) }
+    fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec, projectRoot: File? = null): List<GeneratedFile> =
+        generate(template, spec, projectRoot).map { GeneratedFile(it.path, it.content) }
 
-    fun generate(template: ModuleTemplate, spec: SwaggerSpec): List<ModuleGenerator.GeneratedFile> {
+    fun generate(
+        template: ModuleTemplate,
+        spec: SwaggerSpec,
+        projectRoot: File? = null,
+    ): List<ModuleGenerator.GeneratedFile> {
         val moduleDir = "feature/${template.name}"
         val files = mutableListOf<ModuleGenerator.GeneratedFile>()
         val ctx = AndroidSwaggerGeneratorContext(template)
@@ -54,14 +64,22 @@ class SwaggerCodeGenerator(
         )
 
         files.addSwagger(moduleDir, ctx.servicePackage, ctx.serviceName, renderer.renderServiceInterface(adjustedSpec, ctx))
-        files.addSwagger(moduleDir, ctx.domainRepositoryPackage, ctx.repositoryName, renderer.renderRepositoryInterface(adjustedSpec, ctx))
+        files.addSwagger(moduleDir, ctx.domainRepositoryPackage, ctx.apiRepositoryName, renderer.renderRepositoryInterface(adjustedSpec, ctx))
         files.addSwagger(
             moduleDir,
             ctx.dataRepositoryPackage,
-            ctx.repositoryImplName,
+            ctx.apiRepositorySupportName,
             renderer.renderGeneratedRepositorySupport(adjustedSpec, ctx),
         )
-        files.addSwagger(moduleDir, ctx.generateDiPackage, "GeneratedDataModule", renderer.renderGeneratedDataModule(ctx))
+        val renderedDataModule = renderer.renderGeneratedDataModule(ctx)
+        val mergedDataModule = projectRoot?.let { root ->
+            val existingPath = root.resolve(
+                "$moduleDir/src/main/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDataModule.kt",
+            )
+            val existing = if (existingPath.exists()) existingPath.readText() else null
+            KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, renderedDataModule)
+        } ?: renderedDataModule
+        files.addSwagger(moduleDir, ctx.generateDiPackage, "GeneratedDataModule", mergedDataModule)
         files.addSwagger(
             moduleDir,
             ctx.generateDiPackage,
@@ -77,6 +95,30 @@ class SwaggerCodeGenerator(
                 useCaseName,
                 renderer.renderUseCase(op, ctx),
             )
+        }
+
+        val slices = projectRoot?.let { root ->
+            androidCombinedRepositoryGenerator.detectSlices(root, template.name, template)
+        }
+        val includeDb = slices?.hasDb ?: false
+        val includePrefs = slices?.hasPrefs ?: false
+        androidCombinedRepositoryGenerator.generate(
+            template = template,
+            subProjectRoot = projectRoot,
+            includeApi = true,
+            includeDb = includeDb,
+            includePrefs = includePrefs,
+        )?.let { combined ->
+            files.add(ModuleGenerator.GeneratedFile(combined.path, combined.content))
+        }
+        androidDbOnlyRepositoryImplGenerator.generateOrMerge(
+            template = template,
+            subProjectRoot = projectRoot,
+            includeApi = true,
+            includeDb = includeDb,
+            includePrefs = includePrefs,
+        )?.let { impl ->
+            files.add(ModuleGenerator.GeneratedFile(impl.path, impl.content))
         }
 
         logger.info("Generated ${files.size} swagger scaffold files for module ${template.name}")

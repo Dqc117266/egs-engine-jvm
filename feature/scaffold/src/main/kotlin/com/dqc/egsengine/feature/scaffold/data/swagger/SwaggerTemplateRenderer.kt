@@ -176,10 +176,10 @@ class SwaggerTemplateRenderer(
             }
         }.sorted()
         return engine.render(
-            "android/swagger/Repository.kt.ftl",
+            "android/swagger/ApiRepository.kt.ftl",
             mapOf(
                 "packageName" to ctx.domainRepositoryPackage,
-                "repositoryName" to ctx.repositoryName,
+                "apiRepositoryName" to ctx.apiRepositoryName,
                 "operations" to operations,
                 "imports" to imports,
             ),
@@ -226,12 +226,14 @@ class SwaggerTemplateRenderer(
             )
         }
         val imports = androidGeneratedRepositorySupportImports(spec, ctx)
+        val repositoryInterface =
+            if (ctx.usesSplitRepositoryLayout) ctx.apiRepositoryName else ctx.repositoryName
         return engine.render(
             "android/swagger/RepositoryImpl.kt.ftl",
             mapOf(
                 "packageName" to ctx.dataRepositoryPackage,
                 "repositoryImplName" to ctx.repositoryImplName,
-                "repositoryName" to ctx.repositoryName,
+                "repositoryName" to repositoryInterface,
                 "serviceName" to ctx.serviceName,
                 "operations" to operations,
                 "imports" to imports,
@@ -287,7 +289,7 @@ class SwaggerTemplateRenderer(
             mapOf(
                 "packageName" to ctx.dataRepositoryPackage,
                 "repositoryImplName" to ctx.repositoryImplName,
-                "repositoryName" to ctx.repositoryName,
+                "apiRepositoryName" to ctx.apiRepositoryName,
                 "serviceName" to ctx.serviceName,
                 "operations" to operations,
                 "imports" to imports,
@@ -318,7 +320,7 @@ class SwaggerTemplateRenderer(
                 addAll(ctx.importsForRepositoryReturnType(op.responseBody))
             }
             add("${ctx.servicePackage}.${ctx.serviceName}")
-            add("${ctx.domainRepositoryPackage}.${ctx.repositoryName}")
+            add("${ctx.domainRepositoryPackage}.${ctx.apiRepositoryName}")
             if (needsToResult && ctx.template.baseClassPackages.resultClass != null) {
                 add(ctx.template.baseClassPackages.resultClass!!)
             }
@@ -341,6 +343,8 @@ class SwaggerTemplateRenderer(
                 "generateDiPackage" to ctx.generateDiPackage,
                 "servicePackage" to ctx.servicePackage,
                 "serviceName" to ctx.serviceName,
+                "dataRepositoryPackage" to ctx.dataRepositoryPackage,
+                "apiRepositorySupportName" to ctx.apiRepositorySupportName,
             ),
             projectRoot,
         )
@@ -370,7 +374,7 @@ class SwaggerTemplateRenderer(
                 "dataRepositoryPackage" to ctx.dataRepositoryPackage,
                 "repositoryImplName" to ctx.repositoryImplName,
                 "domainRepositoryPackage" to ctx.domainRepositoryPackage,
-                "repositoryName" to ctx.repositoryName,
+                "apiRepositoryName" to ctx.apiRepositoryName,
                 "servicePackage" to ctx.servicePackage,
                 "serviceName" to ctx.serviceName,
             ),

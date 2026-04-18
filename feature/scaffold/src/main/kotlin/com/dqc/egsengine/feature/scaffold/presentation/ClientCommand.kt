@@ -4,7 +4,7 @@ import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ClientDatabaseScaffolder
-import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.ClientPrefsScaffolder
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.github.ajalt.clikt.core.CliktCommand
@@ -266,12 +266,12 @@ class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent 
  */
 class ClientGenPrefsCommand : CliktCommand(name = "prefs"), KoinComponent {
 
-    private val scaffolder: KmpPreferencesScaffolder by inject()
+    private val scaffolder: ClientPrefsScaffolder by inject()
 
     private val moduleName by option(
         "--module",
         "-m",
-        help = "Target KMP feature module name (under feature/<module>)",
+        help = "Target feature module name (under feature/<module>)",
     ).required()
 
     private val fields by option(
@@ -308,7 +308,7 @@ class ClientGenPrefsCommand : CliktCommand(name = "prefs"), KoinComponent {
                 force = force,
             )
             if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run — KMP preferences codegen preview:"))
+                echo(CliFormatter.formatInfo("Dry run - preferences codegen preview:"))
                 echo("  Module: ${result.moduleName}")
                 echo("  Files:")
                 result.files.forEach { echo("    ${it.path}") }

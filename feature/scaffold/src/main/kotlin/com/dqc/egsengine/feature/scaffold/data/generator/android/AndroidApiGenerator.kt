@@ -31,6 +31,6 @@ class AndroidApiGenerator(
                 toResultPackage = "${config.basePackage}.feature.base.data.retrofit",
             )
         }
-        return swaggerCodeGenerator.generateToCommon(template, spec)
+        return swaggerCodeGenerator.generateToCommon(template, spec, projectRoot)
     }
 }

@@ -28,7 +28,7 @@ class SwaggerApiScaffolder(
         val config = configReader.read(projectRoot)
         val template = buildTemplate(config, moduleName, customPackage)
         val spec = swaggerParser.parse(swaggerLocation)
-        val generated = swaggerCodeGenerator.generate(template, spec)
+        val generated = swaggerCodeGenerator.generate(template, spec, projectRoot)
 
         if (dryRun) {
             return Result(files = generated.map { it.path }, dryRun = true)

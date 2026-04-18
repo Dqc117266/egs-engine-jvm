@@ -10,8 +10,9 @@ import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 /**
  * Type and package resolution for Swagger codegen (Kotlin source strings, no KotlinPoet).
  *
- * @param generateLayout When true, packages are rooted at `[base].generate` and the repository
- * implementation class name is `Generated[Module]RepositorySupport` (aligned with KMP `generate/` tree).
+ * @param generateLayout When true, packages are rooted at `[base].generate`, the Swagger API slice is
+ * `[Module]ApiRepository`, and the Retrofit delegation class is `Generated[Module]ApiRepositorySupport`
+ * (aligned with KMP `generate/` tree).
  */
 open class SwaggerGeneratorContext(
     val template: ModuleTemplate,
@@ -30,9 +31,17 @@ open class SwaggerGeneratorContext(
     val domainRepositoryPackage = "$domainPackage.repository"
     val domainUseCasePackage = "$domainPackage.usecase"
     val serviceName = "${pascalModuleName}RetrofitService"
+    /** Combined domain contract `TodoRepository` (extends API/DB/Prefs slices). Same as [KmpSwaggerGeneratorContext.combinedRepositoryName]. */
     val repositoryName = "${pascalModuleName}Repository"
+    /** Swagger/API slice `TodoApiRepository`. */
+    val apiRepositoryName = "${pascalModuleName}ApiRepository"
+    /** `GeneratedTodoApiRepositorySupport` (Retrofit delegation). */
+    val apiRepositorySupportName = "Generated${pascalModuleName}ApiRepositorySupport"
     val repositoryImplName =
-        if (generateLayout) "Generated${pascalModuleName}RepositorySupport" else "${pascalModuleName}RepositoryImpl"
+        if (generateLayout) apiRepositorySupportName else "${pascalModuleName}RepositoryImpl"
+
+    /** True when using split `XApiRepository` + combined `XRepository` (Android `generate/` tree). */
+    val usesSplitRepositoryLayout: Boolean get() = generateLayout
 
     /** Koin modules for generated API (`GeneratedDataModule` / `GeneratedDomainModule`). Only used when [generateLayout]. */
     val generateDiPackage: String get() = if (generateLayout) "$rootPackage.di" else rootPackage

@@ -19,7 +19,9 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabase
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidFeatureBuildGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpCombinedRepositoryGenerator
@@ -47,8 +49,10 @@ import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
 import com.dqc.egsengine.template.di.featureTemplateEngineModule
 import com.dqc.egsengine.feature.scaffold.domain.AndroidDatabaseScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.AndroidPreferencesScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ClientDatabaseScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.ClientPrefsScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
@@ -66,7 +70,7 @@ val featureScaffoldModule = module {
     single { SettingsGradleUpdater() }
     single { SwaggerParser() }
     single { SwaggerTemplateRenderer(get()) }
-    single { SwaggerCodeGenerator(get()) }
+    single { SwaggerCodeGenerator(get(), get(), get()) }
     single { KmpSwaggerTemplateRenderer(get()) }
     single { KmpCombinedRepositoryGenerator() }
     single { KmpRepositoryImplGenerator() }
@@ -79,6 +83,8 @@ val featureScaffoldModule = module {
     single { AndroidCombinedRepositoryGenerator() }
     single { AndroidDbOnlyRepositoryImplGenerator() }
     single { AndroidApiDbRepositoryImplGenerator() }
+    single { AndroidPrefsGeneratedDataModuleUpdater() }
+    single { AndroidFeatureBuildGradleUpdater() }
     single { KmpSwaggerCodeGenerator(get(), get(), get()) }
     single { KmpDatabaseCodeGenerator(get()) }
     single { KmpDatabaseRepositoryGenerator(get()) }
@@ -190,6 +196,22 @@ val featureScaffoldModule = module {
         KmpPreferencesScaffolder(
             get(),
             get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single {
+        AndroidPreferencesScaffolder(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single {
+        ClientPrefsScaffolder(
             get(),
             get(),
             get(),

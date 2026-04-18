@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
- * Delegates Retrofit [GeneratedXRepositorySupport] and Room [GeneratedXDbRepositorySupport] for Android Swagger (`XRepository`, not `XApiRepository`).
+ * Delegates Retrofit [GeneratedXApiRepositorySupport] and Room [GeneratedXDbRepositorySupport] into [XRepository].
  */
 class AndroidApiDbRepositoryImplGenerator {
 
@@ -52,13 +52,13 @@ class AndroidApiDbRepositoryImplGenerator {
          */
         package $pkg.data.repository
 
+        import $pkg.generate.data.repository.Generated${pascal}ApiRepositorySupport
         import $pkg.generate.data.repository.Generated${pascal}DbRepositorySupport
-        import $pkg.generate.data.repository.Generated${pascal}RepositorySupport
         import $pkg.generate.domain.repository.${pascal}DbRepository
         import $pkg.generate.domain.repository.${pascal}Repository
 
         internal class ${pascal}RepositoryImpl(
-            apiSupport: Generated${pascal}RepositorySupport,
+            apiSupport: Generated${pascal}ApiRepositorySupport,
             dbSupport: Generated${pascal}DbRepositorySupport,
         ) : ${pascal}Repository by apiSupport,
             ${pascal}DbRepository by dbSupport
