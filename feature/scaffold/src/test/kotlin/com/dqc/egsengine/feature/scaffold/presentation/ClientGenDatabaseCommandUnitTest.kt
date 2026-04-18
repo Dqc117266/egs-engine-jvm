@@ -1,6 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
+import com.dqc.egsengine.feature.scaffold.domain.ClientDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
 import com.github.ajalt.clikt.core.main
 import io.mockk.every
@@ -22,7 +23,7 @@ class ClientGenDatabaseCommandUnitTest {
 
     @Test
     fun `client gen database passes sql module project and dry-run`() {
-        val scaffolder = mockk<KmpDatabaseScaffolder>()
+        val scaffolder = mockk<ClientDatabaseScaffolder>()
         every {
             scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
         } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
@@ -71,7 +72,7 @@ class ClientGenDatabaseCommandUnitTest {
 
     @Test
     fun `short option -m works`() {
-        val scaffolder = mockk<KmpDatabaseScaffolder>()
+        val scaffolder = mockk<ClientDatabaseScaffolder>()
         every {
             scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
         } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
@@ -112,7 +113,7 @@ class ClientGenDatabaseCommandUnitTest {
 
     @Test
     fun `client gen database --repo and --cached passed to scaffolder`() {
-        val scaffolder = mockk<KmpDatabaseScaffolder>()
+        val scaffolder = mockk<ClientDatabaseScaffolder>()
         every {
             scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
         } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(

@@ -3,7 +3,7 @@ package com.dqc.egsengine.feature.scaffold.presentation
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
-import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.ClientDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
@@ -202,14 +202,14 @@ class ClientGenCommand : CliktCommand(name = "gen") {
  */
 class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent {
 
-    private val scaffolder: KmpDatabaseScaffolder by inject()
+    private val scaffolder: ClientDatabaseScaffolder by inject()
 
     private val sqlFile by argument(help = "Path to SQL DDL file (CREATE TABLE)")
 
     private val moduleName by option(
         "--module",
         "-m",
-        help = "Target KMP feature module name (under feature/<module>)",
+        help = "Target feature module name (under feature/<module>)",
     ).required()
 
     private val projectPath by option("--project", "-p", help = "Workspace root path")
@@ -244,7 +244,7 @@ class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent 
             )
 
             if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run ¡ª KMP database codegen preview:"))
+                echo(CliFormatter.formatInfo("Dry run - database codegen preview:"))
                 echo("  Module: ${result.moduleName}")
                 echo("  Files:")
                 result.files.forEach { echo("    ${it.path}") }

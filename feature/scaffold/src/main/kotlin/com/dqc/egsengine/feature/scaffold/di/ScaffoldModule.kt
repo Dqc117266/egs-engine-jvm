@@ -8,9 +8,17 @@ import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiDbRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncKoinUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseRepositoryImplGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidCombinedRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseCodeGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseDbOnlyDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseEntityMapperGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseGeneratedDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseRepositoryGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseUseCaseGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
@@ -38,7 +46,9 @@ import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
 import com.dqc.egsengine.template.di.featureTemplateEngineModule
+import com.dqc.egsengine.feature.scaffold.domain.AndroidDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.ClientDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
@@ -60,7 +70,15 @@ val featureScaffoldModule = module {
     single { KmpSwaggerTemplateRenderer(get()) }
     single { KmpCombinedRepositoryGenerator() }
     single { KmpRepositoryImplGenerator() }
-    single { AndroidDatabaseRepositoryImplGenerator() }
+    single { AndroidDatabaseCodeGenerator(get()) }
+    single { AndroidDatabaseRepositoryGenerator(get()) }
+    single { AndroidDatabaseGeneratedDataModuleUpdater() }
+    single { AndroidDatabaseDbOnlyDataModuleUpdater() }
+    single { AndroidDatabaseEntityMapperGenerator(get()) }
+    single { AndroidDatabaseUseCaseGenerator(get()) }
+    single { AndroidCombinedRepositoryGenerator() }
+    single { AndroidDbOnlyRepositoryImplGenerator() }
+    single { AndroidApiDbRepositoryImplGenerator() }
     single { KmpSwaggerCodeGenerator(get(), get(), get()) }
     single { KmpDatabaseCodeGenerator(get()) }
     single { KmpDatabaseRepositoryGenerator(get()) }
@@ -141,6 +159,28 @@ val featureScaffoldModule = module {
             get(),
             get(),
             get(),
+            get(),
+            get(),
+        )
+    }
+    single {
+        AndroidDatabaseScaffolder(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single {
+        ClientDatabaseScaffolder(
             get(),
             get(),
             get(),
