@@ -108,9 +108,10 @@ class ClientListCommand : CliktCommand(name = "list") {
 }
 
 /**
- * `egs-engine client list usecases [--module=X] [--project=P]`
+ * `egs-engine client list usecases [-m|--module <name>] [--project=P]`
  *
- * Lists `*UseCase.kt` under each `feature/<module>`, grouped by module (git-status style).
+ * Lists use case **class names** only (e.g. `DeleteUserSessionUseCase`), one per line.
+ * Without `-m`, groups under `feature/<module>` headers. With `-m`, only that module is listed.
  */
 class ClientListUsecasesCommand : CliktCommand(name = "usecases"), KoinComponent {
 
@@ -119,7 +120,7 @@ class ClientListUsecasesCommand : CliktCommand(name = "usecases"), KoinComponent
     private val module by option(
         "-m",
         "--module",
-        help = "Only list use cases in this feature module",
+        help = "Feature module name (under feature/<module>); only list use cases from this module",
     )
 
     private val projectPath by option("--project", "-p", help = "Workspace or Gradle project root")
@@ -141,14 +142,11 @@ class ClientListUsecasesCommand : CliktCommand(name = "usecases"), KoinComponent
                 echo()
                 if (useCases.isEmpty()) {
                     echo("feature/$target")
-                    echo("  (no *UseCase.kt files)")
+                    echo("(no *UseCase.kt files)")
                     return
                 }
                 echo("feature/$target")
-                useCases.forEach { uc ->
-                    echo("  ${uc.name}")
-                    echo("    ${uc.path}")
-                }
+                useCases.forEach { uc -> echo(uc.name) }
                 return
             }
 
@@ -166,10 +164,7 @@ class ClientListUsecasesCommand : CliktCommand(name = "usecases"), KoinComponent
                 if (useCases.isEmpty()) continue
                 anyPrinted = true
                 echo("feature/$m")
-                useCases.forEach { uc ->
-                    echo("  ${uc.name}")
-                    echo("    ${uc.path}")
-                }
+                useCases.forEach { uc -> echo(uc.name) }
                 echo()
             }
             if (!anyPrinted) {

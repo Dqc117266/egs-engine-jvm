@@ -44,7 +44,7 @@ class ClientListUsecasesCommandTest {
         val text = out.toString()
         assertTrue(text.contains("feature/demo"), "expected module header\n$text")
         assertTrue(text.contains("FooUseCase"), "expected class name\n$text")
-        assertTrue(text.contains("FooUseCase.kt"), "expected path\n$text")
+        assertTrue(!text.contains("FooUseCase.kt"), "should not print file paths\n$text")
     }
 
     @Test
