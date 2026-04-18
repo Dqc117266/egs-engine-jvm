@@ -1,5 +1,8 @@
 package ${screenPkg}
 
+<#list contractImports as imp>
+${imp}
+</#list>
 import ${uiContractPackage}.UiState
 import ${uiContractPackage}.UiIntent
 import ${uiContractPackage}.UiEffect
@@ -10,7 +13,7 @@ interface ${pascalName}Contract {
         val isLoading: Boolean = false,
         val error: String? = null,
 <#list stateFields as f>
-        val ${f.name}: ${f.typeFqn}? = null,
+        val ${f.name}: ${f.typeContractRef}? = null,
 </#list>
     ) : UiState
 

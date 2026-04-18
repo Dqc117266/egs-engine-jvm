@@ -30,7 +30,10 @@ data class PageUseCaseModel(
 /** Extra state field on Contract.State from use case return types. */
 data class PageStateFieldModel(
     val name: String,
+    /** Fully qualified type used for import collection (primitives stay short: [Long], [List]). */
     val typeFqn: String,
+    /** Short type for generated [State] properties ([contractImports] cover domain types). */
+    val typeContractRef: String,
     val nullable: Boolean,
 )
 
@@ -72,6 +75,8 @@ data class PageTemplateModel(
     val baseViewModelImport: String?,
     val baseViewModelSimpleName: String?,
     val stateFields: List<PageStateFieldModel>,
+    /** Imports for domain types referenced in [PageStateFieldModel.typeContractRef]. */
+    val contractImports: List<String>,
     val intentInners: List<PageIntentInnerModel>,
     val useCaseHandlers: List<PageUseCaseHandlerModel>,
 )

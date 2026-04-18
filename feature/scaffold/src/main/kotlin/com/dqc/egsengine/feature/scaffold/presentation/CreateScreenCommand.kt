@@ -8,8 +8,10 @@ import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.help
+import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.multiple as optionMultiple
 import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -29,6 +31,8 @@ import org.koin.core.component.inject
  * Short form:
  * ```
  * egs create screen Login -m user -u DefaultAi4043UseCase,TopicCreateTopicUseCase
+ * egs create screen Login -m user -u FirstUseCase -u SecondUseCase
+ * egs create screen Login -m user -u FirstUseCase SecondUseCase
  * ```
  */
 class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
@@ -41,15 +45,23 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         help = "Screen name, e.g. Login, Profile, Settings"
     )
 
+    /**
+     * Optional trailing names so `-u First Second` works: `-u` binds `First`, `Second` is collected here.
+     */
+    private val trailingUseCaseNames by argument(
+        name = "ADDITIONAL_USECASES",
+        help = "Additional use case names (optional; space-separated after the first `-u` value)",
+    ).multiple(required = false)
+
     private val module by option(
         "-m", "--module",
         help = "Target feature module, e.g. user, home, profile"
     )
 
-    private val useCases by option(
+    private val useCaseOptions by option(
         "-u", "--usecase",
-        help = "Comma-separated UseCase names, e.g. GetUserUseCase,UpdateUserUseCase"
-    )
+        help = "Use case class name(s); repeat -u, or comma/space-separated in one value, or `-u A B` (B as trailing arg)",
+    ).optionMultiple()
 
     private val route by option(
         "-r", "--route",
@@ -101,7 +113,7 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         }
 
         val allUseCases = useCaseScanner.scanByModule(clientRoot, targetModule)
-        val selectedUseCases = parseUseCases(useCases, allUseCases, targetModule)
+        val selectedUseCases = parseUseCases(collectedUseCaseNames(), allUseCases, targetModule)
 
         val screenParams = parseParams(params)
 
@@ -204,14 +216,21 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         return name.replaceFirstChar { it.uppercase() }
     }
 
-    private fun parseUseCases(
-        useCaseStr: String?,
-        allUseCases: List<UseCaseInfo>,
-        moduleName: String
-    ): List<UseCaseInfo> {
-        if (useCaseStr.isNullOrBlank()) return emptyList()
+    private fun collectedUseCaseNames(): List<String> {
+        val fromOptions = useCaseOptions.flatMap { part ->
+            part.split(Regex("[,\\s]+")).map { it.trim() }.filter { it.isNotBlank() }
+        }
+        val fromTrailing = trailingUseCaseNames.map { it.trim() }.filter { it.isNotBlank() }
+        return fromOptions + fromTrailing
+    }
 
-        val names = useCaseStr.split(",").map { it.trim() }
+    private fun parseUseCases(
+        names: List<String>,
+        allUseCases: List<UseCaseInfo>,
+        moduleName: String,
+    ): List<UseCaseInfo> {
+        if (names.isEmpty()) return emptyList()
+
         return names.map { name ->
             allUseCases.find { it.name == name || it.name == "${name}UseCase" }
                 ?: throw IllegalArgumentException("UseCase '$name' not found in module '$moduleName'")
