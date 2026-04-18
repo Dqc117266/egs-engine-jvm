@@ -249,7 +249,7 @@ class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent 
                 echo("  Files:")
                 result.files.forEach { echo("    ${it.path}") }
             } else {
-                echo(CliFormatter.formatSuccess("Generated Room database for module '${result.moduleName}'"))
+                echo(CliFormatter.formatSuccess("Generated Room database sources for module '${result.moduleName}'"))
                 echo("  ${result.files.size} files")
                 result.files.forEach { echo("    ${it.path}") }
             }

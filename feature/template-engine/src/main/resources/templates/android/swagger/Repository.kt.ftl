@@ -1,5 +1,9 @@
 package ${packageName}
 
+<#list imports as imp>
+import ${imp}
+</#list>
+
 internal interface ${repositoryName} {
 <#list operations as op>
     suspend fun ${op.operationId}(

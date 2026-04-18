@@ -10,6 +10,7 @@ import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncKoinUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
@@ -59,6 +60,7 @@ val featureScaffoldModule = module {
     single { KmpSwaggerTemplateRenderer(get()) }
     single { KmpCombinedRepositoryGenerator() }
     single { KmpRepositoryImplGenerator() }
+    single { AndroidDatabaseRepositoryImplGenerator() }
     single { KmpSwaggerCodeGenerator(get(), get(), get()) }
     single { KmpDatabaseCodeGenerator(get()) }
     single { KmpDatabaseRepositoryGenerator(get()) }
@@ -129,6 +131,7 @@ val featureScaffoldModule = module {
     }
     single {
         KmpDatabaseScaffolder(
+            get(),
             get(),
             get(),
             get(),
