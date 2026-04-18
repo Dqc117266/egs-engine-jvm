@@ -102,11 +102,13 @@ fun SubProjectConfig.toModuleTemplate(moduleName: String): ModuleTemplate {
     val featurePackage = "$bp.feature.$normalizedModule"
     val isAndroid = this.isAndroid
     val namespace = if (isAndroid) featurePackage else null
+    val resolvedConventionPlugin = conventionPluginId?.takeIf { it.isNotBlank() }
+        ?: if (isAndroid && bp.isNotBlank()) "$bp.convention.feature" else null
 
     return ModuleTemplate(
         name = moduleName,
         packageName = featurePackage,
-        conventionPluginId = conventionPluginId,
+        conventionPluginId = resolvedConventionPlugin,
         layers = moduleStructure?.layers ?: listOf("data", "domain", "presentation"),
         hasRes = moduleStructure?.hasRes ?: false,
         namespace = namespace,

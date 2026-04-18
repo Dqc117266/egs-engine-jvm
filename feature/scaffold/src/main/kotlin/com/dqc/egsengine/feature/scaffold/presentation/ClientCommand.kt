@@ -68,14 +68,22 @@ class ClientModuleCreateCommand : CliktCommand(name = "create"), KoinComponent {
                 dryRun = dryRun,
             )
 
+            val clientRoot = ProjectRootResolver.resolveGradleClientRoot(dir)
+            val moduleRoot = clientRoot.resolve("feature/$name")
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
+                echo()
+                echo(CliFormatter.formatInfo("  Client project (Gradle root): ${clientRoot.absolutePath}"))
+                echo(CliFormatter.formatInfo("  Module directory: ${moduleRoot.absolutePath}"))
                 echo()
                 result.files.forEach { echo("  $it") }
             } else {
                 echo(CliFormatter.formatSuccess("Created client module 'feature:$name'"))
                 echo()
-                echo("  Files created:")
+                echo("  Client project (Gradle root): ${clientRoot.absolutePath}")
+                echo("  Module directory: ${moduleRoot.absolutePath}")
+                echo()
+                echo("  Files created (paths relative to client project):")
                 result.files.forEach { echo("    $it") }
             }
         } catch (e: IllegalArgumentException) {

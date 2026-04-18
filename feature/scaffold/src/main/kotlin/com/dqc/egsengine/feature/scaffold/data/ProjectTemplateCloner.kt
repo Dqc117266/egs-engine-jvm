@@ -8,7 +8,21 @@ internal class ProjectTemplateCloner(
     private val logInfo: (String) -> Unit,
 ) {
 
-    fun cloneAndCustomize(canonicalUrl: String, targetDir: File, projectName: String) {
+    private val packageRewriter = TemplatePackageRewriter()
+
+    /**
+     * Clones [canonicalUrl] into [targetDir], then applies project-name patches and (optionally)
+     * the full package / project-name rewrite recipe for this template.
+     *
+     * @param packageName when non-null, will be used as the new base package in [TemplateRenameRecipes].
+     * If no recipe is registered for [canonicalUrl], the package rewrite is skipped silently.
+     */
+    fun cloneAndCustomize(
+        canonicalUrl: String,
+        targetDir: File,
+        projectName: String,
+        packageName: String? = null,
+    ) {
         val cloneUrl = GitHubCloneUrlPolicy.embedHttpsToken(canonicalUrl, githubToken, githubUsername)
         logInfo.invoke("Cloning template: $canonicalUrl")
 
@@ -25,6 +39,20 @@ internal class ProjectTemplateCloner(
 
         targetDir.resolve(".git").takeIf { it.exists() }?.deleteRecursively()
         applyProjectNameToClonedTree(targetDir, projectName)
+
+        if (packageName != null) {
+            TemplateRenameRecipes.recipeFor(canonicalUrl)?.let { recipe ->
+                logInfo.invoke(
+                    "Rewriting package ${recipe.oldPackage} -> $packageName in ${targetDir.name}",
+                )
+                packageRewriter.rewrite(
+                    projectDir = targetDir,
+                    recipe = recipe,
+                    newProjectName = projectName,
+                    newPackage = packageName,
+                )
+            }
+        }
     }
 
     private fun applyProjectNameToClonedTree(root: File, projectName: String) {

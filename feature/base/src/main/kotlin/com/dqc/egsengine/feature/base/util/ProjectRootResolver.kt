@@ -25,20 +25,36 @@ object ProjectRootResolver {
 
     fun hasGradleSettings(dir: File): Boolean = isGradleProjectRoot(dir)
 
+    /**
+     * Prefer walking from the **absolute** path (symlinks not resolved) so that a workspace
+     * reached through a symlink — e.g. `.../egs-group/android-test` -> `.../.Trashes/...` —
+     * resolves to the path the user actually `cd`'d into, and generated files show up where the
+     * IDE project is opened. Using [File.getCanonicalFile] first used to anchor the walk in
+     * `.Trashes/...`, which made all writes go to the trash copy and looked like "no code under
+     * feature/" in the normal project folder.
+     */
     private fun findProjectRoot(start: File): File? {
+        val absoluteStart = start.absoluteFile
+        findProjectRootWalkingUp(absoluteStart)?.let { return it }
+
         val canonicalStart = try {
-            start.canonicalFile
+            absoluteStart.canonicalFile
         } catch (_: Exception) {
-            start.absoluteFile
+            null
         }
-        // 1) Nearest ancestor with workspace.json (multi-project root)
-        var current: File? = canonicalStart
+        if (canonicalStart != null && canonicalStart != absoluteStart) {
+            findProjectRootWalkingUp(canonicalStart)?.let { return it }
+        }
+        return null
+    }
+
+    private fun findProjectRootWalkingUp(start: File): File? {
+        var current: File? = start
         while (current != null) {
             if (isWorkspaceRoot(current)) return current
             current = current.parentFile
         }
-        // 2) Nearest ancestor with Gradle settings
-        current = canonicalStart
+        current = start
         while (current != null) {
             if (isGradleProjectRoot(current)) return current
             current = current.parentFile

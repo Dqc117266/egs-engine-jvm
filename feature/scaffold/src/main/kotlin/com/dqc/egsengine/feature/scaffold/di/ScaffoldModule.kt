@@ -117,7 +117,16 @@ val featureScaffoldModule = module {
     single { ModuleScaffolder(get(), get(), get(), get(), get(named("platformModuleGenerators"))) }
     single { SwaggerApiScaffolder(get(), get(), get()) }
     single { PageScaffolder(get(), get(), get(), get()) }
-    single { ApiSyncScaffolder(get(), get(), get(named("platformApiGenerators")), get(), get()) }
+    single {
+        ApiSyncScaffolder(
+            workspaceResolver = get(),
+            swaggerParser = get(),
+            platformApiGenerators = get(named("platformApiGenerators")),
+            platformModuleGenerators = get(named("platformModuleGenerators")),
+            kmpApiSyncKoinUpdater = get(),
+            androidApiSyncKoinUpdater = get(),
+        )
+    }
     single {
         KmpDatabaseScaffolder(
             get(),

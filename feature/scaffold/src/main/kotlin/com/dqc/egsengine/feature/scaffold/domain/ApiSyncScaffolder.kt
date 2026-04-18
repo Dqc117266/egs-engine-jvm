@@ -4,6 +4,7 @@ import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
@@ -18,6 +19,7 @@ class ApiSyncScaffolder(
     private val workspaceResolver: WorkspaceConfigResolver,
     private val swaggerParser: SwaggerParser,
     private val platformApiGenerators: Map<Platform, PlatformApiGenerator>,
+    private val platformModuleGenerators: Map<Platform, PlatformModuleGenerator>,
     private val kmpApiSyncKoinUpdater: KmpApiSyncKoinUpdater,
     private val androidApiSyncKoinUpdater: AndroidApiSyncKoinUpdater,
 ) {
@@ -42,6 +44,17 @@ class ApiSyncScaffolder(
             ?: throw IllegalArgumentException("No API generator for platform: ${clientConfig.platform}")
 
         val subProjectRoot = projectRoot.resolve(clientConfig.path)
+        val scaffoldFiles = if (!dryRun) {
+            ensureFeatureModuleScaffold(
+                projectRoot = projectRoot,
+                subProjectRoot = subProjectRoot,
+                clientModuleName = clientModuleName,
+                clientConfig = clientConfig,
+            )
+        } else {
+            emptyList()
+        }
+
         val generated = gen.generate(subProjectRoot, clientModuleName, spec, clientConfig)
 
         if (dryRun) {
@@ -71,8 +84,8 @@ class ApiSyncScaffolder(
             config = clientConfig,
         )
 
-        logger.info("Synced API from backend module '{}' to client module '{}' ({} files)",
-            backendModuleName, clientModuleName, generated.size)
+        logger.info("Synced API from backend module '{}' to client module '{}' ({} files, scaffold={})",
+            backendModuleName, clientModuleName, generated.size, scaffoldFiles.size)
 
         return ApiSyncResult(
             clientModule = clientModuleName,
@@ -80,6 +93,60 @@ class ApiSyncScaffolder(
             files = generated,
             dryRun = false,
         )
+    }
+
+    /**
+     * Auto-creates the feature module skeleton (`build.gradle.kts`, `AndroidManifest.xml` on
+     * Android, the Koin/Data/Domain/Presentation stubs) and registers it in
+     * `settings.gradle.kts` when the target feature directory does not already carry a Gradle
+     * build file.
+     *
+     * Writes only files that do not already exist so that hand-edits inside
+     * `feature/<module>/` (e.g. a user-authored `RepositoryImpl`) survive re-runs. No-op when
+     * no module generator is registered for the client's platform, or when the feature already
+     * has a `build.gradle.kts`.
+     */
+    private fun ensureFeatureModuleScaffold(
+        projectRoot: File,
+        subProjectRoot: File,
+        clientModuleName: String,
+        clientConfig: com.dqc.egsengine.feature.init.domain.model.SubProjectConfig,
+    ): List<File> {
+        val featureBuildFile = subProjectRoot.resolve("feature/$clientModuleName/build.gradle.kts")
+        if (featureBuildFile.exists()) return emptyList()
+
+        val moduleGen = platformModuleGenerators[clientConfig.platform] ?: run {
+            logger.debug(
+                "No module generator registered for platform {} - skipping scaffold auto-create for feature/{}",
+                clientConfig.platform,
+                clientModuleName,
+            )
+            return emptyList()
+        }
+
+        logger.info(
+            "feature/{} build file missing; auto-scaffolding module skeleton before API sync",
+            clientModuleName,
+        )
+        val preview = moduleGen.preview(subProjectRoot, clientModuleName, clientConfig)
+        val created = mutableListOf<File>()
+        preview.forEach { entry ->
+            val target = subProjectRoot.resolve(entry.path)
+            if (target.exists()) {
+                logger.debug("Skip existing file during scaffold auto-create: {}", target.path)
+                return@forEach
+            }
+            target.parentFile.mkdirs()
+            val content = entry.content
+            if (content != null) {
+                target.writeText(content)
+            } else {
+                target.createNewFile()
+            }
+            created.add(target)
+        }
+        moduleGen.updateSettings(projectRoot, clientModuleName, clientConfig)
+        return created
     }
 
     data class ApiSyncResult(

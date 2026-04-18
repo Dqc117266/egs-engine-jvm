@@ -121,7 +121,12 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
                 if (dryRun) {
                     echo(CliFormatter.formatInfo("[dry-run] Would clone client ($clientPlatform) from $resolvedUrl -> $clientPath/"))
                 } else {
-                    cloner.cloneAndCustomize(resolvedUrl, targetDir.resolve(clientPath), projectName)
+                    cloner.cloneAndCustomize(
+                        canonicalUrl = resolvedUrl,
+                        targetDir = targetDir.resolve(clientPath),
+                        projectName = projectName,
+                        packageName = packageName,
+                    )
                 }
                 projects["client"] = SubProjectConfig(
                     platform = clientPlatform,

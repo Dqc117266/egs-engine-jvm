@@ -30,6 +30,16 @@ class AndroidModuleGenerator(
         return previewFromTemplate(template, projectRoot)
     }
 
+    /**
+     * Writes the module skeleton under [projectRoot].
+     *
+     * NOTE: [projectRoot] is the **Android Gradle root** (already resolved by the caller through
+     * `workspaceRoot.resolve(config.path)`). Do NOT resolve [config.path] again here, otherwise
+     * files land under `client/client/feature/<name>/` and the `:feature:<name>` entry that
+     * [SettingsGradleUpdater] inserted in `client/settings.gradle.kts` will point at a missing
+     * directory — Gradle then fails with "Configuring project ':feature:<name>' without an
+     * existing directory".
+     */
     override fun generate(
         projectRoot: File,
         moduleName: String,
@@ -37,10 +47,9 @@ class AndroidModuleGenerator(
     ): List<File> {
         val template = toModuleTemplate(moduleName, config)
         val created = mutableListOf<File>()
-        val subProjectRoot = projectRoot.resolve(config.path)
 
-        for (entry in previewFromTemplate(template, subProjectRoot)) {
-            val file = subProjectRoot.resolve(entry.path)
+        for (entry in previewFromTemplate(template, projectRoot)) {
+            val file = projectRoot.resolve(entry.path)
             file.parentFile.mkdirs()
 
             if (entry.content != null) {
@@ -50,13 +59,20 @@ class AndroidModuleGenerator(
             }
 
             created.add(file)
-            logger.debug("Created: {}", entry.path)
+            logger.debug("Created: {}", file.absolutePath)
         }
 
-        logger.info("Generated {} files for Android module '{}'", created.size, moduleName)
+        logger.info("Generated {} files for Android module '{}' under {}", created.size, moduleName, projectRoot.absolutePath)
         return created
     }
 
+    /**
+     * Registers the new `:feature:<name>` entry in the Android Gradle root's `settings.gradle.kts`.
+     *
+     * Matches the convention from [ModuleScaffolder.scaffoldForProject]: it passes the
+     * **workspace root** as `projectRoot`, and the Android Gradle root lives at
+     * `projectRoot.resolve(config.path)` (e.g. `android-test/client/`).
+     */
     override fun updateSettings(
         projectRoot: File,
         moduleName: String,
@@ -133,11 +149,12 @@ class AndroidModuleGenerator(
             val featurePackage = "${config.basePackage}.feature.$normalizedModule"
             val isAndroid = config.platform in setOf(Platform.ANDROID, Platform.KMP_ANDROID)
             val namespace = if (isAndroid) featurePackage else null
+            val conventionPluginId = resolveConventionPluginId(config, isAndroid)
 
             return ModuleTemplate(
                 name = moduleName,
                 packageName = featurePackage,
-                conventionPluginId = config.conventionPluginId,
+                conventionPluginId = conventionPluginId,
                 layers = config.moduleStructure?.layers ?: listOf("data", "domain", "presentation"),
                 hasRes = config.moduleStructure?.hasRes ?: false,
                 namespace = namespace,
@@ -145,6 +162,21 @@ class AndroidModuleGenerator(
                 basePackage = config.basePackage,
                 baseClassPackages = resolveBaseClasses(config),
             )
+        }
+
+        /**
+         * Derives the Android convention plugin id for feature modules when
+         * [SubProjectConfig.conventionPluginId] is not explicitly set.
+         *
+         * The default Android client template registers a convention plugin named
+         * `<basePackage>.convention.feature`; this matches that naming so fresh scaffolds compile
+         * against the template's `build-logic`.
+         */
+        private fun resolveConventionPluginId(config: SubProjectConfig, isAndroid: Boolean): String? {
+            config.conventionPluginId?.takeIf { it.isNotBlank() }?.let { return it }
+            if (!isAndroid) return null
+            val base = config.basePackage.takeIf { it.isNotBlank() } ?: return null
+            return "$base.convention.feature"
         }
 
         private fun resolveBaseClasses(config: SubProjectConfig): BaseClassPackages {
