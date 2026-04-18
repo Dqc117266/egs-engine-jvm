@@ -8,6 +8,9 @@ import ${uc.domainUseCasePackage}.${uc.useCaseClass}
 <#list dbUseCaseImports as imp>
 import ${imp}
 </#list>
+<#list prefsUseCaseImports as imp>
+import ${imp}
+</#list>
 
 internal val generatedDomainModule = module {
     // egs-gen:swagger-usecases-begin
@@ -21,4 +24,10 @@ internal val generatedDomainModule = module {
     singleOf(::${uc.useCaseClass})
 </#list>
     // egs-gen:db-usecases-end
+
+    // egs-gen:prefs-usecases-begin
+<#list prefsUseCases as uc>
+    singleOf(::${uc.useCaseClass})
+</#list>
+    // egs-gen:prefs-usecases-end
 }

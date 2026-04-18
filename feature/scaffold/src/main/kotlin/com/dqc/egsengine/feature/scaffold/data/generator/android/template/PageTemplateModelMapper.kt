@@ -39,7 +39,7 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
     val stateFields = buildList {
         useCases.forEach { uc ->
             val rt = uc.returnType ?: return@forEach
-            if (looksLikeFlowReturn(rt)) return@forEach
+            if (!shouldEmitStateFieldForReturnType(rt)) return@forEach
             val propName = uc.camelName
             val typeFqn = resolveStatePropertyTypeString(rt, modelPackage, modulePackage)
             add(
@@ -53,8 +53,6 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
         }
     }
 
-    val contractImports = buildContractImports(stateFields)
-
     val intentInners = useCases.map { uc ->
         val intentName = uc.name.removeSuffix("UseCase")
         val emptyParams = uc.parameters.isEmpty()
@@ -65,8 +63,13 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
         )
     }
 
+    val contractImports = buildContractImports(stateFields, intentInners)
+
     val useCaseHandlers = useCases.map { uc ->
         val intentName = uc.name.removeSuffix("UseCase")
+        val rt = uc.returnType.orEmpty()
+        val flowBased = looksLikeFlowReturn(rt)
+        val resultBased = !flowBased && looksLikeResultReturn(rt)
         PageUseCaseHandlerModel(
             intentSimpleName = intentName,
             handlerName = "handle${intentName.replaceFirstChar { it.uppercase() }}",
@@ -74,8 +77,11 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
             hasParams = uc.parameters.isNotEmpty(),
             paramPassArgs = uc.parameters.joinToString(", ") { "${it.name} = ${it.name}" },
             showLoading = !(uc.returnType?.contains("SseEmitter") == true),
+            resultBased = resultBased,
+            flowBased = flowBased,
         )
     }
+    val hasResultBasedHandler = useCaseHandlers.any { it.resultBased }
 
     return PageTemplateModel(
         pascalName = pascalName,
@@ -104,16 +110,20 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
         contractImports = contractImports,
         intentInners = intentInners,
         useCaseHandlers = useCaseHandlers,
+        hasResultBasedHandler = hasResultBasedHandler,
     )
 }
 
-private fun UseCaseParam.toPageParamModel(modelPackage: String, modulePackage: String): PageUseCaseParamModel =
-    PageUseCaseParamModel(
+private fun UseCaseParam.toPageParamModel(modelPackage: String, modulePackage: String): PageUseCaseParamModel {
+    val fqn = resolveParamTypeString(type, modelPackage, modulePackage)
+    return PageUseCaseParamModel(
         name = name,
         type = type,
-        kotlinType = resolveParamTypeString(type, modelPackage, modulePackage),
+        kotlinType = fqn,
+        kotlinTypeContractRef = contractShortTypeDisplay(fqn),
         placeholderValue = placeholderValue,
     )
+}
 
 private fun UseCaseInfo.toPageUseCaseModel(modelPackage: String, modulePackage: String): PageUseCaseModel {
     val intentName = name.removeSuffix("UseCase")
@@ -136,6 +146,31 @@ private fun looksLikeFlowReturn(returnType: String): Boolean {
 
 private val FLOW_TYPE_REGEX =
     Regex("""\b(Flow|StateFlow|SharedFlow|MutableStateFlow|MutableSharedFlow)\s*<""")
+
+private fun looksLikeResultReturn(returnType: String): Boolean {
+    if (returnType.isBlank()) return false
+    return returnType.contains("Result<") ||
+        returnType.contains(".Result<") ||
+        returnType.contains("domain.result.Result<") ||
+        returnType.contains("generate.domain.result.Result<") ||
+        returnType.contains("base.domain.result.Result<") ||
+        returnType.endsWith(".Result") ||
+        returnType.contains("network.domain.Result")
+}
+
+/** No [State] field for Flow returns or for Unit / Result<Unit> (side-effect DB writes). */
+private fun shouldEmitStateFieldForReturnType(returnType: String): Boolean {
+    if (returnType.isBlank()) return false
+    if (looksLikeFlowReturn(returnType)) return false
+    val norm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
+    val effective = extractResultInnerType(norm)
+        ?: Regex("""Result<([^>]+)>""").find(norm)?.groupValues?.get(1)?.trim()
+        ?: norm
+    val trimmed = effective.trimEnd('?')
+    val simple = trimmed.substringAfterLast(".")
+    if (simple == "Unit" || trimmed == "kotlin.Unit") return false
+    return true
+}
 
 /**
  * Use case sources may use fully qualified stdlib types (`kotlin.Long`, `kotlin.Int`).
@@ -200,7 +235,7 @@ private fun resolveBasicTypeString(simpleType: String, typePackage: String, mode
             } else {
                 "$typePackage.$cleaned"
             }
-            normalizeSwaggerModelFqn(raw, modulePackage)
+            fixRoomEntityFqn(normalizeSwaggerModelFqn(raw, modulePackage), cleaned, modulePackage)
         }
     }
 }
@@ -230,6 +265,14 @@ private fun resolveParamTypeString(typeStr: String, modelPackage: String, module
                 else ->
                     if (simple.endsWith("ApiModel")) {
                         "$modelPackage.${simple.removeSuffix("ApiModel")}"
+                    } else if (simple.endsWith("Entity")) {
+                        val entityPkg = databaseEntityPackage(modulePackage)
+                        val candidate = when {
+                            parts.size == 1 -> "$entityPkg.$simple"
+                            pkg == modelPackage || pkg.endsWith(".generate.domain.model") -> "$entityPkg.$simple"
+                            else -> "$pkg.$simple"
+                        }
+                        fixRoomEntityFqn(normalizeSwaggerModelFqn(candidate, modulePackage), simple, modulePackage)
                     } else {
                         normalizeSwaggerModelFqn("$pkg.$simple", modulePackage)
                     }
@@ -237,6 +280,18 @@ private fun resolveParamTypeString(typeStr: String, modelPackage: String, module
         }
     }
     return if (nullable) "$typeName?" else typeName
+}
+
+private fun databaseEntityPackage(modulePackage: String): String =
+    "$modulePackage.generate.data.datasource.database.entity"
+
+/** Room entities belong under [databaseEntityPackage], not [generate.domain.model]. */
+private fun fixRoomEntityFqn(fqn: String, simple: String, modulePackage: String): String {
+    if (!simple.endsWith("Entity")) return fqn
+    val entityPkg = databaseEntityPackage(modulePackage)
+    val wrong = "$modulePackage.generate.domain.model.$simple"
+    if (fqn == wrong) return "$entityPkg.$simple"
+    return fqn
 }
 
 /** API-sync DTOs live under [modulePackage].generate.domain.model; older sources may still say …domain.model…. */
@@ -290,10 +345,16 @@ private fun splitTopLevelCommaGenericArgs(args: String): List<String> {
     return out
 }
 
-private fun buildContractImports(stateFields: List<PageStateFieldModel>): List<String> {
+private fun buildContractImports(
+    stateFields: List<PageStateFieldModel>,
+    intentInners: List<PageIntentInnerModel>,
+): List<String> {
     val out = mutableSetOf<String>()
     stateFields.forEach { f ->
         collectContractImportsForType(f.typeFqn, out)
+    }
+    intentInners.flatMap { it.params }.forEach { p ->
+        collectContractImportsForType(p.kotlinType, out)
     }
     return out.sorted()
 }

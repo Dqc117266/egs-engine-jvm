@@ -24,7 +24,7 @@ interface ${pascalName}Contract {
 <#else>
         data class ${intent.simpleName}(
 <#list intent.params as p>
-            val ${p.name}: ${p.kotlinType}<#if p_has_next>,</#if>
+            val ${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>,</#if>
 </#list>
         ) : Intent
 </#if>

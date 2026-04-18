@@ -18,6 +18,11 @@ object KmpGeneratedDomainModuleIo {
         RegexOption.MULTILINE,
     )
 
+    private val prefsBlockPattern = Regex(
+        """//\s*egs-gen:prefs-usecases-begin\s*\n([\s\S]*?)\n\s*//\s*egs-gen:prefs-usecases-end""",
+        RegexOption.MULTILINE,
+    )
+
     private val singleOfPattern = Regex("""singleOf\s*\(\s*::\s*(\w+)\s*\)""")
 
     fun extractDbUseCaseClassNames(
@@ -82,6 +87,38 @@ object KmpGeneratedDomainModuleIo {
         val replacement = "// egs-gen:db-usecases-begin\n$body\n    // egs-gen:db-usecases-end"
         return if (dbBlockPattern.containsMatchIn(existingContent)) {
             dbBlockPattern.replace(existingContent, replacement)
+        } else {
+            existingContent
+        }
+    }
+
+    fun extractPrefsUseCaseClassNames(
+        subProjectRoot: File,
+        moduleName: String,
+        template: ModuleTemplate,
+    ): List<String> {
+        val pkgPath = template.packageName.replace('.', '/')
+        val file = subProjectRoot.resolve(
+            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+        )
+        if (!file.exists()) return emptyList()
+        val text = file.readText()
+        val block = prefsBlockPattern.find(text)?.groupValues?.get(1) ?: return emptyList()
+        return singleOfPattern.findAll(block).map { it.groupValues[1] }.toList()
+    }
+
+    fun replacePrefsUseCasesBlock(
+        existingContent: String,
+        prefsUseCaseClassNames: List<String>,
+    ): String {
+        val body = buildString {
+            for (name in prefsUseCaseClassNames) {
+                appendLine("    singleOf(::$name)")
+            }
+        }.trimEnd()
+        val replacement = "// egs-gen:prefs-usecases-begin\n$body\n    // egs-gen:prefs-usecases-end"
+        return if (prefsBlockPattern.containsMatchIn(existingContent)) {
+            prefsBlockPattern.replace(existingContent, replacement)
         } else {
             existingContent
         }

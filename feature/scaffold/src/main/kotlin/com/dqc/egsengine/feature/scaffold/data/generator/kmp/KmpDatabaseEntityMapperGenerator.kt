@@ -5,8 +5,8 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
-import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
+import com.dqc.egsengine.feature.scaffold.data.generator.common.DatabaseEntityDomainMapping
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerSchema
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerSpec
@@ -31,10 +31,10 @@ class KmpDatabaseEntityMapperGenerator(
         projectRoot: File?,
     ): List<GeneratedFile> {
         val rows = KmpDatabaseTemplateModels.buildRows(tables)
-        val pairs = rows.mapNotNull { row -> matchSchema(row.table, spec)?.let { row to it } }
-            .mapNotNull { (row, schema) ->
-                buildMapperBlock(row.table, row.entityClassName, schema)?.let { row to it }
-            }
+        val pairs = rows.mapNotNull { row ->
+            val schema = DatabaseEntityDomainMapping.matchSchema(row.table, spec) ?: return@mapNotNull null
+            DatabaseEntityDomainMapping.buildMapperBlock(row.table, row.entityClassName, schema)?.let { row to it }
+        }
         if (pairs.isEmpty()) {
             logger.warn("No Swagger schemas matched DDL tables with overlapping fields; skipping entity mappers.")
             return emptyList()
@@ -71,46 +71,6 @@ class KmpDatabaseEntityMapperGenerator(
         )
     }
 
-    private fun matchSchema(table: TableSchema, spec: SwaggerSpec): SwaggerSchema? {
-        val base = SqlNaming.snakeToPascal(table.tableName)
-        return spec.schemas.find { it.name == "${base}RespVO" }
-            ?: spec.schemas.find {
-                it.name.startsWith(base) && (it.name.contains("Resp") || it.name == base)
-            }
-    }
-
-    private fun buildMapperBlock(
-        table: TableSchema,
-        entityClassName: String,
-        schema: SwaggerSchema,
-    ): Map<String, Any?>? {
-        val domainClassName = schema.name
-        val columnByKotlinProp = table.columns.associateBy { SqlNaming.snakeToLowerCamel(it.name) }
-
-        val toDomainLines = mutableListOf<String>()
-        val toEntityLines = mutableListOf<String>()
-
-        for (prop in schema.properties) {
-            val col = columnByKotlinProp[prop.name]
-            if (col != null) {
-                val lhs = prop.name
-                toDomainLines.add("    $lhs = $lhs")
-                toEntityLines.add("    $lhs = $lhs")
-            }
-        }
-        if (toDomainLines.isEmpty()) return null
-
-        val toDomainBody = toDomainLines.joinToString(",\n")
-        val toEntityBody = toEntityLines.joinToString(",\n")
-
-        return mapOf(
-            "entityClassName" to entityClassName,
-            "domainClassName" to domainClassName,
-            "toDomainBody" to toDomainBody,
-            "toEntityBody" to toEntityBody,
-        )
-    }
-
     /**
      * Maps Swagger domain model name (e.g. TopicRespVO) to table row, if a matching table exists.
      */
@@ -121,7 +81,7 @@ class KmpDatabaseEntityMapperGenerator(
         val rows = KmpDatabaseTemplateModels.buildRows(tables)
         val map = mutableMapOf<String, KmpDatabaseTableRow>()
         for (row in rows) {
-            val schema = matchSchema(row.table, spec) ?: continue
+            val schema = DatabaseEntityDomainMapping.matchSchema(row.table, spec) ?: continue
             map[schema.name] = row
         }
         return map

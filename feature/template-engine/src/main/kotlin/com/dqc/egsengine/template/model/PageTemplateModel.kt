@@ -9,8 +9,10 @@ package com.dqc.egsengine.template.model
 data class PageUseCaseParamModel(
     val name: String,
     val type: String,
-    /** Resolved Kotlin type for generated sources. */
+    /** Fully qualified Kotlin type (for imports). */
     val kotlinType: String,
+    /** Short type for Contract / ViewModel parameters ([contractImports] cover FQNs). */
+    val kotlinTypeContractRef: String,
     val placeholderValue: String,
 )
 
@@ -53,6 +55,10 @@ data class PageUseCaseHandlerModel(
     val hasParams: Boolean,
     val paramPassArgs: String,
     val showLoading: Boolean,
+    /** True when [UseCaseInfo.returnType] is a network/API [Result] (not Flow, not plain Unit/T). */
+    val resultBased: Boolean,
+    /** True when return type is Flow / StateFlow / etc. */
+    val flowBased: Boolean,
 )
 
 /** Freemarker root model for android page templates. */
@@ -79,4 +85,6 @@ data class PageTemplateModel(
     val contractImports: List<String>,
     val intentInners: List<PageIntentInnerModel>,
     val useCaseHandlers: List<PageUseCaseHandlerModel>,
+    /** When false, ViewModel template omits `import …Result` (plain/Flow-only handlers). */
+    val hasResultBasedHandler: Boolean,
 )

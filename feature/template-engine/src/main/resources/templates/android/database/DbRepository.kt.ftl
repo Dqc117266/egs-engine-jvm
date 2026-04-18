@@ -5,7 +5,7 @@
  */
 package ${repositoryPackageName}
 
-<#list entityImports as imp>
+<#list rowImports as imp>
 import ${imp}
 </#list>
 
@@ -15,19 +15,19 @@ import ${imp}
 internal interface ${dbRepositoryName} {
 <#list tables as t>
     // --- ${t.sqlTableName} ---
-    suspend fun get${t.prefixPascal}All(): List<${t.entityClassName}>
+    suspend fun get${t.prefixPascal}All(): List<${t.exposedRowType}>
 
-    suspend fun get${t.prefixPascal}ById(${t.pkPropertyName}: ${t.pkKotlinType}): ${t.entityClassName}?
+    suspend fun get${t.prefixPascal}ById(${t.pkPropertyName}: ${t.pkKotlinType}): ${t.exposedRowType}?
 
     suspend fun count${t.prefixPascal}(): Long
 
-    suspend fun insert${t.prefixPascal}(entity: ${t.entityClassName})
+    suspend fun insert${t.prefixPascal}(entity: ${t.exposedRowType})
 
-    suspend fun insertAll${t.prefixPascal}(entities: List<${t.entityClassName}>)
+    suspend fun insertAll${t.prefixPascal}(entities: List<${t.exposedRowType}>)
 
-    suspend fun update${t.prefixPascal}(entity: ${t.entityClassName})
+    suspend fun update${t.prefixPascal}(entity: ${t.exposedRowType})
 
-    suspend fun delete${t.prefixPascal}(entity: ${t.entityClassName})
+    suspend fun delete${t.prefixPascal}(entity: ${t.exposedRowType})
 
     suspend fun delete${t.prefixPascal}ById(${t.pkPropertyName}: ${t.pkKotlinType})
 

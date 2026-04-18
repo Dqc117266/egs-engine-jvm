@@ -32,6 +32,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGenerate
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpPrefsGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseUseCaseGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpPrefsUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
@@ -91,6 +92,7 @@ val featureScaffoldModule = module {
     single { KmpDatabaseDbOnlyDataModuleUpdater() }
     single { KmpDatabaseEntityMapperGenerator(get()) }
     single { KmpDatabaseUseCaseGenerator(get()) }
+    single { KmpPrefsUseCaseGenerator(get()) }
     single { KmpFeatureBuildGradleUpdater() }
     single { KmpDatabaseGeneratedDataModuleUpdater() }
     single { KmpPrefsGeneratedDataModuleUpdater() }
@@ -195,6 +197,7 @@ val featureScaffoldModule = module {
     }
     single {
         KmpPreferencesScaffolder(
+            get(),
             get(),
             get(),
             get(),

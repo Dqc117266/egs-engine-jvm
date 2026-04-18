@@ -67,6 +67,15 @@ class KmpDatabaseScaffolder(
         )
         val hasApi = apiSupportFile.exists()
 
+        val swaggerSpec = runCatching {
+            swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
+        }.onFailure { logger.debug("Swagger not available for DB VO mapping: {}", it.message) }
+            .getOrNull()
+
+        if (swaggerSpec != null) {
+            generated += kmpDatabaseEntityMapperGenerator.generate(template, tables, swaggerSpec, projectRoot)
+        }
+
         val effectiveRepo = repo || cached
         if (cached) {
             require(hasApi) {
@@ -79,19 +88,23 @@ class KmpDatabaseScaffolder(
                 "--cached is deprecated: cache-aside belongs in {}RepositoryImpl overrides (delegation model).",
                 modulePascal,
             )
-            val spec = swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
-            generated += kmpDatabaseEntityMapperGenerator.generate(template, tables, spec, projectRoot)
         }
 
         if (effectiveRepo) {
             when {
                 !cached && hasApi -> {
-                    generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(template, tables, projectRoot)
+                    generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                        template,
+                        tables,
+                        projectRoot,
+                        swaggerSpec,
+                    )
                     generated += kmpDatabaseUseCaseGenerator.generate(
                         template = template,
                         tables = tables,
                         projectRoot = projectRoot,
                         subProjectRoot = subProjectRoot,
+                        spec = swaggerSpec,
                     )
                     val prefsSlice = kmpCombinedRepositoryGenerator.detectSlices(
                         subProjectRoot,
@@ -114,12 +127,18 @@ class KmpDatabaseScaffolder(
                     )?.let { generated += it }
                 }
                 !cached && !hasApi -> {
-                    generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(template, tables, projectRoot)
+                    generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                        template,
+                        tables,
+                        projectRoot,
+                        swaggerSpec,
+                    )
                     generated += kmpDatabaseUseCaseGenerator.generate(
                         template = template,
                         tables = tables,
                         projectRoot = projectRoot,
                         subProjectRoot = subProjectRoot,
+                        spec = swaggerSpec,
                     )
                     val prefsSlice = kmpCombinedRepositoryGenerator.detectSlices(
                         subProjectRoot,

@@ -6,8 +6,10 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
+import com.dqc.egsengine.feature.scaffold.data.generator.common.DatabaseEntityDomainMapping
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerGeneratorContext
+import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerSpec
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.template.TemplateEngine
 import org.slf4j.LoggerFactory
@@ -26,10 +28,12 @@ class KmpDatabaseUseCaseGenerator(
         tables: List<TableSchema>,
         projectRoot: File?,
         subProjectRoot: File? = null,
+        spec: SwaggerSpec? = null,
     ): List<GeneratedFile> {
         require(tables.isNotEmpty()) { "tables required" }
         val ctx = KmpSwaggerGeneratorContext(template)
         val entityPackage = "${template.packageName}.generate.data.datasource.database.entity"
+        val domainModelPackage = "${template.packageName}.generate.domain.model"
         val rows = KmpDatabaseTemplateModels.buildRows(tables)
         val moduleDir = "feature/${template.name}"
         val useCasePkg = ctx.domainUseCasePackage
@@ -39,7 +43,10 @@ class KmpDatabaseUseCaseGenerator(
 
         for (row in rows) {
             val p = row.prefixPascal
-            val e = row.entityClassName
+            val domainSimple = DatabaseEntityDomainMapping.resolveDomainClassName(row.table, spec)
+            val e = domainSimple ?: row.entityClassName
+            val rowTypeImport =
+                if (domainSimple != null) "$domainModelPackage.$domainSimple" else "$entityPackage.${row.entityClassName}"
             val pk = row.pkPropertyName
             val pkt = row.pkKotlinType
 
@@ -79,14 +86,14 @@ class KmpDatabaseUseCaseGenerator(
                 "",
                 "List<$e>",
                 "get${p}All()",
-                setOf("$entityPackage.$e"),
+                setOf(rowTypeImport),
             )
             add(
                 "Get${p}ByIdUseCase",
                 "$pk: $pkt",
                 "$e?",
                 "get${p}ById($pk)",
-                setOf("$entityPackage.$e"),
+                setOf(rowTypeImport),
             )
             add(
                 "Count${p}UseCase",
@@ -100,35 +107,35 @@ class KmpDatabaseUseCaseGenerator(
                 "entity: $e",
                 "Unit",
                 "insert${p}(entity)",
-                setOf("$entityPackage.$e"),
+                setOf(rowTypeImport),
             )
             add(
                 "InsertAll${p}UseCase",
                 "entities: List<$e>",
                 "Unit",
                 "insertAll${p}(entities)",
-                setOf("$entityPackage.$e"),
+                setOf(rowTypeImport),
             )
             add(
                 "Update${p}UseCase",
                 "entity: $e",
                 "Unit",
                 "update${p}(entity)",
-                setOf("$entityPackage.$e"),
+                setOf(rowTypeImport),
             )
             add(
                 "Delete${p}UseCase",
                 "entity: $e",
                 "Unit",
                 "delete${p}(entity)",
-                setOf("$entityPackage.$e"),
+                setOf(rowTypeImport),
             )
             add(
                 "Delete${p}ByIdUseCase",
                 "$pk: $pkt",
                 "Unit",
                 "delete${p}ById($pk)",
-                setOf("$entityPackage.$e"),
+                emptySet(),
             )
             add(
                 "DeleteAll${p}UseCase",
@@ -190,6 +197,8 @@ class KmpDatabaseUseCaseGenerator(
             "swaggerUseCases" to emptyList<Map<String, String>>(),
             "dbUseCases" to dbUseCaseClassNames.map { mapOf("useCaseClass" to it) },
             "dbUseCaseImports" to dbUseCaseClassNames.map { "${ctx.domainUseCasePackage}.$it" },
+            "prefsUseCases" to emptyList<Map<String, String>>(),
+            "prefsUseCaseImports" to emptyList<String>(),
         ),
         projectRoot,
     )

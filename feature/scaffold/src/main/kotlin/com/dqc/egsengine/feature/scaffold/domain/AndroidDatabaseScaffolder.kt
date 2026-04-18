@@ -67,6 +67,15 @@ class AndroidDatabaseScaffolder(
         )
         val hasApi = androidApiSupport.exists()
 
+        val swaggerSpec = runCatching {
+            swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
+        }.onFailure { logger.debug("Swagger not available for DB VO mapping: {}", it.message) }
+            .getOrNull()
+
+        if (swaggerSpec != null) {
+            generated += androidDatabaseEntityMapperGenerator.generate(template, tables, swaggerSpec, projectRoot)
+        }
+
         val effectiveRepo = repo || cached
         if (cached) {
             require(hasApi) {
@@ -79,30 +88,40 @@ class AndroidDatabaseScaffolder(
                 "--cached is deprecated: cache-aside belongs in {}RepositoryImpl overrides (delegation model).",
                 modulePascal,
             )
-            val spec = swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
-            generated += androidDatabaseEntityMapperGenerator.generate(template, tables, spec, projectRoot)
         }
 
         if (effectiveRepo) {
             when {
                 !cached && hasApi -> {
-                    generated += androidDatabaseRepositoryGenerator.generateDbOnlyRepository(template, tables, projectRoot)
+                    generated += androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                        template,
+                        tables,
+                        projectRoot,
+                        swaggerSpec,
+                    )
                     generated += androidDatabaseUseCaseGenerator.generate(
                         template = template,
                         tables = tables,
                         projectRoot = projectRoot,
                         subProjectRoot = subProjectRoot,
                         useCaseRepositorySimpleName = "${modulePascal}DbRepository",
+                        spec = swaggerSpec,
                     )
                     androidApiDbRepositoryImplGenerator.generateOrMerge(template, subProjectRoot)?.let { generated += it }
                 }
                 !cached && !hasApi -> {
-                    generated += androidDatabaseRepositoryGenerator.generateDbOnlyRepository(template, tables, projectRoot)
+                    generated += androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                        template,
+                        tables,
+                        projectRoot,
+                        swaggerSpec,
+                    )
                     generated += androidDatabaseUseCaseGenerator.generate(
                         template = template,
                         tables = tables,
                         projectRoot = projectRoot,
                         subProjectRoot = subProjectRoot,
+                        spec = swaggerSpec,
                     )
                     val prefsSlice = androidCombinedRepositoryGenerator.detectSlices(
                         subProjectRoot,

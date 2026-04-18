@@ -1,6 +1,11 @@
 package ${screenPkg}
 
+<#list contractImports as imp>
+${imp}
+</#list>
+<#if hasResultBasedHandler>
 import ${resultPackage}.Result
+</#if>
 <#list useCases as uc>
 import ${uc.packageName}.${uc.name}
 </#list>
@@ -39,7 +44,8 @@ internal class ${pascalName}ViewModel(
 
 <#list useCases as uc>
 <#assign h = useCaseHandlers[uc_index] />
-    private suspend fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
+<#if h.resultBased>
+    private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>, </#if></#list>) {
         launchRequest(showLoading = ${h.showLoading?c}) {
 <#if uc.parameters?has_content>
             when (val result = ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)) {
@@ -56,6 +62,31 @@ internal class ${pascalName}ViewModel(
         }
     }
 
+<#elseif h.flowBased>
+    private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>, </#if></#list>) {
+        launch {
+<#if uc.parameters?has_content>
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
+<#else>
+            ${h.useCaseCamel}()
+</#if>
+            // TODO: collect Flow and update State
+        }
+    }
+
+<#else>
+    private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>, </#if></#list>) {
+        launchRequest {
+<#if uc.parameters?has_content>
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
+<#else>
+            ${h.useCaseCamel}()
+</#if>
+            // TODO: map result to State (or add Result return type to UseCase)
+        }
+    }
+
+</#if>
 </#list>
 }
 <#else>

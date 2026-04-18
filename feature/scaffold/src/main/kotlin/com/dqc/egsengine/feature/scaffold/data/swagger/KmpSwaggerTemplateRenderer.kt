@@ -309,6 +309,7 @@ class KmpSwaggerTemplateRenderer(
         spec: SwaggerSpec,
         ctx: KmpSwaggerGeneratorContext,
         preservedDbUseCaseClassNames: List<String> = emptyList(),
+        preservedPrefsUseCaseClassNames: List<String> = emptyList(),
         projectRoot: File? = null,
     ): String {
         val swaggerUseCases = spec.operations.map { op ->
@@ -323,6 +324,12 @@ class KmpSwaggerTemplateRenderer(
         val dbUseCaseImports = preservedDbUseCaseClassNames.map { simpleName ->
             "${ctx.domainUseCasePackage}.$simpleName"
         }
+        val prefsUseCases = preservedPrefsUseCaseClassNames.map { simpleName ->
+            mapOf("useCaseClass" to simpleName)
+        }
+        val prefsUseCaseImports = preservedPrefsUseCaseClassNames.map { simpleName ->
+            "${ctx.domainUseCasePackage}.$simpleName"
+        }
         return engine.render(
             "kmp/swagger/GeneratedDomainModule.kt.ftl",
             mapOf(
@@ -330,6 +337,8 @@ class KmpSwaggerTemplateRenderer(
                 "swaggerUseCases" to swaggerUseCases,
                 "dbUseCases" to dbUseCases,
                 "dbUseCaseImports" to dbUseCaseImports,
+                "prefsUseCases" to prefsUseCases,
+                "prefsUseCaseImports" to prefsUseCaseImports,
             ),
             projectRoot,
         )

@@ -7,7 +7,9 @@ package com.dqc.egsengine.feature.scaffold.data.generator.android
 
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
+import com.dqc.egsengine.feature.scaffold.data.generator.common.DatabaseEntityDomainMapping
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
+import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerSpec
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.template.TemplateEngine
 import org.slf4j.LoggerFactory
@@ -25,12 +27,15 @@ class AndroidDatabaseRepositoryGenerator(
         template: ModuleTemplate,
         tables: List<TableSchema>,
         projectRoot: File?,
+        spec: SwaggerSpec? = null,
     ): List<GeneratedFile> {
         require(tables.isNotEmpty()) { "At least one table is required for DB-only repository" }
 
         val pkg = template.packageName
         val databasePackageName = "$pkg.generate.data.datasource.database"
         val entityPackageName = "$databasePackageName.entity"
+        val domainPackageName = "$pkg.generate.domain.model"
+        val mapperPackageName = "$databasePackageName.mapper"
         val modulePascal = SqlNaming.moduleNameToPascal(template.name)
         val moduleDatabaseName = "${modulePascal}Database"
         val dbRepositoryName = "${modulePascal}DbRepository"
@@ -41,17 +46,31 @@ class AndroidDatabaseRepositoryGenerator(
         val moduleDir = "feature/${template.name}"
         val rows = AndroidDatabaseTemplateModels.buildRows(tables)
 
-        val entityImports = rows.map { "$entityPackageName.${it.entityClassName}" }.sorted().distinct()
-
         val tableMaps = rows.map { row ->
+            val domainSimple = DatabaseEntityDomainMapping.resolveDomainClassName(row.table, spec)
+            val hasDomainMapping = domainSimple != null
+            val exposedRowType = domainSimple ?: row.entityClassName
             mapOf(
                 "sqlTableName" to row.table.tableName,
                 "entityClassName" to row.entityClassName,
+                "exposedRowType" to exposedRowType,
+                "hasDomainMapping" to hasDomainMapping,
                 "prefixPascal" to row.prefixPascal,
                 "pkPropertyName" to row.pkPropertyName,
                 "pkKotlinType" to row.pkKotlinType,
             )
         }
+
+        val rowImports = rows.map { row ->
+            val domainSimple = DatabaseEntityDomainMapping.resolveDomainClassName(row.table, spec)
+            if (domainSimple != null) {
+                "$domainPackageName.$domainSimple"
+            } else {
+                "$entityPackageName.${row.entityClassName}"
+            }
+        }.distinct().sorted()
+
+        val hasAnyDomainMapping = tableMaps.any { it["hasDomainMapping"] == true }
 
         val repoInterface = templateEngine.render(
             "android/database/DbRepository.kt.ftl",
@@ -59,7 +78,7 @@ class AndroidDatabaseRepositoryGenerator(
                 "repositoryPackageName" to repositoryPackageName,
                 "dbRepositoryName" to dbRepositoryName,
                 "moduleDatabaseName" to moduleDatabaseName,
-                "entityImports" to entityImports,
+                "rowImports" to rowImports,
                 "tables" to tableMaps,
             ),
             projectRoot,
@@ -74,7 +93,8 @@ class AndroidDatabaseRepositoryGenerator(
                 "dbRepositorySupportName" to dbRepositorySupportName,
                 "databasePackageName" to databasePackageName,
                 "moduleDatabaseName" to moduleDatabaseName,
-                "entityImports" to entityImports,
+                "mapperPackageName" to mapperPackageName,
+                "hasAnyDomainMapping" to hasAnyDomainMapping,
                 "tables" to tableMaps,
             ),
             projectRoot,

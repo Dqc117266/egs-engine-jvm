@@ -111,11 +111,14 @@ class KmpSwaggerCodeGenerator(
         val preservedDb = projectRoot?.let { root ->
             KmpGeneratedDomainModuleIo.extractDbUseCaseClassNames(root, template.name, template)
         }.orEmpty()
+        val preservedPrefs = projectRoot?.let { root ->
+            KmpGeneratedDomainModuleIo.extractPrefsUseCaseClassNames(root, template.name, template)
+        }.orEmpty()
         files.addCommonMain(
             moduleDir,
             ctx.generateDiPackage,
             "GeneratedDomainModule",
-            renderer.renderGeneratedDomainModule(adjustedSpec, ctx, preservedDb),
+            renderer.renderGeneratedDomainModule(adjustedSpec, ctx, preservedDb, preservedPrefs),
         )
 
         adjustedSpec.operations.forEach { op ->

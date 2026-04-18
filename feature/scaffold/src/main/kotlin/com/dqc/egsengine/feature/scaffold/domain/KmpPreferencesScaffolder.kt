@@ -12,6 +12,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpCombinedRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpPrefsGeneratedDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpPrefsUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesBlockMerger
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesKotlinEmitter
@@ -34,6 +35,7 @@ class KmpPreferencesScaffolder(
     private val kmpRepositoryImplGenerator: KmpRepositoryImplGenerator,
     private val kmpPrefsGeneratedDataModuleUpdater: KmpPrefsGeneratedDataModuleUpdater,
     private val kmpFeatureBuildGradleUpdater: KmpFeatureBuildGradleUpdater,
+    private val kmpPrefsUseCaseGenerator: KmpPrefsUseCaseGenerator,
 ) {
     private val logger = LoggerFactory.getLogger(KmpPreferencesScaffolder::class.java)
 
@@ -152,6 +154,13 @@ class KmpPreferencesScaffolder(
             includeDb = slices.hasDb,
             includePrefs = true,
         )?.let { generated += it }
+
+        generated += kmpPrefsUseCaseGenerator.generate(
+            template = template,
+            mode = mode,
+            projectRoot = projectRoot,
+            subProjectRoot = subProjectRoot,
+        )
 
         if (!dryRun) {
             for (file in generated) {
