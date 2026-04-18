@@ -156,7 +156,7 @@ class AndroidDatabaseGeneratedDataModuleUpdater {
             RegexOption.MULTILINE,
         )
         return pattern.replace(text) {
-            "// egs-gen:database-begin\n$body\n    // egs-gen:database-end"
+            "    // egs-gen:database-begin\n$body\n    // egs-gen:database-end"
         }
     }
 
@@ -169,8 +169,11 @@ class AndroidDatabaseGeneratedDataModuleUpdater {
     }
 
     private fun mergeImports(text: String, importsToEnsure: List<String>): String {
-        val existingSet = text.lines().map { it.trim() }.toSet()
-        val toAdd = importsToEnsure.filter { it.trim() !in existingSet }
+        val existingImports = text.lines()
+            .filter { it.trim().startsWith("import ") }
+            .map { it.trim() }
+            .toSet()
+        val toAdd = importsToEnsure.filter { it.trim() !in existingImports }
         if (toAdd.isEmpty()) return text
 
         val lines = text.lines().toMutableList()

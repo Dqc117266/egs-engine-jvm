@@ -9,11 +9,30 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
- * Idempotent patch for Android feature [build.gradle.kts]: adds [coreBase.preferences] when missing.
+ * Idempotent patches for Android feature [build.gradle.kts]: adds
+ * [coreBase.preferences] / [coreBase.database] project dependencies when missing
+ * (matches [com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater]).
  */
 class AndroidFeatureBuildGradleUpdater {
 
     private val logger = LoggerFactory.getLogger(AndroidFeatureBuildGradleUpdater::class.java)
+
+    fun applyAfterDatabaseGen(subProjectRoot: File, moduleName: String) {
+        val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
+        var text = file.readText()
+        val original = text
+        val gradleProjectRef = "projects.coreBase.database"
+        val depLine = "implementation(projects.coreBase.database)"
+        if (text.contains(gradleProjectRef)) return
+
+        text = insertIntoDependenciesBlock(text, gradleProjectRef, depLine)
+            ?: appendDependenciesBlock(text, depLine)
+
+        if (text != original) {
+            file.writeText(text)
+            logger.info("Updated {} for coreBase.database", file.path)
+        }
+    }
 
     fun applyAfterPrefsGen(subProjectRoot: File, moduleName: String) {
         val file = moduleBuildFile(subProjectRoot, moduleName) ?: return

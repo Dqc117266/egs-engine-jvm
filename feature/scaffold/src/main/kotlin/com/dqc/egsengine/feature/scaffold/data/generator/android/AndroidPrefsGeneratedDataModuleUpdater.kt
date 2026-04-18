@@ -118,13 +118,16 @@ class AndroidPrefsGeneratedDataModuleUpdater {
             RegexOption.MULTILINE,
         )
         return pattern.replace(text) {
-            "// egs-gen:prefs-begin\n$body\n    // egs-gen:prefs-end"
+            "    // egs-gen:prefs-begin\n$body\n    // egs-gen:prefs-end"
         }
     }
 
     private fun mergeImports(text: String, importsToEnsure: List<String>): String {
-        val existingSet = text.lines().map { it.trim() }.toSet()
-        val toAdd = importsToEnsure.filter { it.trim() !in existingSet }
+        val existingImports = text.lines()
+            .filter { it.trim().startsWith("import ") }
+            .map { it.trim() }
+            .toSet()
+        val toAdd = importsToEnsure.filter { it.trim() !in existingImports }
         if (toAdd.isEmpty()) return text
 
         val lines = text.lines().toMutableList()

@@ -17,6 +17,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabase
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidFeatureBuildGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
@@ -39,6 +40,7 @@ class AndroidDatabaseScaffolder(
     private val androidCombinedRepositoryGenerator: AndroidCombinedRepositoryGenerator,
     private val androidDbOnlyRepositoryImplGenerator: AndroidDbOnlyRepositoryImplGenerator,
     private val androidApiDbRepositoryImplGenerator: AndroidApiDbRepositoryImplGenerator,
+    private val androidFeatureBuildGradleUpdater: AndroidFeatureBuildGradleUpdater,
 ) {
     private val logger = LoggerFactory.getLogger(AndroidDatabaseScaffolder::class.java)
 
@@ -132,9 +134,7 @@ class AndroidDatabaseScaffolder(
                 file.content?.let { target.writeText(it) }
                 logger.debug("Wrote {}", file.path)
             }
-            logger.info(
-                "Android client: ensure feature convention (or build.gradle.kts) applies Room / coreBase.database dependencies.",
-            )
+            androidFeatureBuildGradleUpdater.applyAfterDatabaseGen(subProjectRoot, moduleName)
             val includeDbRepositorySupport = effectiveRepo && !cached
             androidDatabaseGeneratedDataModuleUpdater.apply(
                 subProjectRoot,

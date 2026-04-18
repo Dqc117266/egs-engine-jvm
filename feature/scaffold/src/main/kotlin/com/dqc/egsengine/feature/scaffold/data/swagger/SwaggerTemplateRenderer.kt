@@ -243,7 +243,7 @@ class SwaggerTemplateRenderer(
     }
 
     /**
-     * Generated `open class Generated¡­RepositorySupport` under `¡­/generate/¡­` (not overwritten by module scaffold).
+     * Generated `open class GeneratedRepositorySupport` under `/generate/` (not overwritten by module scaffold).
      */
     fun renderGeneratedRepositorySupport(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
         val operations = spec.operations.map { op ->

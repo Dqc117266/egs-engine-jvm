@@ -58,13 +58,13 @@ object KmpGeneratedDomainModuleIo {
         val existingDb = dataModuleDbPattern.find(existing)?.groupValues?.get(1)?.trim()
         if (!existingDb.isNullOrBlank()) {
             result = dataModuleDbPattern.replace(result) {
-                "// egs-gen:database-begin\n$existingDb\n    // egs-gen:database-end"
+                "    // egs-gen:database-begin\n$existingDb\n    // egs-gen:database-end"
             }
         }
         val existingPrefs = dataModulePrefsPattern.find(existing)?.groupValues?.get(1)?.trim()
         if (!existingPrefs.isNullOrBlank()) {
             result = dataModulePrefsPattern.replace(result) {
-                "// egs-gen:prefs-begin\n$existingPrefs\n    // egs-gen:prefs-end"
+                "    // egs-gen:prefs-begin\n$existingPrefs\n    // egs-gen:prefs-end"
             }
         }
         return result

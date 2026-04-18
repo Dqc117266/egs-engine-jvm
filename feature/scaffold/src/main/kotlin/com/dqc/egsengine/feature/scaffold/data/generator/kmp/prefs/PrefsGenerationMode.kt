@@ -6,7 +6,7 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs
 
 /**
- * Scalar: one field, [logicalKey] drives const names (e.g. `user_id` ¡ú USER_ID).
+ * Scalar: one field, [logicalKey] drives const names (e.g. `user_id` USER_ID).
  * Snapshot: two or more fields; [logicalKey] names the snapshot preference key and [snapshotClassName] the `@Serializable` model.
  */
 sealed class PrefsGenerationMode {

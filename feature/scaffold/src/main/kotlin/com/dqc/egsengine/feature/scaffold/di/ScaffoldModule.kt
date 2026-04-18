@@ -183,6 +183,7 @@ val featureScaffoldModule = module {
             get(),
             get(),
             get(),
+            get(),
         )
     }
     single {
