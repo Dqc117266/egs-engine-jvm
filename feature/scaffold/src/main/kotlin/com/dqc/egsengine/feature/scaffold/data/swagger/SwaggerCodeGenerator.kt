@@ -80,11 +80,23 @@ class SwaggerCodeGenerator(
             KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, renderedDataModule)
         } ?: renderedDataModule
         files.addSwagger(moduleDir, ctx.generateDiPackage, "GeneratedDataModule", mergedDataModule)
+        val preservedDb = projectRoot?.let { root ->
+            KmpGeneratedDomainModuleIo.extractDbUseCaseClassNames(root, template.name, template, kotlinSourceSet = "main")
+        }.orEmpty()
+        val preservedPrefs = projectRoot?.let { root ->
+            KmpGeneratedDomainModuleIo.extractPrefsUseCaseClassNames(root, template.name, template, kotlinSourceSet = "main")
+        }.orEmpty()
         files.addSwagger(
             moduleDir,
             ctx.generateDiPackage,
             "GeneratedDomainModule",
-            renderer.renderGeneratedDomainModule(adjustedSpec, ctx),
+            renderer.renderGeneratedDomainModule(
+                adjustedSpec,
+                ctx,
+                preservedDbUseCaseClassNames = preservedDb,
+                preservedPrefsUseCaseClassNames = preservedPrefs,
+                projectRoot = projectRoot,
+            ),
         )
 
         adjustedSpec.operations.forEach { op ->

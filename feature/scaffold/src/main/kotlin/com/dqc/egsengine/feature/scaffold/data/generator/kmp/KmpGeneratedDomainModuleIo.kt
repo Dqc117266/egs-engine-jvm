@@ -29,10 +29,11 @@ object KmpGeneratedDomainModuleIo {
         subProjectRoot: File,
         moduleName: String,
         template: ModuleTemplate,
+        kotlinSourceSet: String = "commonMain",
     ): List<String> {
         val pkgPath = template.packageName.replace('.', '/')
         val file = subProjectRoot.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+            "feature/$moduleName/src/$kotlinSourceSet/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
         )
         if (!file.exists()) return emptyList()
         val text = file.readText()
@@ -96,10 +97,11 @@ object KmpGeneratedDomainModuleIo {
         subProjectRoot: File,
         moduleName: String,
         template: ModuleTemplate,
+        kotlinSourceSet: String = "commonMain",
     ): List<String> {
         val pkgPath = template.packageName.replace('.', '/')
         val file = subProjectRoot.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+            "feature/$moduleName/src/$kotlinSourceSet/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
         )
         if (!file.exists()) return emptyList()
         val text = file.readText()

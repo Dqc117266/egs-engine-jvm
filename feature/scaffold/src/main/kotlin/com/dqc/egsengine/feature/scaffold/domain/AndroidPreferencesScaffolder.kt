@@ -11,6 +11,7 @@ import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidCombinedRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidFeatureBuildGradleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesBlockMerger
@@ -30,6 +31,7 @@ class AndroidPreferencesScaffolder(
     private val androidDbOnlyRepositoryImplGenerator: AndroidDbOnlyRepositoryImplGenerator,
     private val androidPrefsGeneratedDataModuleUpdater: AndroidPrefsGeneratedDataModuleUpdater,
     private val androidFeatureBuildGradleUpdater: AndroidFeatureBuildGradleUpdater,
+    private val androidPrefsUseCaseGenerator: AndroidPrefsUseCaseGenerator,
 ) {
     private val logger = LoggerFactory.getLogger(AndroidPreferencesScaffolder::class.java)
 
@@ -143,6 +145,13 @@ class AndroidPreferencesScaffolder(
             includeDb = slices.hasDb,
             includePrefs = true,
         )?.let { generated += it }
+
+        generated += androidPrefsUseCaseGenerator.generate(
+            template = template,
+            mode = mode,
+            projectRoot = projectRoot,
+            subProjectRoot = subProjectRoot,
+        )
 
         if (!dryRun) {
             for (file in generated) {

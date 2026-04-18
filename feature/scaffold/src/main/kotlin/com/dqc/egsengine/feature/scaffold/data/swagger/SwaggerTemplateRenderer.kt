@@ -349,18 +349,32 @@ class SwaggerTemplateRenderer(
             projectRoot,
         )
 
-    fun renderGeneratedDomainModule(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
-        val useCases = spec.operations.map { op ->
+    fun renderGeneratedDomainModule(
+        spec: SwaggerSpec,
+        ctx: SwaggerGeneratorContext,
+        preservedDbUseCaseClassNames: List<String> = emptyList(),
+        preservedPrefsUseCaseClassNames: List<String> = emptyList(),
+        projectRoot: File? = null,
+    ): String {
+        val swaggerUseCases = spec.operations.map { op ->
             mapOf(
                 "useCaseClass" to "${op.operationId.toSafePascal()}UseCase",
                 "domainUseCasePackage" to ctx.domainUseCasePackage,
             )
         }
+        val dbUseCases = preservedDbUseCaseClassNames.map { mapOf("useCaseClass" to it) }
+        val dbUseCaseImports = preservedDbUseCaseClassNames.map { "${ctx.domainUseCasePackage}.$it" }
+        val prefsUseCases = preservedPrefsUseCaseClassNames.map { mapOf("useCaseClass" to it) }
+        val prefsUseCaseImports = preservedPrefsUseCaseClassNames.map { "${ctx.domainUseCasePackage}.$it" }
         return engine.render(
-            "android/swagger/GeneratedDomainModule.kt.ftl",
+            "kmp/swagger/GeneratedDomainModule.kt.ftl",
             mapOf(
                 "generateDiPackage" to ctx.generateDiPackage,
-                "useCases" to useCases,
+                "swaggerUseCases" to swaggerUseCases,
+                "dbUseCases" to dbUseCases,
+                "dbUseCaseImports" to dbUseCaseImports,
+                "prefsUseCases" to prefsUseCases,
+                "prefsUseCaseImports" to prefsUseCaseImports,
             ),
             projectRoot,
         )
