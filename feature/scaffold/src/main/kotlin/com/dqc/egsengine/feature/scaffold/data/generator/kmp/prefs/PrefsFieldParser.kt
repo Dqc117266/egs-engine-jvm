@@ -22,7 +22,7 @@ enum class PrefsStorageKind {
 }
 
 /**
- * `userId:String, isLogin:bool` ¡ú list of fields. Whitespace allowed around `:` and `,`.
+ * `userId:String, isLogin:bool` â†’ list of fields. Whitespace allowed around `:` and `,`.
  */
 object PrefsFieldParser {
 

@@ -126,7 +126,7 @@ class DdlParser {
                     pkColumns.addAll(cols)
                 }
                 upper.startsWith("UNIQUE KEY") || upper.startsWith("KEY ") || upper.startsWith("INDEX ") -> {
-                    // optional: parse indexes ¡ª skip for Room v1
+                    // optional: parse indexes â€” skip for Room v1
                 }
                 upper.startsWith("CONSTRAINT") || upper.startsWith("FOREIGN KEY") -> continue
                 else -> columnLines.add(line)

@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
- * Android client: DDL ¡ú Room + optional DB repository / use cases (`src/main/kotlin`).
+ * Android client: DDL â†’ Room + optional DB repository / use cases (`src/main/kotlin`).
  * Independent from [KmpDatabaseScaffolder].
  */
 class AndroidDatabaseScaffolder(

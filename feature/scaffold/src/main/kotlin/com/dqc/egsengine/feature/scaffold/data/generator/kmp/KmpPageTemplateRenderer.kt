@@ -11,7 +11,7 @@ import java.io.File
 
 /**
  * Renders KMP screen sources using FreeMarker under `templates/kmp/page/`.
- * Layout: `src/commonMain/kotlin/<pkg>/presentation/screen/<camelPage>/¡­`
+ * Layout: `src/commonMain/kotlin/<pkg>/presentation/screen/<camelPage>/â€¦`
  */
 internal class KmpPageTemplateRenderer(
     private val engine: TemplateEngine,
