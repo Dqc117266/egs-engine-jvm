@@ -83,27 +83,26 @@ object KotlinMemberInspector {
         return names
     }
 
+    /**
+     * Span of import lines in [source], using character indices into [source] (not [String.lines]).
+     *
+     * [String.lines] plus a fixed `+1` per line breaks under CRLF (`\r\n`): each logical line adds **two**
+     * characters, so [ImportBlock.endExclusive] could land **inside** an import string and split it when
+     * new imports are spliced in.
+     */
     fun importsBlock(source: String): ImportBlock? {
-        val lines = source.lines()
-        var first = -1
-        var last = -1
-        lines.forEachIndexed { i, line ->
-            val t = line.trim()
-            if (t.startsWith("import ")) {
-                if (first < 0) first = i
-                last = i
-            }
+        val importLine = Regex("""(?m)^import\s+.*$""")
+        var firstStart: Int? = null
+        var lastEndExclusive: Int? = null
+        for (m in importLine.findAll(source)) {
+            if (firstStart == null) firstStart = m.range.first
+            var end = m.range.last + 1
+            if (end < source.length && source[end] == '\r') end++
+            if (end < source.length && source[end] == '\n') end++
+            lastEndExclusive = end
         }
-        if (first < 0) return null
-        var startChar = 0
-        for (i in 0 until first) {
-            startChar += lines[i].length + 1
-        }
-        var endChar = startChar
-        for (i in first..last) {
-            endChar += lines[i].length + 1
-        }
-        return ImportBlock(startIndex = startChar, endExclusive = endChar)
+        if (firstStart == null || lastEndExclusive == null) return null
+        return ImportBlock(startIndex = firstStart, endExclusive = lastEndExclusive)
     }
 
     fun findMatchingCloseParen(source: String, openParenIndex: Int): Int? {

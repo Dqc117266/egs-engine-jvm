@@ -75,4 +75,32 @@ class KotlinMemberInspectorTest {
         val h = KotlinMemberInspector.privateHandlerFunctionNames(sampleVm)
         assertTrue(h.contains("handleAlpha"))
     }
+
+    @Test
+    fun `importsBlock endExclusive is CRLF safe and points after last import`() {
+        val lf =
+            """
+            package p
+
+            import com.example.A
+            import com.example.BaseViewModel
+
+            class T
+            """.trimIndent()
+        val crlf = lf.replace("\n", "\r\n")
+        val blockLf = KotlinMemberInspector.importsBlock(lf)!!
+        val blockCrlf = KotlinMemberInspector.importsBlock(crlf)!!
+        val tailLf = lf.substring(blockLf.endExclusive)
+        val tailCrlf = crlf.substring(blockCrlf.endExclusive)
+        // After the last import line's newline, the next segment is the blank line then `class T`.
+        assertTrue(tailLf.startsWith("\nclass T"), "LF: remainder should be after blank line following imports")
+        assertTrue(
+            tailCrlf.startsWith("\r\nclass T"),
+            "CRLF: remainder should match LF structure; bad endExclusive would split an import mid-line",
+        )
+        assertTrue(
+            lf.substring(blockLf.startIndex).startsWith("import "),
+            "startIndex should be first import line",
+        )
+    }
 }

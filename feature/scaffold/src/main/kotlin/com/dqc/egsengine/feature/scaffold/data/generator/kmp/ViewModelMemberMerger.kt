@@ -186,17 +186,101 @@ internal object ViewModelMemberMerger {
             ?: return vm
         val openBrace = m.range.last
         require(vm[openBrace] == '{') { "registerIntents parse" }
-        val closeBrace = KotlinMemberInspector.findMatchingCloseBrace(vm, openBrace) ?: return vm
-        val insert = "\n" + block.trimEnd() + "\n"
+        val closeBrace = findRegisterIntentsClosingBrace(vm, openBrace) ?: return vm
+        val bodyForIndent = vm.substring(openBrace + 1, closeBrace)
+        val indent =
+            Regex("""(?m)^(\s+)registerIntent<""").find(bodyForIndent)?.groupValues?.get(1)
+                ?: "        "
+        val normalized = normalizeRegisterIntentBlock(block, indent)
+        val insert = "\n\n" + normalized.trimEnd() + "\n"
         return vm.substring(0, closeBrace) + insert + vm.substring(closeBrace)
+    }
+
+    /**
+     * Closing `}` for [registerIntents][openBraceIndex] must not include braces from later
+     * `private fun handle…` bodies. A plain global [findMatchingCloseBrace] scan can pair with
+     * the first `}` inside the first handler when that handler is malformed (column 0) or when
+     * nested lambdas confuse depth in edge cases. We bound the scan to the text before the first
+     * handler method after [openBraceIndex].
+     */
+    private fun findRegisterIntentsClosingBrace(vm: String, openBraceIndex: Int): Int? {
+        findMatchingCloseBraceInRange(vm, openBraceIndex, endExclusive = findFirstHandlerAfterRegisterIntents(vm, openBraceIndex))
+            ?.let { return it }
+        return KotlinMemberInspector.findMatchingCloseBrace(vm, openBraceIndex)
+    }
+
+    private fun findFirstHandlerAfterRegisterIntents(vm: String, openBraceIndex: Int): Int {
+        val tail = vm.substring(openBraceIndex + 1)
+        val re = Regex("""\r?\n(\s*)(?:private|internal)\s+fun\s+handle""")
+        val match = re.find(tail) ?: return vm.length
+        return openBraceIndex + 1 + match.range.first
+    }
+
+    private fun findMatchingCloseBraceInRange(source: String, openBraceIndex: Int, endExclusive: Int): Int? {
+        if (openBraceIndex < 0 || openBraceIndex >= source.length) return null
+        if (source[openBraceIndex] != '{') return null
+        val end = endExclusive.coerceAtMost(source.length)
+        var depth = 0
+        var i = openBraceIndex
+        while (i < end) {
+            when (source[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return i
+                }
+            }
+            i++
+        }
+        return null
+    }
+
+    private fun normalizeRegisterIntentBlock(block: String, indent: String): String {
+        val trimmed = block.trim()
+        val first = trimmed.lines().firstOrNull { it.isNotBlank() } ?: return block.trimEnd()
+        if (first.startsWith(indent)) return trimmed
+        return trimmed.lines().joinToString("\n") { line ->
+            if (line.isBlank()) {
+                ""
+            } else {
+                val t = line.trim()
+                when {
+                    t.startsWith("registerIntent") -> indent + t
+                    t == "}" -> indent + t
+                    else -> indent + "    " + t
+                }
+            }
+        }
     }
 
     private fun insertBeforeViewModelClassClose(vm: String, pascalName: String, handler: String): String {
         val braceIdx = findViewModelClassBodyOpenBrace(vm, pascalName) ?: return vm
         val classClose = KotlinMemberInspector.findMatchingCloseBrace(vm, braceIdx) ?: return vm
         val insertPos = findInsertionBeforeCompanionOrClassEnd(vm, braceIdx, classClose)
-        val insert = handler.trimEnd() + "\n"
-        return vm.substring(0, insertPos) + insert + vm.substring(insertPos)
+        val normalized = normalizePrivateHandlerFunctionIndent(handler)
+        val before = vm.substring(0, insertPos)
+        val sep =
+            when {
+                before.endsWith("\n\n") -> ""
+                before.endsWith("\n") -> "\n"
+                before.isEmpty() -> ""
+                else -> "\n\n"
+            }
+        return before + sep + normalized + vm.substring(insertPos)
+    }
+
+    private fun normalizePrivateHandlerFunctionIndent(handler: String): String {
+        val t = handler.trimEnd()
+        val first = t.lines().firstOrNull { it.isNotBlank() } ?: return "$t\n"
+        return if (first.startsWith("    private ") || first.startsWith("    internal ") ||
+            first.startsWith("    protected ")
+        ) {
+            "$t\n"
+        } else {
+            t.lines().joinToString("\n") { line ->
+                if (line.isBlank()) line else "    " + line.trimStart()
+            } + "\n"
+        }
     }
 
     /** New handlers go above a trailing [companion object], otherwise before the class closing [brace]. */

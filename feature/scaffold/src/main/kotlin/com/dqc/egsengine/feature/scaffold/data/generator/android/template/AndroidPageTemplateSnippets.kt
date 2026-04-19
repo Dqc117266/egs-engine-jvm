@@ -89,10 +89,10 @@ private fun renderAndroidRegisterBlock(pascalName: String, uc: PageUseCaseModel)
             "${uc.handlerName}()"
         }
     return """
-
         registerIntent<${pascalName}Contract.Intent.${uc.intentName}> {
             $body
-        }""".trimEnd()
+        }
+    """.trimIndent()
 }
 
 private fun renderAndroidHandlerFunction(

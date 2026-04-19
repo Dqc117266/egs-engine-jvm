@@ -149,10 +149,10 @@ private fun renderRegisterIntentBlock(
         }
 
     return """
-
         registerIntent<${pascalName}Contract.Intent.$intentSimpleName> {
             $body
-        }""".trimEnd()
+        }
+    """.trimIndent()
 }
 
 @Suppress("UNCHECKED_CAST")
