@@ -7,6 +7,9 @@ import template.core.base.ui.BaseViewModel
 <#if hasResultBasedHandler>
 import ${resultClassFqn}
 </#if>
+<#if hasPagedOffset>
+import ${pageResultClassFqn}
+</#if>
 <#list useCases as uc>
 import ${uc.packageName}.${uc.name}
 </#list>
@@ -26,9 +29,9 @@ internal class ${pascalName}ViewModel(
 <#list intentInners as intent>
         registerIntent<${pascalName}Contract.Intent.${intent.simpleName}> {
 <#if hasPagedOffset && (intent.simpleName == "Refresh" || intent.simpleName == "Retry")>
-            runPagedLoad(refresh = true)
+            loadPage(refresh = true)
 <#elseif hasPagedOffset && intent.simpleName == "LoadMore">
-            runPagedLoad(refresh = false)
+            loadPage(refresh = false)
 <#else>
 <#list useCases as uc>
 <#if uc.intentName == intent.simpleName>
@@ -51,49 +54,19 @@ internal class ${pascalName}ViewModel(
     }
 
 <#if hasPagedOffset && primaryPagedUseCaseCamel?has_content>
-    private fun runPagedLoad(refresh: Boolean) {
-        val s = currentState
-        if (!refresh && s.isLoadingMore) return
-        if (!refresh && s.endReached) return
-        val nextPage = if (refresh) 0 else s.page + 1
-        launchRequest(showLoading = false) {
-            if (refresh) {
-                updateState { copy(isRefreshing = true, error = null) }
-            } else {
-                updateState { copy(isLoadingMore = true, error = null) }
-            }
+    private fun loadPage(refresh: Boolean) {
+        runPagedLoad<${pagedStateItemContractRef}>(refresh = refresh) { page, size ->
             when (val result = ${primaryPagedUseCaseCamel}(${primaryPagedArgList})) {
                 is Result.Success -> {
-                    val pageResult = result.value
-                    val merged = if (refresh) {
-                        pageResult.list
-                    } else {
-                        currentState.items + pageResult.list
-                    }
-                    val ended = pageResult.page + 1 >= pageResult.totalPages
-                    updateState {
-                        copy(
-                            items = merged,
-                            page = pageResult.page,
-                            pageSize = pageResult.pageSize,
-                            total = pageResult.total,
-                            totalPages = pageResult.totalPages,
-                            endReached = ended,
-                            isRefreshing = false,
-                            isLoadingMore = false,
-                            error = null,
-                        )
-                    }
+                    val data = result.value
+                    PageResult(
+                        list = data.list,
+                        total = data.total,
+                        page = page,
+                        pageSize = size,
+                    )
                 }
-                is Result.Failure -> {
-                    updateState {
-                        copy(
-                            error = result.throwable?.message,
-                            isRefreshing = false,
-                            isLoadingMore = false,
-                        )
-                    }
-                }
+                is Result.Failure -> throw (result.throwable ?: IllegalStateException("Paging error"))
             }
         }
     }
@@ -102,7 +75,7 @@ internal class ${pascalName}ViewModel(
 <#list useCases as uc>
 <#assign h = useCaseHandlers[uc_index] />
 <#if h.pagedBased>
-<#-- paged: handled by runPagedLoad -->
+<#-- offset paging handled by loadPage -->
 <#elseif h.pagedFlowBased>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launch {

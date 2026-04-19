@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 class PageTemplateModelMapperTest {
 
     @Test
-    fun `Contract state uses short type name and import for domain VO`() {
+    fun `concrete PageResult use case becomes offset paging with PagingListState fields and Refresh intents`() {
         val uc = UseCaseInfo(
             name = "AppAiChatGetSessionPageUseCase",
             packageName = "p",
@@ -33,23 +33,22 @@ class PageTemplateModelMapperTest {
             baseClassPackages = BaseClassPackages(),
         )
         val m = pt.toPageTemplateModel()
-        val f = m.stateFields.single()
-        assertEquals("appAiChatGetSessionPage", f.name)
-        assertEquals(
-            "com.dqc.androidtest.feature.todo.generate.domain.model.PageResultAppAiChatSessionRespVO",
-            f.typeFqn,
-        )
-        assertEquals("PageResultAppAiChatSessionRespVO", f.typeContractRef)
-        assertTrue(
-            m.contractImports.any {
-                it == "import com.dqc.androidtest.feature.todo.generate.domain.model.PageResultAppAiChatSessionRespVO"
-            },
-        )
-        val intent = m.intentInners.single()
-        val params = intent.params
-        assertEquals("Long?", params[0].kotlinType)
-        assertEquals("Int", params[1].kotlinType)
-        assertEquals("Int", params[2].kotlinType)
+        assertTrue(m.hasPagedOffset)
+        assertTrue(m.contractImports.any { it.contains("PagingListState") })
+        assertTrue(m.contractImports.any { it.contains("DEFAULT_FIRST_PAGE") })
+        assertEquals("AppAiChatSessionRespVO", m.pagedStateItemContractRef)
+        assertEquals("PageResultAppAiChatSessionRespVO", m.pagedConcreteInnerContractRef)
+        assertTrue(m.stateFields.any { it.name == "items" && it.defaultLiteral == "emptyList()" })
+        assertTrue(m.stateFields.any { it.name == "pagingError" })
+        assertTrue(m.primaryPagedArgList.contains("pageNo = page"))
+        assertTrue(m.primaryPagedArgList.contains("pageSize = size"))
+        assertTrue(m.primaryPagedNonPageArgList.contains("topicId"))
+        val names = m.intentInners.map { it.simpleName }
+        assertTrue(names.indexOf("Refresh") < names.indexOf("LoadMore"))
+        assertFalse(names.contains("AppAiChatGetSessionPage"))
+        val h = m.useCaseHandlers.single()
+        assertTrue(h.pagedBased)
+        assertFalse(h.resultBased)
     }
 
     @Test

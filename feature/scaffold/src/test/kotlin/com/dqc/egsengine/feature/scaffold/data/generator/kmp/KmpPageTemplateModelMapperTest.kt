@@ -200,25 +200,24 @@ class KmpPageTemplateModelMapperTest {
         val renderer = KmpPageTemplateRenderer(engine, pt, "src/commonMain/kotlin")
 
         val contract = renderer.renderContract()
-        assertTrue(contract.contains("val appAiChatGetSessionPage:"), "State should have appAiChatGetSessionPage field")
-        assertTrue(contract.contains("PageResultAppAiChatSessionRespVO"), "State field should reference the VO type")
+        assertTrue(contract.contains("PagingListState<AppAiChatSessionRespVO>"), contract)
+        assertTrue(contract.contains("override val items:"), contract)
+        assertTrue(contract.contains("override fun copyPaging("), contract)
 
         val vm = renderer.renderViewModel()
-        assertTrue(vm.contains("is Result.Success"), "ViewModel should use Result.Success branch")
-        assertTrue(vm.contains("is Result.Failure"), "ViewModel should use Result.Failure branch")
-        assertTrue(vm.contains("updateState { copy(appAiChatGetSessionPage = result.value) }"), "Should update state with result.value")
+        assertTrue(vm.contains("private fun loadPage("), vm)
+        assertTrue(vm.contains("runPagedLoad<AppAiChatSessionRespVO>"), vm)
+        assertTrue(vm.contains("PageResult("), vm)
+        assertTrue(vm.contains("is Result.Success"), vm)
+        assertTrue(vm.contains("is Result.Failure"), vm)
         assertFalse(vm.contains("// TODO: map result to State"), "Should NOT contain TODO placeholder")
         assertTrue(
             vm.contains("template.core.base.network.domain.Result"),
             "Should import template core network Result",
         )
         assertTrue(
-            contract.contains("com.dqc.example.feature.todolist.generate.domain.model.PageResultAppAiChatSessionRespVO"),
-            "Contract should import swagger VO from generate.domain.model",
-        )
-        assertTrue(
-            contract.contains("val appAiChatGetSessionPage: PageResultAppAiChatSessionRespVO? = null"),
-            "State field should use short type name when import is present",
+            contract.contains("com.dqc.example.feature.todolist.generate.domain.model.AppAiChatSessionRespVO"),
+            "Contract should import item VO from generate.domain.model",
         )
     }
 

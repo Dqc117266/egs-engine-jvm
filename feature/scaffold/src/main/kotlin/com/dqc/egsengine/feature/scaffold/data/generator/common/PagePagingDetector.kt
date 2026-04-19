@@ -17,21 +17,63 @@ internal object PagePagingDetector {
         raw.lowercase().trim().ifEmpty { "auto" }
 
     /**
-     * True when [returnType] is `Result<бн>` whose inner type is generic `PageResult<Item>` (not a class named `PageResultFoo`).
+     * True when [returnType] is `Result<бн>` whose inner type is generic `PageResult<Item>` **or**
+     * a concrete Swagger DTO `PageResultFoo` (e.g. `PageResultAppAiChatSessionRespVO`) with page + size params.
      */
-    fun isOffsetPageResultUseCase(returnType: String?, pagingOption: String): Boolean {
+    fun isOffsetPageResultUseCase(
+        returnType: String?,
+        pagingOption: String,
+        parameters: List<UseCaseParam> = emptyList(),
+    ): Boolean {
         if (normalizePagingOption(pagingOption) == "none") return false
         if (normalizePagingOption(pagingOption) == "paging3") return false
         val rt = returnType?.trim().orEmpty()
         if (rt.isEmpty()) return false
-        if (normalizePagingOption(pagingOption) == "offset") {
-            val inner = extractResultInnerType(rt) ?: return false
-            return isGenericPageResultType(inner)
-        }
-        if (normalizePagingOption(pagingOption) != "auto") return false
         val inner = extractResultInnerType(rt) ?: return false
-        return isGenericPageResultType(inner)
+        if (isGenericPageResultType(inner)) {
+            if (normalizePagingOption(pagingOption) == "offset") return true
+            if (normalizePagingOption(pagingOption) == "auto") return true
+            return false
+        }
+        if (isConcretePageResultInner(inner) && hasPageAndSizeParams(parameters)) {
+            if (normalizePagingOption(pagingOption) == "offset") return true
+            if (normalizePagingOption(pagingOption) == "auto") return true
+        }
+        return false
     }
+
+    /**
+     * Swagger-style `PageResultSomething` (not `PageResult<бн>` generic).
+     */
+    fun isConcretePageResultInner(innerResultType: String): Boolean {
+        val s = innerResultType.trim()
+        if (s.contains('<')) return false
+        val simple = s.substringAfterLast('.')
+        return CONCRETE_PAGE_RESULT_SIMPLE.matches(simple)
+    }
+
+    /**
+     * Both a page-like and a size-like parameter must exist (not inferred defaults).
+     */
+    fun hasPageAndSizeParams(parameters: List<UseCaseParam>): Boolean {
+        val names = parameters.map { it.name }
+        val hasPage = names.any { it.equals("page", true) || it == "pageNo" || it.equals("pageIndex", true) }
+        val hasSize = names.any { it.equals("pageSize", true) || it.equals("size", true) || it.equals("limit", true) }
+        return hasPage && hasSize
+    }
+
+    /**
+     * `PageResultAppAiChatSessionRespVO` б· `AppAiChatSessionRespVO` (simple name for [resolveParamTypeString]).
+     */
+    fun extractConcretePageResultItemSimpleName(innerResultType: String): String? {
+        if (!isConcretePageResultInner(innerResultType)) return null
+        val simple = innerResultType.trim().substringAfterLast('.')
+        if (!simple.startsWith("PageResult")) return null
+        val item = simple.removePrefix("PageResult")
+        return item.takeIf { it.isNotEmpty() && item.first().isUpperCase() }
+    }
+
+    private val CONCRETE_PAGE_RESULT_SIMPLE = Regex("""^PageResult[A-Z]\w*$""")
 
     fun isPaging3FlowUseCase(returnType: String?, pagingOption: String): Boolean {
         val opt = normalizePagingOption(pagingOption)

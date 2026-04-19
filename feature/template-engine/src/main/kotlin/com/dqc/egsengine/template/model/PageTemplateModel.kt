@@ -37,6 +37,8 @@ data class PageStateFieldModel(
     /** Short type for generated [State] properties ([contractImports] cover domain types). */
     val typeContractRef: String,
     val nullable: Boolean,
+    /** When [nullable] is false, Kotlin default expression (e.g. [emptyList()], [0], [DEFAULT_FIRST_PAGE]). */
+    val defaultLiteral: String? = null,
 )
 
 /** Nested intent type under Contract.Intent. */
@@ -122,4 +124,14 @@ data class PageTemplateModel(
     val defaultPageSize: Int = 20,
     val primaryPagedArgList: String = "",
     val primaryPagedUseCaseCamel: String = "",
+    /** FQN for import / FTL: `${uiContractPackage}.PagingListState` or `template.core.base.ui.PagingListState`. */
+    val pagingListStateInterfaceFqn: String = "",
+    /** FQN for `PageResult` used in generated ViewModel fetch mapping. */
+    val pageResultClassFqn: String = "",
+    /** Short item type for `PagingListState<…>` and `runPagedLoad<…>`. */
+    val pagedStateItemContractRef: String = "",
+    /** Simple inner page DTO for comments (e.g. `PageResultAppAiChatSessionRespVO`). */
+    val pagedConcreteInnerContractRef: String = "",
+    /** Comma-separated non-page args with placeholders (documentation / merge); may be empty. */
+    val primaryPagedNonPageArgList: String = "",
 )

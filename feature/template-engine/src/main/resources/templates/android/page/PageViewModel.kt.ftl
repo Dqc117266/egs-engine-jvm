@@ -6,6 +6,9 @@ ${imp}
 <#if hasResultBasedHandler>
 import ${resultPackage}.Result
 </#if>
+<#if hasPagedOffset>
+import ${pageResultClassFqn}
+</#if>
 <#list useCases as uc>
 import ${uc.packageName}.${uc.name}
 </#list>
@@ -26,13 +29,23 @@ internal class ${pascalName}ViewModel(
 ) {
 
     override fun registerIntents() {
-<#if hasUseCases>
-<#list useCases as uc>
-        registerIntent<${pascalName}Contract.Intent.${uc.intentName}> {
-<#if uc.parameters?has_content>
-            ${uc.handlerName}(<#list uc.parameters as p>it.${p.name}<#if p_has_next>, </#if></#list>)
+<#if hasPagedOffset || hasUseCases>
+<#list intentInners as intent>
+        registerIntent<${pascalName}Contract.Intent.${intent.simpleName}> {
+<#if hasPagedOffset && (intent.simpleName == "Refresh" || intent.simpleName == "Retry")>
+            loadPage(refresh = true)
+<#elseif hasPagedOffset && intent.simpleName == "LoadMore">
+            loadPage(refresh = false)
 <#else>
+<#list useCases as uc>
+<#if uc.intentName == intent.simpleName>
+<#if intent.emptyParams>
             ${uc.handlerName}()
+<#else>
+            ${uc.handlerName}(<#list intent.params as p>it.${p.name}<#if p_has_next>, </#if></#list>)
+</#if>
+</#if>
+</#list>
 </#if>
         }
 
@@ -42,9 +55,40 @@ internal class ${pascalName}ViewModel(
 </#if>
     }
 
+<#if hasPagedOffset && primaryPagedUseCaseCamel?has_content>
+    private fun loadPage(refresh: Boolean) {
+        runPagedLoad<${pagedStateItemContractRef}>(refresh = refresh) { page, size ->
+            when (val result = ${primaryPagedUseCaseCamel}(${primaryPagedArgList})) {
+                is Result.Success -> {
+                    val data = result.value
+                    PageResult(
+                        list = data.list,
+                        total = data.total,
+                        page = page,
+                        pageSize = size,
+                    )
+                }
+                is Result.Failure -> throw (result.throwable ?: IllegalStateException("Paging error"))
+            }
+        }
+    }
+
+</#if>
 <#list useCases as uc>
 <#assign h = useCaseHandlers[uc_index] />
-<#if h.resultBased>
+<#if h.pagedBased>
+<#-- offset paging handled by loadPage -->
+<#elseif h.pagedFlowBased>
+    private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>, </#if></#list>) {
+        launch {
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>).collect { pagingData ->
+                // Use androidx.paging.compose.collectAsLazyPagingItems(pagingData) in UI.
+                updateState { copy(error = null) }
+            }
+        }
+    }
+
+<#elseif h.resultBased>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>, </#if></#list>) {
         launchRequest(showLoading = ${h.showLoading?c}) {
 <#if uc.parameters?has_content>

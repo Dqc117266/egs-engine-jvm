@@ -5,6 +5,7 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
+import com.dqc.egsengine.feature.scaffold.data.generator.common.PagePagingDetector
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
@@ -34,11 +35,53 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
     val baseVmSimple = baseVmFqcn?.substringAfterLast(".")
     val baseViewModelIsAndroidX = !hasBaseViewModel
 
+    val pagingOpt = PagePagingDetector.normalizePagingOption(pagingOption)
+    val hasPagedOffset = useCases.any { PagePagingDetector.isOffsetPageResultUseCase(it.returnType, pagingOpt, it.parameters) }
+    val hasPagedFlow = useCases.any { PagePagingDetector.isPaging3FlowUseCase(it.returnType, pagingOpt) }
+    val primaryOffsetUc = useCases.firstOrNull { PagePagingDetector.isOffsetPageResultUseCase(it.returnType, pagingOpt, it.parameters) }
+    val primaryFlowUc = useCases.firstOrNull { PagePagingDetector.isPaging3FlowUseCase(it.returnType, pagingOpt) }
+
+    val primaryPagedArgList: String =
+        if (primaryOffsetUc != null) {
+            val h = PagePagingDetector.detectPageParams(primaryOffsetUc.parameters)
+            buildPagedUseCaseArgumentList(primaryOffsetUc, h.page, h.pageSize)
+        } else {
+            ""
+        }
+
+    val primaryPagedNonPageArgList: String =
+        if (primaryOffsetUc != null) {
+            val h = PagePagingDetector.detectPageParams(primaryOffsetUc.parameters)
+            primaryOffsetUc.parameters
+                .filter { it.name != h.page && it.name != h.pageSize }
+                .joinToString(", ") { p -> "${p.name} = ${defaultLiteralForUseCaseParamType(p.type)}" }
+        } else {
+            ""
+        }
+
+    var pagedItemFqn = ""
+    var pagedItemContractRef = ""
+    var pagedConcreteInnerShort = ""
+    if (primaryOffsetUc != null) {
+        val inner = extractResultInnerType(primaryOffsetUc.returnType.orEmpty()).orEmpty()
+        pagedConcreteInnerShort = contractShortTypeDisplayInner(inner)
+        pagedItemFqn = resolvePagedItemFqn(inner, modelPackage, modulePackage)
+        pagedItemContractRef = contractShortTypeDisplay(pagedItemFqn)
+    }
+    var flowPagedItemContractRef = ""
+    if (primaryFlowUc != null) {
+        val raw = PagePagingDetector.extractPagingDataItemType(primaryFlowUc.returnType.orEmpty()) ?: ""
+        val fqn = resolveParamTypeString(raw, modelPackage, modulePackage)
+        flowPagedItemContractRef = contractShortTypeDisplay(fqn)
+    }
+
     val useCaseModels = useCases.map { it.toPageUseCaseModel(modelPackage, modulePackage) }
 
     val stateFields = buildList {
         useCases.forEach { uc ->
             val rt = uc.returnType ?: return@forEach
+            if (PagePagingDetector.isOffsetPageResultUseCase(rt, pagingOpt, uc.parameters)) return@forEach
+            if (PagePagingDetector.isPaging3FlowUseCase(rt, pagingOpt)) return@forEach
             if (!shouldEmitStateFieldForReturnType(rt)) return@forEach
             val propName = uc.camelName
             val typeFqn = resolveStatePropertyTypeString(rt, modelPackage, modulePackage)
@@ -48,6 +91,81 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
                     typeFqn = typeFqn,
                     typeContractRef = contractShortTypeDisplay(typeFqn),
                     nullable = true,
+                    defaultLiteral = null,
+                ),
+            )
+        }
+        if (hasPagedOffset && primaryOffsetUc != null && pagedItemFqn.isNotBlank()) {
+            add(
+                PageStateFieldModel(
+                    name = "items",
+                    typeFqn = "List<$pagedItemFqn>",
+                    typeContractRef = "List<$pagedItemContractRef>",
+                    nullable = false,
+                    defaultLiteral = "emptyList()",
+                ),
+            )
+            add(
+                PageStateFieldModel(
+                    name = "total",
+                    typeFqn = "Long",
+                    typeContractRef = "Long",
+                    nullable = false,
+                    defaultLiteral = "0L",
+                ),
+            )
+            add(
+                PageStateFieldModel(
+                    name = "page",
+                    typeFqn = "Int",
+                    typeContractRef = "Int",
+                    nullable = false,
+                    defaultLiteral = "DEFAULT_FIRST_PAGE",
+                ),
+            )
+            add(
+                PageStateFieldModel(
+                    name = "pageSize",
+                    typeFqn = "Int",
+                    typeContractRef = "Int",
+                    nullable = false,
+                    defaultLiteral = "DEFAULT_PAGE_SIZE",
+                ),
+            )
+            add(
+                PageStateFieldModel(
+                    name = "isRefreshing",
+                    typeFqn = "Boolean",
+                    typeContractRef = "Boolean",
+                    nullable = false,
+                    defaultLiteral = "false",
+                ),
+            )
+            add(
+                PageStateFieldModel(
+                    name = "isLoadingMore",
+                    typeFqn = "Boolean",
+                    typeContractRef = "Boolean",
+                    nullable = false,
+                    defaultLiteral = "false",
+                ),
+            )
+            add(
+                PageStateFieldModel(
+                    name = "endReached",
+                    typeFqn = "Boolean",
+                    typeContractRef = "Boolean",
+                    nullable = false,
+                    defaultLiteral = "false",
+                ),
+            )
+            add(
+                PageStateFieldModel(
+                    name = "pagingError",
+                    typeFqn = "Throwable",
+                    typeContractRef = "Throwable",
+                    nullable = true,
+                    defaultLiteral = null,
                 ),
             )
         }
@@ -62,30 +180,45 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
                     typeFqn = paramFqn,
                     typeContractRef = contractShortTypeDisplay(paramFqn),
                     nullable = true,
+                    defaultLiteral = null,
                 ),
             )
         }
     }
 
-    val intentInners = useCases.map { uc ->
-        val intentName = uc.name.removeSuffix("UseCase")
-        val emptyParams = uc.parameters.isEmpty()
-        PageIntentInnerModel(
-            simpleName = intentName,
-            emptyParams = emptyParams,
-            params = uc.parameters.map { it.toPageParamModel(modelPackage, modulePackage) },
-        )
+    val intentInners = buildList {
+        if (hasPagedOffset) {
+            add(PageIntentInnerModel("Refresh", true, emptyList()))
+            add(PageIntentInnerModel("LoadMore", true, emptyList()))
+            add(PageIntentInnerModel("Retry", true, emptyList()))
+        }
+        useCases.filterNot { PagePagingDetector.isOffsetPageResultUseCase(it.returnType, pagingOpt, it.parameters) }.forEach { uc ->
+            val intentName = uc.name.removeSuffix("UseCase")
+            val emptyParams = uc.parameters.isEmpty()
+            add(
+                PageIntentInnerModel(
+                    simpleName = intentName,
+                    emptyParams = emptyParams,
+                    params = uc.parameters.map { it.toPageParamModel(modelPackage, modulePackage) },
+                ),
+            )
+        }
     }
 
-    val contractImports = buildContractImports(stateFields, intentInners)
+    val contractImports = buildContractImports(stateFields, intentInners, hasPagedOffset, uiContractPackage)
 
     val useCaseHandlers = useCases.map { uc ->
         val intentName = uc.name.removeSuffix("UseCase")
         val rt = uc.returnType.orEmpty()
-        val flowBased = looksLikeFlowReturn(rt)
+        val offsetPaged = PagePagingDetector.isOffsetPageResultUseCase(rt, pagingOpt, uc.parameters)
+        val flowPaged = PagePagingDetector.isPaging3FlowUseCase(rt, pagingOpt)
+        val pageParams = PagePagingDetector.detectPageParams(uc.parameters)
+        val flowBasedRaw = looksLikeFlowReturn(rt)
         val unitEcho = isUnitParamEchoUseCase(uc, modelPackage, modulePackage)
         val direct = isDirectReturnToStateUseCase(uc, modelPackage, modulePackage)
-        val resultBased = !unitEcho && !direct && !flowBased && looksLikeResultReturn(rt)
+        val flowBased = !unitEcho && !direct && flowBasedRaw && !flowPaged
+        val resultBased =
+            !offsetPaged && !flowPaged && !unitEcho && !direct && !flowBasedRaw && looksLikeResultReturn(rt)
         val echoProp =
             if (unitEcho) {
                 unitEchoStatePropertyNameFor(
@@ -96,6 +229,22 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
                 ""
             }
         val echoParamName = if (unitEcho) uc.parameters.single().name else ""
+        val innerRt = extractResultInnerType(rt)
+        val itemRaw = innerRt?.let {
+            when {
+                PagePagingDetector.isGenericPageResultType(it) -> PagePagingDetector.extractPageResultItemRaw(it)
+                PagePagingDetector.isConcretePageResultInner(it) -> PagePagingDetector.extractConcretePageResultItemSimpleName(it)
+                else -> null
+            }
+        } ?: ""
+        val pagedItemFqnForUc = if (itemRaw.isNotBlank()) {
+            resolveParamTypeString(itemRaw, modelPackage, modulePackage)
+        } else {
+            ""
+        }
+        val flowItemRaw = PagePagingDetector.extractPagingDataItemType(rt) ?: ""
+        val flowItemFqnForUc =
+            if (flowItemRaw.isNotBlank()) resolveParamTypeString(flowItemRaw, modelPackage, modulePackage) else ""
         PageUseCaseHandlerModel(
             intentSimpleName = intentName,
             handlerName = "handle${intentName.replaceFirstChar { it.uppercase() }}",
@@ -104,15 +253,31 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
             paramPassArgs = uc.parameters.joinToString(", ") { "${it.name} = ${it.name}" },
             showLoading = !(uc.returnType?.contains("SseEmitter") == true),
             resultBased = resultBased,
-            flowBased = !unitEcho && !direct && flowBased,
+            flowBased = flowBased,
             unitEntityEchoToState = unitEcho,
             unitEchoStatePropertyName = echoProp,
             unitEchoParamName = echoParamName,
             directReturnToState = direct,
             directStatePropertyName = if (direct) uc.camelName else "",
+            pagedBased = offsetPaged,
+            pagedFlowBased = flowPaged,
+            pageParam = pageParams.page,
+            pageSizeParam = pageParams.pageSize,
+            pagedItemTypeFqn = pagedItemFqnForUc,
+            pagedItemTypeContractRef = if (pagedItemFqnForUc.isNotBlank()) {
+                contractShortTypeDisplay(pagedItemFqnForUc)
+            } else {
+                ""
+            },
+            flowPagedItemTypeFqn = flowItemFqnForUc,
+            flowPagedItemTypeContractRef = if (flowItemFqnForUc.isNotBlank()) {
+                contractShortTypeDisplay(flowItemFqnForUc)
+            } else {
+                ""
+            },
         )
     }
-    val hasResultBasedHandler = useCaseHandlers.any { it.resultBased }
+    val hasResultBasedHandler = useCaseHandlers.any { it.resultBased || it.pagedBased } || hasPagedOffset
 
     return PageTemplateModel(
         pascalName = pascalName,
@@ -142,7 +307,70 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
         intentInners = intentInners,
         useCaseHandlers = useCaseHandlers,
         hasResultBasedHandler = hasResultBasedHandler,
+        pagingOption = pagingOpt,
+        hasPagedOffset = hasPagedOffset,
+        hasPagedFlow = hasPagedFlow,
+        pagedItemTypeContractRef = pagedItemContractRef,
+        pagedItemTypeFqn = pagedItemFqn,
+        flowPagedItemTypeContractRef = flowPagedItemContractRef,
+        defaultPageSize = 20,
+        primaryPagedArgList = primaryPagedArgList,
+        primaryPagedUseCaseCamel = primaryOffsetUc?.camelName ?: "",
+        pagingListStateInterfaceFqn = "$uiContractPackage.PagingListState",
+        pageResultClassFqn = "$uiContractPackage.PageResult",
+        pagedStateItemContractRef = pagedItemContractRef,
+        pagedConcreteInnerContractRef = pagedConcreteInnerShort,
+        primaryPagedNonPageArgList = primaryPagedNonPageArgList,
     )
+}
+
+private fun buildPagedUseCaseArgumentList(
+    uc: UseCaseInfo,
+    pageParam: String,
+    pageSizeParam: String,
+): String =
+    uc.parameters.joinToString(",\n            ") { p ->
+        val value = when (p.name) {
+            pageParam -> "page"
+            pageSizeParam -> "size"
+            else -> defaultLiteralForUseCaseParamType(p.type)
+        }
+        "${p.name} = $value"
+    }
+
+private fun defaultLiteralForUseCaseParamType(type: String): String {
+    val t = type.trim()
+    if (t.endsWith("?")) return "null"
+    val base = t.removeSuffix("?").substringAfterLast(".")
+    return when (base) {
+        "Long" -> "0L"
+        "Int" -> "0"
+        "String" -> "\"\""
+        "Boolean" -> "false"
+        "Float" -> "0f"
+        "Double" -> "0.0"
+        else ->
+            if (t.startsWith("List<") || t.contains(".List<")) {
+                "emptyList()"
+            } else {
+                "null"
+            }
+    }
+}
+
+private fun resolvePagedItemFqn(innerResultType: String, modelPackage: String, modulePackage: String): String {
+    val rt = innerResultType.trim()
+    return when {
+        PagePagingDetector.isGenericPageResultType(rt) -> {
+            val raw = PagePagingDetector.extractPageResultItemRaw(rt) ?: return ""
+            resolveParamTypeString(raw, modelPackage, modulePackage)
+        }
+        PagePagingDetector.isConcretePageResultInner(rt) -> {
+            val simple = PagePagingDetector.extractConcretePageResultItemSimpleName(rt) ?: return ""
+            resolveParamTypeString(simple, modelPackage, modulePackage)
+        }
+        else -> ""
+    }
 }
 
 private fun UseCaseParam.toPageParamModel(modelPackage: String, modulePackage: String): PageUseCaseParamModel {
@@ -401,7 +629,7 @@ private fun contractShortTypeDisplay(typeFqn: String): String {
     return if (nullable) "$base?" else base
 }
 
-private fun contractShortTypeDisplayInner(s: String): String {
+internal fun contractShortTypeDisplayInner(s: String): String {
     if (s.startsWith("List<") && s.endsWith(">")) {
         val inner = extractFirstGenericArgument(s, "List<") ?: return s
         return "List<${contractShortTypeDisplayInner(inner)}>"
@@ -439,6 +667,8 @@ private fun splitTopLevelCommaGenericArgs(args: String): List<String> {
 private fun buildContractImports(
     stateFields: List<PageStateFieldModel>,
     intentInners: List<PageIntentInnerModel>,
+    hasPagedOffset: Boolean,
+    uiContractPackage: String,
 ): List<String> {
     val out = mutableSetOf<String>()
     stateFields.forEach { f ->
@@ -446,6 +676,11 @@ private fun buildContractImports(
     }
     intentInners.flatMap { it.params }.forEach { p ->
         collectContractImportsForType(p.kotlinType, out)
+    }
+    if (hasPagedOffset) {
+        out.add("import $uiContractPackage.DEFAULT_FIRST_PAGE")
+        out.add("import $uiContractPackage.DEFAULT_PAGE_SIZE")
+        out.add("import $uiContractPackage.PagingListState")
     }
     return out.sorted()
 }

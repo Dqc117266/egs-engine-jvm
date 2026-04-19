@@ -9,6 +9,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.common.ViewModelMergeSn
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.template.model.PageIntentInnerModel
+import com.dqc.egsengine.template.model.PageStateFieldModel
 import com.dqc.egsengine.template.model.PageTemplateModel
 import com.dqc.egsengine.template.model.PageUseCaseHandlerModel
 import com.dqc.egsengine.template.model.PageUseCaseModel
@@ -27,13 +28,28 @@ internal fun buildAndroidMergeSnippetForUseCase(
     val intentInner = model.intentInners[ucIndex]
 
     val vmImports = mutableListOf<String>()
-    if (h.resultBased) {
+    if (h.resultBased || h.pagedBased) {
         vmImports.add("import ${model.resultPackage}.Result")
+    }
+    if (h.pagedBased) {
+        vmImports.add("import ${model.pageResultClassFqn}")
     }
     vmImports.add("import ${uc.packageName}.${uc.name}")
     vmImports.addAll(importLinesForUseCaseHandlerParams(ucRow.parameters))
 
     val ctorParamLine = "    private val ${uc.camelName}: ${uc.name},\n"
+
+    if (h.pagedBased) {
+        return ViewModelMergeSnippet(
+            useCase = uc,
+            intentMemberText = "",
+            stateFieldText = null,
+            viewModelImportLines = vmImports.distinct().sorted(),
+            ctorParamLine = ctorParamLine,
+            registerIntentBlock = "",
+            handlerFunction = null,
+        )
+    }
 
     val intentMemberText = renderAndroidIntentMember(intentInner)
     val stateFieldText = resolveAndroidStateFieldSnippet(model, uc, h)
@@ -48,6 +64,118 @@ internal fun buildAndroidMergeSnippetForUseCase(
         ctorParamLine = ctorParamLine,
         registerIntentBlock = registerBlock,
         handlerFunction = handlerFunction,
+    )
+}
+
+/**
+ * When an existing Contract has no paging yet, inserts Refresh/LoadMore/Retry, paging [State] fields,
+ * register blocks, and [loadPage] (idempotent via merger name checks).
+ */
+internal fun buildAndroidPagingBootstrapSnippets(
+    template: PageTemplate,
+    model: PageTemplateModel,
+): List<ViewModelMergeSnippet> {
+    if (!model.hasPagedOffset) return emptyList()
+    val primaryIdx = model.useCaseHandlers.indexOfFirst { it.pagedBased }
+    if (primaryIdx < 0) return emptyList()
+    val uc = template.useCases[primaryIdx]
+    val out = mutableListOf<ViewModelMergeSnippet>()
+    val pagingNames =
+        setOf("items", "total", "page", "pageSize", "isRefreshing", "isLoadingMore", "endReached", "pagingError")
+    for (f in model.stateFields.filter { it.name in pagingNames }) {
+        out +=
+            ViewModelMergeSnippet(
+                useCase = uc,
+                intentMemberText = "",
+                stateFieldText = renderAndroidPagingStateFieldLine(f),
+                viewModelImportLines = emptyList(),
+                ctorParamLine = "",
+                registerIntentBlock = "",
+                handlerFunction = null,
+            )
+    }
+    for (name in listOf("Refresh", "LoadMore", "Retry")) {
+        out +=
+            ViewModelMergeSnippet(
+                useCase = uc,
+                intentMemberText = "\n        data object $name : Intent",
+                stateFieldText = null,
+                viewModelImportLines = emptyList(),
+                ctorParamLine = "",
+                registerIntentBlock = "",
+                handlerFunction = null,
+            )
+    }
+    for (intent in listOf("Refresh", "Retry", "LoadMore")) {
+        val body =
+            if (intent == "LoadMore") {
+                "loadPage(refresh = false)"
+            } else {
+                "loadPage(refresh = true)"
+            }
+        out +=
+            ViewModelMergeSnippet(
+                useCase = uc,
+                intentMemberText = "",
+                stateFieldText = null,
+                viewModelImportLines = emptyList(),
+                ctorParamLine = "",
+                registerIntentBlock =
+                    """
+                    registerIntent<${model.pascalName}Contract.Intent.$intent> {
+                        $body
+                    }
+                    """.trimIndent(),
+                handlerFunction = null,
+            )
+    }
+    out +=
+        ViewModelMergeSnippet(
+            useCase = uc,
+            intentMemberText = "",
+            stateFieldText = null,
+            viewModelImportLines =
+                listOf(
+                    "import ${model.resultPackage}.Result",
+                    "import ${model.pageResultClassFqn}",
+                ).sorted(),
+            ctorParamLine = "",
+            registerIntentBlock = "",
+            handlerFunction = renderAndroidLoadPageHandler(model),
+        )
+    return out
+}
+
+private fun renderAndroidPagingStateFieldLine(f: PageStateFieldModel): String {
+    val indent = "\n        "
+    return if (f.nullable) {
+        "${indent}override val ${f.name}: ${f.typeContractRef}? = null,"
+    } else {
+        "${indent}override val ${f.name}: ${f.typeContractRef} = ${f.defaultLiteral},"
+    }
+}
+
+private fun renderAndroidLoadPageHandler(model: PageTemplateModel): String {
+    val argList = model.primaryPagedArgList.ifBlank { "page = page, size = size" }
+    return androidHandlerBlock(
+        """
+    private fun loadPage(refresh: Boolean) {
+        runPagedLoad<${model.pagedStateItemContractRef}>(refresh = refresh) { page, size ->
+            when (val result = ${model.primaryPagedUseCaseCamel}($argList)) {
+                is Result.Success -> {
+                    val data = result.value
+                    PageResult(
+                        list = data.list,
+                        total = data.total,
+                        page = page,
+                        pageSize = size,
+                    )
+                }
+                is Result.Failure -> throw (result.throwable ?: IllegalStateException("Paging error"))
+            }
+        }
+    }
+""",
     )
 }
 
@@ -115,6 +243,34 @@ private fun renderAndroidHandlerFunction(
     val showLoading = h.showLoading
 
     return when {
+        h.pagedFlowBased ->
+            if (params.isNotEmpty()) {
+                androidHandlerBlock(
+                    """
+    private fun $handlerName($paramList) {
+        launch {
+            $useCaseCamel($paramPass).collect { pagingData ->
+                // Use androidx.paging.compose.collectAsLazyPagingItems(pagingData) in UI.
+                updateState { copy(error = null) }
+            }
+        }
+    }
+""",
+                )
+            } else {
+                androidHandlerBlock(
+                    """
+    private fun $handlerName() {
+        launch {
+            $useCaseCamel().collect { pagingData ->
+                updateState { copy(error = null) }
+            }
+        }
+    }
+""",
+                )
+            }
+
         h.resultBased ->
             if (params.isNotEmpty()) {
                 androidHandlerBlock(

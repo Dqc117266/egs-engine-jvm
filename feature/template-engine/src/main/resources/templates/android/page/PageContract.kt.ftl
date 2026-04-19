@@ -13,9 +13,44 @@ interface ${pascalName}Contract {
         val isLoading: Boolean = false,
         val error: String? = null,
 <#list stateFields as f>
+<#if hasPagedOffset && (f.name == "items" || f.name == "total" || f.name == "page" || f.name == "pageSize" || f.name == "isRefreshing" || f.name == "isLoadingMore" || f.name == "endReached" || f.name == "pagingError")>
+<#if f.nullable>
+        override val ${f.name}: ${f.typeContractRef}? = null,
+<#else>
+        override val ${f.name}: ${f.typeContractRef} = ${f.defaultLiteral},
+</#if>
+<#else>
+<#if f.nullable>
         val ${f.name}: ${f.typeContractRef}? = null,
+<#else>
+        val ${f.name}: ${f.typeContractRef} = ${f.defaultLiteral},
+</#if>
+</#if>
 </#list>
-    ) : UiState
+    ) : UiState<#if hasPagedOffset>, PagingListState<${pagedStateItemContractRef}></#if> {
+<#if hasPagedOffset>
+
+        override fun copyPaging(
+            items: List<${pagedStateItemContractRef}>,
+            total: Long,
+            page: Int,
+            pageSize: Int,
+            isRefreshing: Boolean,
+            isLoadingMore: Boolean,
+            endReached: Boolean,
+            pagingError: Throwable?,
+        ): ${pascalName}Contract.State = copy(
+            items = items,
+            total = total,
+            page = page,
+            pageSize = pageSize,
+            isRefreshing = isRefreshing,
+            isLoadingMore = isLoadingMore,
+            endReached = endReached,
+            pagingError = pagingError,
+        )
+</#if>
+    }
 
     sealed interface Intent : UiIntent {
 <#list intentInners as intent>

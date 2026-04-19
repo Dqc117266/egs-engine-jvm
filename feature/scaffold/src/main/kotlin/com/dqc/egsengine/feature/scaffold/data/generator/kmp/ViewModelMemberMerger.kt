@@ -335,7 +335,7 @@ internal object ViewModelMemberMerger {
 }
 
 private fun extractStatePropertyName(fieldSnippet: String): String? {
-    val m = Regex("""val\s+(\w+)\s*:""").find(fieldSnippet) ?: return null
+    val m = Regex("""(?:override\s+)?val\s+(\w+)\s*:""").find(fieldSnippet) ?: return null
     return m.groupValues[1]
 }
 
@@ -351,5 +351,5 @@ private fun extractRegisterBranchName(block: String): String? {
 }
 
 private fun extractHandlerName(handler: String): String? =
-    Regex("""\bprivate\s+fun\s+(handle\w+)\s*\(""").find(handler)?.groupValues?.get(1)
+    Regex("""\bprivate\s+fun\s+(handle\w+|loadPage)\s*\(""").find(handler)?.groupValues?.get(1)
         ?: Regex("""\bprivate\s+suspend\s+fun\s+(handle\w+)\s*\(""").find(handler)?.groupValues?.get(1)

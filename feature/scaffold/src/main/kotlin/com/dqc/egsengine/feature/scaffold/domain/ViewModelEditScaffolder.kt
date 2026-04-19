@@ -8,7 +8,9 @@ package com.dqc.egsengine.feature.scaffold.domain
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.data.generator.android.template.buildAndroidMergeSnippetForUseCase
+import com.dqc.egsengine.feature.scaffold.data.generator.android.template.buildAndroidPagingBootstrapSnippets
 import com.dqc.egsengine.feature.scaffold.data.generator.android.template.toPageTemplateModel
+import com.dqc.egsengine.feature.scaffold.data.generator.common.ContractPagingMergePatcher
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PagePagingDetector
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.PageFileLocator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.buildMergeSnippetForUseCase
@@ -133,32 +135,46 @@ class ViewModelEditScaffolder(
 
         val existingImports = parseImportLineSet(contractText)
 
+        val pageModelForPaging = template.toPageTemplateModel()
         val fullContractImports: List<String>
+        val bootstrapSnippets =
+            if (pageModelForPaging.hasPagedOffset && !contractText.contains("PagingListState")) {
+                buildAndroidPagingBootstrapSnippets(template, pageModelForPaging)
+            } else {
+                emptyList()
+            }
         val snippets =
             if (useKmpTemplates) {
                 val templateMap = template.toKmpPageTemplateMap()
                 validatePagingIfNeeded(templateMap, contractText, pagingOption)
                 @Suppress("UNCHECKED_CAST")
                 fullContractImports = templateMap["contractImports"] as List<String>
-                actuallyToAdd.map { add ->
-                    val idx = mergedUseCases.indexOfFirst { it.name == add.name }
-                    require(idx >= 0) { "merged use case list missing ${add.name}" }
-                    buildMergeSnippetForUseCase(template, templateMap, idx)
-                }
+                bootstrapSnippets +
+                    actuallyToAdd.map { add ->
+                        val idx = mergedUseCases.indexOfFirst { it.name == add.name }
+                        require(idx >= 0) { "merged use case list missing ${add.name}" }
+                        buildMergeSnippetForUseCase(template, templateMap, idx)
+                    }
             } else {
                 validateAndroidViewModelForMerge(vmText)
-                val pageModel = template.toPageTemplateModel()
-                fullContractImports = pageModel.contractImports
-                actuallyToAdd.map { add ->
-                    val idx = mergedUseCases.indexOfFirst { it.name == add.name }
-                    require(idx >= 0) { "merged use case list missing ${add.name}" }
-                    buildAndroidMergeSnippetForUseCase(template, pageModel, idx)
-                }
+                fullContractImports = pageModelForPaging.contractImports
+                bootstrapSnippets +
+                    actuallyToAdd.map { add ->
+                        val idx = mergedUseCases.indexOfFirst { it.name == add.name }
+                        require(idx >= 0) { "merged use case list missing ${add.name}" }
+                        buildAndroidMergeSnippetForUseCase(template, pageModelForPaging, idx)
+                    }
             }
 
+        val contractImportSource =
+            if (bootstrapSnippets.isNotEmpty()) {
+                pageModelForPaging.contractImports
+            } else {
+                fullContractImports
+            }
         val newContractImportLines =
-            if (snippets.any { it.stateFieldText != null }) {
-                fullContractImports.filter { it !in existingImports }.sorted()
+            if (snippets.any { it.stateFieldText != null } || bootstrapSnippets.isNotEmpty()) {
+                contractImportSource.filter { it !in existingImports }.sorted()
             } else {
                 emptyList()
             }
@@ -166,7 +182,7 @@ class ViewModelEditScaffolder(
         val intentNames = KotlinMemberInspector.sealedIntentMemberNames(contractText)
         val stateNames = KotlinMemberInspector.dataClassPropertyNames(contractText)
 
-        val contractMerge =
+        var contractMerge =
             ViewModelMemberMerger.mergeContract(
                 contractText = contractText,
                 snippets = snippets,
@@ -174,6 +190,17 @@ class ViewModelEditScaffolder(
                 existingStateNames = stateNames,
                 newContractImportLines = newContractImportLines,
             )
+        if (pageModelForPaging.hasPagedOffset) {
+            contractMerge =
+                contractMerge.copy(
+                    text =
+                        ContractPagingMergePatcher.patchIfNeeded(
+                            contractMerge.text,
+                            pascal,
+                            pageModelForPaging.pagedStateItemContractRef,
+                        ),
+                )
+        }
 
         val registerNames =
             KotlinMemberInspector.registerIntentBranchNames(contractText, pascal)

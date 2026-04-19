@@ -40,11 +40,14 @@ internal fun buildMergeSnippetForUseCase(
 
     val pagedBased = h["pagedBased"] == true
     if (pagedBased) {
+        val resultFqn = templateMap["resultClassFqn"] as String
+        val pageResultFqn = templateMap["pageResultClassFqn"] as? String ?: "template.core.base.ui.PageResult"
+        val extraImports = listOf("import $resultFqn", "import $pageResultFqn")
         return ViewModelMergeSnippet(
             useCase = uc,
             intentMemberText = "",
             stateFieldText = null,
-            viewModelImportLines = vmImportLinesForMerge(),
+            viewModelImportLines = (extraImports + vmImportLinesForMerge()).distinct().sorted(),
             ctorParamLine = ctorParamLine,
             registerIntentBlock = "",
             handlerFunction = null,
@@ -106,22 +109,25 @@ private fun resolveStateFieldSnippet(
     val field = stateFields.find { (it["name"] as? String) == name } ?: return null
     val nullable = field["nullable"] as Boolean
     val typeRef = field["typeContractRef"] as String
+    val defaultLiteral = field["defaultLiteral"] as? String
     val indent = "\n        "
+    val pagingNames =
+        setOf("items", "total", "page", "pageSize", "isRefreshing", "isLoadingMore", "endReached", "pagingError")
+    val kw = if (name in pagingNames) "override val" else "val"
     return if (nullable) {
-        "${indent}val $name: $typeRef? = null,"
+        "${indent}$kw $name: $typeRef? = null,"
     } else {
-        val default = defaultValueForStateField(field["name"] as String)
-        "${indent}val $name: $typeRef = $default,"
+        val default = defaultLiteral ?: defaultValueForStateField(field["name"] as String)
+        "${indent}$kw $name: $typeRef = $default,"
     }
 }
 
 private fun defaultValueForStateField(name: String): String =
     when (name) {
         "items" -> "emptyList()"
-        "page" -> "0"
-        "pageSize" -> "20"
+        "page" -> "DEFAULT_FIRST_PAGE"
+        "pageSize" -> "DEFAULT_PAGE_SIZE"
         "total" -> "0L"
-        "totalPages" -> "0"
         "endReached", "isRefreshing", "isLoadingMore" -> "false"
         else -> "emptyList()"
     }
@@ -142,9 +148,9 @@ private fun renderRegisterIntentBlock(
     val body =
         when {
             hasPagedOffset && (intentSimpleName == "Refresh" || intentSimpleName == "Retry") ->
-                "runPagedLoad(refresh = true)"
+                "loadPage(refresh = true)"
             hasPagedOffset && intentSimpleName == "LoadMore" ->
-                "runPagedLoad(refresh = false)"
+                "loadPage(refresh = false)"
             emptyParams ->
                 "$handlerName()"
             else -> {
