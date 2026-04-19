@@ -33,6 +33,7 @@ import org.koin.core.component.inject
  * egs create screen Login -m user -u DefaultAi4043UseCase,TopicCreateTopicUseCase
  * egs create screen Login -m user -u FirstUseCase -u SecondUseCase
  * egs create screen Login -m user -u FirstUseCase SecondUseCase
+ * egs create screen Login -m user -u FirstUseCase SecondUseCase ThirdUseCase
  * ```
  */
 class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
@@ -50,7 +51,7 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
      */
     private val trailingUseCaseNames by argument(
         name = "ADDITIONAL_USECASES",
-        help = "Additional use case names (optional; space-separated after the first `-u` value)",
+        help = "More use case class names after `-u First` (optional; space-separated, like `git add`)",
     ).multiple(required = false)
 
     private val module by option(
@@ -60,7 +61,9 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
 
     private val useCaseOptions by option(
         "-u", "--usecase",
-        help = "Use case class name(s); repeat -u, or comma/space-separated in one value, or `-u A B` (B as trailing arg)",
+        help =
+            "Use case class name(s). Prefer spaces: `-u FooUseCase BarUseCase` (like `git add`). " +
+                "Also: `-u A,B`, repeat `-u`, or `-u \"A B\"`.",
     ).optionMultiple()
 
     private val route by option(

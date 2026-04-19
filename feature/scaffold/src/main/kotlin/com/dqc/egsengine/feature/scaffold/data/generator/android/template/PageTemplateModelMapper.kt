@@ -430,7 +430,17 @@ private fun buildContractImports(
     return out.sorted()
 }
 
-private fun collectContractImportsForType(typeFqn: String, out: MutableSet<String>) {
+/** Import lines (`import …`) for types appearing in ViewModel handler parameters (e.g. `List<UserEntity>` → `UserEntity`). */
+internal fun importLinesForKotlinTypeFqns(fqns: Iterable<String>): List<String> {
+    val out = mutableSetOf<String>()
+    fqns.forEach { collectContractImportsForType(it, out) }
+    return out.sorted()
+}
+
+internal fun importLinesForUseCaseHandlerParams(parameters: List<PageUseCaseParamModel>): List<String> =
+    importLinesForKotlinTypeFqns(parameters.map { it.kotlinType })
+
+internal fun collectContractImportsForType(typeFqn: String, out: MutableSet<String>) {
     val trimmed = typeFqn.trimEnd('?')
     if (trimmed.startsWith("List<") && trimmed.endsWith(">")) {
         val inner = extractFirstGenericArgument(trimmed, "List<") ?: return

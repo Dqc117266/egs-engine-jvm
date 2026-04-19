@@ -31,6 +31,7 @@ internal fun buildAndroidMergeSnippetForUseCase(
         vmImports.add("import ${model.resultPackage}.Result")
     }
     vmImports.add("import ${uc.packageName}.${uc.name}")
+    vmImports.addAll(importLinesForUseCaseHandlerParams(ucRow.parameters))
 
     val ctorParamLine = "    private val ${uc.camelName}: ${uc.name},\n"
 
@@ -95,6 +96,13 @@ private fun renderAndroidRegisterBlock(pascalName: String, uc: PageUseCaseModel)
     """.trimIndent()
 }
 
+/**
+ * Raw handler snippets use [trimIndent], which strips the shared margin and often leaves `private fun`
+ * at column 0. [prependIndent] restores class-body indentation (4 spaces) while preserving nesting.
+ */
+private fun androidHandlerBlock(raw: String): String =
+    raw.trimIndent().prependIndent("    ").trimEnd() + "\n"
+
 private fun renderAndroidHandlerFunction(
     ucRow: PageUseCaseModel,
     h: PageUseCaseHandlerModel,
@@ -109,7 +117,8 @@ private fun renderAndroidHandlerFunction(
     return when {
         h.resultBased ->
             if (params.isNotEmpty()) {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName($paramList) {
         launchRequest(showLoading = $showLoading) {
             when (val result = $useCaseCamel($paramPass)) {
@@ -122,9 +131,11 @@ private fun renderAndroidHandlerFunction(
             }
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             } else {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName() {
         launchRequest(showLoading = $showLoading) {
             when (val result = $useCaseCamel()) {
@@ -137,90 +148,107 @@ private fun renderAndroidHandlerFunction(
             }
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             }
 
         h.flowBased ->
             if (params.isNotEmpty()) {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName($paramList) {
         launch {
             $useCaseCamel($paramPass)
             // TODO: collect Flow and update State
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             } else {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName() {
         launch {
             $useCaseCamel()
             // TODO: collect Flow and update State
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             }
 
         h.unitEntityEchoToState ->
             if (params.isNotEmpty()) {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName($paramList) {
         launchRequest {
             $useCaseCamel($paramPass)
             updateState { copy(${h.unitEchoStatePropertyName} = ${h.unitEchoParamName}, error = null) }
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             } else {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName() {
         launchRequest {
             $useCaseCamel()
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             }
 
         h.directReturnToState ->
             if (params.isNotEmpty()) {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName($paramList) {
         launchRequest {
             val ret = $useCaseCamel($paramPass)
             updateState { copy(${h.directStatePropertyName} = ret, error = null) }
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             } else {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName() {
         launchRequest {
             val ret = $useCaseCamel()
             updateState { copy(${h.directStatePropertyName} = ret, error = null) }
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             }
 
         else ->
             if (params.isNotEmpty()) {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName($paramList) {
         launchRequest {
             $useCaseCamel($paramPass)
             // TODO: map result to State (or add Result / Flow return type to UseCase)
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             } else {
-                """
+                androidHandlerBlock(
+                    """
     private fun $handlerName() {
         launchRequest {
             $useCaseCamel()
             // TODO: map result to State (or add Result / Flow return type to UseCase)
         }
     }
-""".trimIndent() + "\n"
+""",
+                )
             }
     }
 }

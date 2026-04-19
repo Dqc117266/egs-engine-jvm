@@ -269,18 +269,35 @@ internal object ViewModelMemberMerger {
         return before + sep + normalized + vm.substring(insertPos)
     }
 
+    /**
+     * Ensures the first line starts at class-member indent (4 spaces). Preserves **relative** nesting:
+     * a flat `    ` + [trimStart] per line breaks bodies where [trimIndent] left `private fun` at column 0
+     * but inner lines still had partial indent.
+     */
     private fun normalizePrivateHandlerFunctionIndent(handler: String): String {
         val t = handler.trimEnd()
-        val first = t.lines().firstOrNull { it.isNotBlank() } ?: return "$t\n"
-        return if (first.startsWith("    private ") || first.startsWith("    internal ") ||
-            first.startsWith("    protected ")
+        val lines = t.lines()
+        val nonBlank = lines.filter { it.isNotBlank() }
+        if (nonBlank.isEmpty()) return "$t\n"
+        val minLead = nonBlank.minOfOrNull { line -> line.takeWhile { c -> c == ' ' }.length } ?: 0
+        val first = nonBlank.first()
+        if (minLead >= 4 && (
+                first.startsWith("    private ") || first.startsWith("    internal ") ||
+                    first.startsWith("    protected ")
+                )
         ) {
-            "$t\n"
-        } else {
-            t.lines().joinToString("\n") { line ->
-                if (line.isBlank()) line else "    " + line.trimStart()
-            } + "\n"
+            return "$t\n"
         }
+        val delta = 4 - minLead
+        if (delta == 0) return "$t\n"
+        return lines.joinToString("\n") { line ->
+            if (line.isBlank()) {
+                line
+            } else {
+                val n = line.takeWhile { c -> c == ' ' }.length
+                " ".repeat(n + delta) + line.trimStart()
+            }
+        } + "\n"
     }
 
     /** New handlers go above a trailing [companion object], otherwise before the class closing [brace]. */

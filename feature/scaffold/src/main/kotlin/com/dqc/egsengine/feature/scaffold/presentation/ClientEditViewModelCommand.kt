@@ -24,6 +24,9 @@ import org.koin.core.component.inject
 
 /**
  * `egs client edit viewmodel <page> -m <module> [-u UseCase ...]`
+ *
+ * Use case names can be space-separated after `-u` (like `git add a b c`), for example:
+ * `-m todo -u GetUserIdUseCase DeleteUserSessionUseCase`. Commas still work: `-u A,B,C`.
  */
 class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinComponent {
 
@@ -37,7 +40,7 @@ class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinCompone
 
     private val trailingUseCaseNames by argument(
         name = "ADDITIONAL_USECASES",
-        help = "Additional use case names (optional; space-separated after the first -u value)",
+        help = "More use case class names after `-u First` (optional; space-separated, like `git add`)",
     ).multiple(required = false)
 
     private val module by option(
@@ -49,7 +52,9 @@ class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinCompone
     private val useCaseOptions by option(
         "-u",
         "--usecase",
-        help = "Use case class name(s); repeat -u, comma-separated, or `-u A B` (B as trailing arg)",
+        help =
+            "Use case class name(s). Prefer spaces: `-u FooUseCase BarUseCase` (same idea as `git add`). " +
+                "Also: `-u A,B`, repeat `-u`, or one quoted `-u \"A B\"`.",
     ).optionMultiple()
 
     private val projectPath by option("--project", help = "Workspace / Gradle project root")

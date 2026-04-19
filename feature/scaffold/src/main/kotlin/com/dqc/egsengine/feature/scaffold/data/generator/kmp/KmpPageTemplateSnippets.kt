@@ -5,6 +5,7 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
+import com.dqc.egsengine.feature.scaffold.data.generator.android.template.importLinesForKotlinTypeFqns
 import com.dqc.egsengine.feature.scaffold.data.generator.common.ViewModelMergeSnippet
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
@@ -32,6 +33,10 @@ internal fun buildMergeSnippetForUseCase(
 
     val vmImport = "import ${uc.packageName}.${uc.name}"
     val ctorParamLine = "    private val ${uc.camelName}: ${uc.name},\n"
+    val paramTypeFqns =
+        (ucRow["parameters"] as? List<Map<String, Any?>>).orEmpty().mapNotNull { it["kotlinType"] as? String }
+    fun vmImportLinesForMerge(): List<String> =
+        (listOf(vmImport) + importLinesForKotlinTypeFqns(paramTypeFqns)).distinct().sorted()
 
     val pagedBased = h["pagedBased"] == true
     if (pagedBased) {
@@ -39,7 +44,7 @@ internal fun buildMergeSnippetForUseCase(
             useCase = uc,
             intentMemberText = "",
             stateFieldText = null,
-            viewModelImportLines = listOf(vmImport),
+            viewModelImportLines = vmImportLinesForMerge(),
             ctorParamLine = ctorParamLine,
             registerIntentBlock = "",
             handlerFunction = null,
@@ -64,7 +69,7 @@ internal fun buildMergeSnippetForUseCase(
         useCase = uc,
         intentMemberText = intentMemberText,
         stateFieldText = stateFieldText,
-        viewModelImportLines = listOf(vmImport),
+        viewModelImportLines = vmImportLinesForMerge(),
         ctorParamLine = ctorParamLine,
         registerIntentBlock = registerBlock,
         handlerFunction = handlerFunction,
