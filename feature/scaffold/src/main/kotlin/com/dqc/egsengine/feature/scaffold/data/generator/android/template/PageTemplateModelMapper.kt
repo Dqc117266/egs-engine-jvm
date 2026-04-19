@@ -52,15 +52,15 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
             )
         }
         useCases.forEach { uc ->
-            if (!isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return@forEach
-            val entityFqn =
+            if (!isUnitParamEchoUseCase(uc, modelPackage, modulePackage)) return@forEach
+            val paramFqn =
                 resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
-            val propName = updatedStatePropertyNameForEntityFqn(entityFqn)
+            val propName = unitEchoStatePropertyNameFor(uc, paramFqn)
             add(
                 PageStateFieldModel(
                     name = propName,
-                    typeFqn = entityFqn,
-                    typeContractRef = contractShortTypeDisplay(entityFqn),
+                    typeFqn = paramFqn,
+                    typeContractRef = contractShortTypeDisplay(paramFqn),
                     nullable = true,
                 ),
             )
@@ -83,17 +83,19 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
         val intentName = uc.name.removeSuffix("UseCase")
         val rt = uc.returnType.orEmpty()
         val flowBased = looksLikeFlowReturn(rt)
-        val unitEcho = isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)
+        val unitEcho = isUnitParamEchoUseCase(uc, modelPackage, modulePackage)
         val direct = isDirectReturnToStateUseCase(uc, modelPackage, modulePackage)
         val resultBased = !unitEcho && !direct && !flowBased && looksLikeResultReturn(rt)
         val echoProp =
             if (unitEcho) {
-                updatedStatePropertyNameForEntityFqn(
+                unitEchoStatePropertyNameFor(
+                    uc,
                     resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage),
                 )
             } else {
                 ""
             }
+        val echoParamName = if (unitEcho) uc.parameters.single().name else ""
         PageUseCaseHandlerModel(
             intentSimpleName = intentName,
             handlerName = "handle${intentName.replaceFirstChar { it.uppercase() }}",
@@ -105,7 +107,7 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
             flowBased = !unitEcho && !direct && flowBased,
             unitEntityEchoToState = unitEcho,
             unitEchoStatePropertyName = echoProp,
-            unitEchoParamName = if (unitEcho) "entity" else "",
+            unitEchoParamName = echoParamName,
             directReturnToState = direct,
             directStatePropertyName = if (direct) uc.camelName else "",
         )
@@ -188,27 +190,45 @@ private fun looksLikeResultReturn(returnType: String): Boolean {
 }
 
 /**
- * Room-generated `Update*UseCase` with [Unit] return and `entity: *Entity` — echo the written entity into State
- * (`updatedFoo` for `FooEntity`) so Compose can read the last successful value.
+ * Unit-returning DB / prefs use cases that take a single argument — Insert / InsertAll / Update /
+ * UpdateAll / Delete / DeleteAll / Set. We echo the caller-provided argument into State so Compose
+ * can observe the last successful write without rewriting the UseCase signature.
+ *
+ * DeleteAll-style no-arg variants fall through to the default `// TODO` path since there is
+ * nothing meaningful to echo.
  */
-private fun isUnitUpdateEntityEchoUseCase(
+internal fun isUnitParamEchoUseCase(
     uc: UseCaseInfo,
-    modelPackage: String,
-    modulePackage: String,
+    @Suppress("UNUSED_PARAMETER") modelPackage: String,
+    @Suppress("UNUSED_PARAMETER") modulePackage: String,
 ): Boolean {
-    if (!uc.name.startsWith("Update") || !uc.name.endsWith("UseCase")) return false
+    if (!uc.name.endsWith("UseCase")) return false
     val rt = uc.returnType?.trim()
     if (!rt.isNullOrBlank() && rt != "Unit" && rt != "kotlin.Unit") return false
-    if (uc.parameters.size != 1 || uc.parameters.single().name != "entity") return false
-    val fqn = resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
-    return fqn.trimEnd('?').substringAfterLast(".").endsWith("Entity")
+    if (uc.parameters.size != 1) return false
+    val base = uc.name.removeSuffix("UseCase")
+    return UNIT_ECHO_PREFIX_REGEX.containsMatchIn(base)
 }
 
-/** e.g. `…UserSessionEntity` → `updatedUserSession`. */
-private fun updatedStatePropertyNameForEntityFqn(entityFqn: String): String {
-    val simple = entityFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
-    require(simple.isNotEmpty()) { "expected *Entity type, got $entityFqn" }
-    return "updated" + simple.replaceFirstChar { it.uppercase() }
+private val UNIT_ECHO_PREFIX_REGEX =
+    Regex("""^(UpdateAll|InsertAll|DeleteAll|Update|Insert|Delete|Set)(?=[A-Z]|$)""")
+
+/**
+ * State property name for [isUnitParamEchoUseCase] hits.
+ *
+ * For backward compatibility with existing Contracts, `Update*(entity: *Entity)` keeps the legacy
+ * `updatedFoo` naming. Every other matched prefix (Insert / InsertAll / Delete / DeleteAll / Set /
+ * UpdateAll) uses the use case's camelName directly (matches `handleGetUserId`-style).
+ */
+internal fun unitEchoStatePropertyNameFor(uc: UseCaseInfo, paramFqn: String): String {
+    val base = uc.name.removeSuffix("UseCase")
+    if (base.startsWith("Update") && !base.startsWith("UpdateAll")) {
+        val simple = paramFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
+        if (simple.isNotEmpty() && paramFqn.trimEnd('?').substringAfterLast(".").endsWith("Entity")) {
+            return "updated" + simple.replaceFirstChar { it.uppercase() }
+        }
+    }
+    return uc.camelName
 }
 
 /**
@@ -224,7 +244,7 @@ private fun isDirectReturnToStateUseCase(
     if (rt.isBlank()) return false
     if (looksLikeFlowReturn(rt)) return false
     if (looksLikeResultReturn(rt)) return false
-    if (isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return false
+    if (isUnitParamEchoUseCase(uc, modelPackage, modulePackage)) return false
     if (!shouldEmitStateFieldForReturnType(rt)) return false
     return true
 }

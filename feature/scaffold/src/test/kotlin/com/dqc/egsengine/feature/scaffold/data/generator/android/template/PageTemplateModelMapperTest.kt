@@ -213,6 +213,117 @@ class PageTemplateModelMapperTest {
     }
 
     @Test
+    fun `Insert UseCase with Unit return echoes entity into State under use case camelName`() {
+        val uc = UseCaseInfo(
+            name = "InsertUserSessionUseCase",
+            packageName = "p",
+            path = "x",
+            returnType = "Unit",
+            parameters = listOf(UseCaseParam("entity", "UserSessionEntity")),
+        )
+        val m = PageTemplate(
+            pageName = "P",
+            moduleName = "todo",
+            modulePackage = "com.dqc.androidtest.feature.todo",
+            useCases = listOf(uc),
+            basePackage = "com.dqc.androidtest",
+            baseClassPackages = BaseClassPackages(),
+        ).toPageTemplateModel()
+        val f = m.stateFields.single()
+        assertEquals("insertUserSession", f.name)
+        assertEquals(
+            "com.dqc.androidtest.feature.todo.generate.data.datasource.database.entity.UserSessionEntity",
+            f.typeFqn,
+        )
+        val h = m.useCaseHandlers.single()
+        assertTrue(h.unitEntityEchoToState)
+        assertEquals("insertUserSession", h.unitEchoStatePropertyName)
+        assertEquals("entity", h.unitEchoParamName)
+    }
+
+    @Test
+    fun `InsertAll UseCase echoes entities List into State under use case camelName`() {
+        val uc = UseCaseInfo(
+            name = "InsertAllUserUseCase",
+            packageName = "p",
+            path = "x",
+            returnType = "Unit",
+            parameters = listOf(UseCaseParam("entities", "List<UserEntity>")),
+        )
+        val m = PageTemplate(
+            pageName = "P",
+            moduleName = "todo",
+            modulePackage = "com.dqc.androidtest.feature.todo",
+            useCases = listOf(uc),
+            basePackage = "com.dqc.androidtest",
+            baseClassPackages = BaseClassPackages(),
+        ).toPageTemplateModel()
+        val f = m.stateFields.single()
+        assertEquals("insertAllUser", f.name)
+        assertEquals(
+            "List<com.dqc.androidtest.feature.todo.generate.data.datasource.database.entity.UserEntity>",
+            f.typeFqn,
+        )
+        assertEquals("List<UserEntity>", f.typeContractRef)
+        val h = m.useCaseHandlers.single()
+        assertTrue(h.unitEntityEchoToState)
+        assertEquals("insertAllUser", h.unitEchoStatePropertyName)
+        assertEquals("entities", h.unitEchoParamName)
+        assertTrue(
+            m.contractImports.any {
+                it == "import com.dqc.androidtest.feature.todo.generate.data.datasource.database.entity.UserEntity"
+            },
+        )
+    }
+
+    @Test
+    fun `Delete UseCase with single entity param falls into echo branch`() {
+        val uc = UseCaseInfo(
+            name = "DeleteUserSessionUseCase",
+            packageName = "p",
+            path = "x",
+            returnType = "Unit",
+            parameters = listOf(UseCaseParam("entity", "UserSessionEntity")),
+        )
+        val m = PageTemplate(
+            pageName = "P",
+            moduleName = "todo",
+            modulePackage = "com.dqc.androidtest.feature.todo",
+            useCases = listOf(uc),
+            basePackage = "com.dqc.androidtest",
+            baseClassPackages = BaseClassPackages(),
+        ).toPageTemplateModel()
+        val h = m.useCaseHandlers.single()
+        assertTrue(h.unitEntityEchoToState)
+        assertEquals("deleteUserSession", h.unitEchoStatePropertyName)
+        assertEquals("entity", h.unitEchoParamName)
+    }
+
+    @Test
+    fun `DeleteAll UseCase with no params keeps TODO handler and no state field`() {
+        val uc = UseCaseInfo(
+            name = "DeleteAllUserUseCase",
+            packageName = "p",
+            path = "x",
+            returnType = "Unit",
+            parameters = emptyList(),
+        )
+        val m = PageTemplate(
+            pageName = "P",
+            moduleName = "todo",
+            modulePackage = "com.dqc.androidtest.feature.todo",
+            useCases = listOf(uc),
+            basePackage = "com.dqc.androidtest",
+            baseClassPackages = BaseClassPackages(),
+        ).toPageTemplateModel()
+        assertTrue(m.stateFields.isEmpty())
+        val h = m.useCaseHandlers.single()
+        assertFalse(h.unitEntityEchoToState)
+        assertFalse(h.directReturnToState)
+        assertFalse(h.resultBased)
+    }
+
+    @Test
     fun `Result Unit return has no state field but still uses result handler branch`() {
         val uc = UseCaseInfo(
             name = "DeleteThingUseCase",

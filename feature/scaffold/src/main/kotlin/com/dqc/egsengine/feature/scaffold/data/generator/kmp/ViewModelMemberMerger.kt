@@ -188,12 +188,28 @@ internal object ViewModelMemberMerger {
         require(vm[openBrace] == '{') { "registerIntents parse" }
         val closeBrace = findRegisterIntentsClosingBrace(vm, openBrace) ?: return vm
         val bodyForIndent = vm.substring(openBrace + 1, closeBrace)
+        // [ \t]+ (not \s+) so the leading `\n` of `bodyForIndent` is not captured when the regex
+        // matches at the start-of-input anchor — that would have made `indent` a newline + spaces
+        // and corrupted the re-indent path in [normalizeRegisterIntentBlock].
         val indent =
-            Regex("""(?m)^(\s+)registerIntent<""").find(bodyForIndent)?.groupValues?.get(1)
+            Regex("""(?m)^([ \t]+)registerIntent<""").find(bodyForIndent)?.groupValues?.get(1)
                 ?: "        "
         val normalized = normalizeRegisterIntentBlock(block, indent)
-        val insert = "\n\n" + normalized.trimEnd() + "\n"
-        return vm.substring(0, closeBrace) + insert + vm.substring(closeBrace)
+        // Back up past any whitespace (including stray blank / trailing-space lines left over from
+        // prior merges) so repeated runs don't accumulate blank lines before the closing brace.
+        var insertAt = closeBrace
+        while (insertAt > openBrace + 1 &&
+            vm[insertAt - 1].let { it == ' ' || it == '\t' || it == '\r' || it == '\n' }
+        ) {
+            insertAt--
+        }
+        val before = vm.substring(0, insertAt)
+        val tail = vm.substring(insertAt)
+        // Single newline when inserting into an empty registerIntents() body so we don't
+        // introduce a leading blank line; otherwise keep one blank line between siblings.
+        val sep = if (insertAt == openBrace + 1) "\n" else "\n\n"
+        val insert = sep + normalized
+        return before + insert + tail
     }
 
     /**
@@ -235,20 +251,22 @@ internal object ViewModelMemberMerger {
         return null
     }
 
+    /**
+     * Produce a compact, uniformly-indented `registerIntent<…> { … }` block. Blank lines are dropped
+     * entirely – older builds of the engine sometimes emitted snippets with stray blank lines inside
+     * the block, and repeated merges would then carry the extra blank lines forward.
+     */
     private fun normalizeRegisterIntentBlock(block: String, indent: String): String {
-        val trimmed = block.trim()
-        val first = trimmed.lines().firstOrNull { it.isNotBlank() } ?: return block.trimEnd()
-        if (first.startsWith(indent)) return trimmed
-        return trimmed.lines().joinToString("\n") { line ->
-            if (line.isBlank()) {
-                ""
-            } else {
-                val t = line.trim()
-                when {
-                    t.startsWith("registerIntent") -> indent + t
-                    t == "}" -> indent + t
-                    else -> indent + "    " + t
-                }
+        val nonBlank = block.lines().filter { it.isNotBlank() }
+        if (nonBlank.isEmpty()) return ""
+        val first = nonBlank.first()
+        if (first.startsWith(indent)) return nonBlank.joinToString("\n")
+        return nonBlank.joinToString("\n") { line ->
+            val t = line.trim()
+            when {
+                t.startsWith("registerIntent") -> indent + t
+                t == "}" -> indent + t
+                else -> indent + "    " + t
             }
         }
     }

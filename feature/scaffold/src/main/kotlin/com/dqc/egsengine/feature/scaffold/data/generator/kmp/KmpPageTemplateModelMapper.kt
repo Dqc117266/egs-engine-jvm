@@ -167,15 +167,15 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             )
         }
         useCases.forEach { uc ->
-            if (!isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return@forEach
-            val entityFqn =
+            if (!isUnitParamEchoUseCase(uc, modelPackage, modulePackage)) return@forEach
+            val paramFqn =
                 resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
-            val propName = updatedStatePropertyNameForEntityFqn(entityFqn)
+            val propName = unitEchoStatePropertyNameFor(uc, paramFqn)
             add(
                 mapOf(
                     "name" to propName,
-                    "typeFqn" to entityFqn,
-                    "typeContractRef" to contractShortTypeDisplay(entityFqn),
+                    "typeFqn" to paramFqn,
+                    "typeContractRef" to contractShortTypeDisplay(paramFqn),
                     "nullable" to true,
                 ),
             )
@@ -233,19 +233,21 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         val flowPaged = PagePagingDetector.isPaging3FlowUseCase(rt, pagingOpt)
         val pageParams = PagePagingDetector.detectPageParams(uc.parameters)
         val flowBasedRaw = PagePagingDetector.looksLikeFlowReturn(rt)
-        val unitEcho = isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)
+        val unitEcho = isUnitParamEchoUseCase(uc, modelPackage, modulePackage)
         val direct = isDirectReturnToStateUseCase(uc, modelPackage, modulePackage)
         val flowBased = !unitEcho && !direct && flowBasedRaw && !flowPaged
         val resultBased =
             !offsetPaged && !flowPaged && !unitEcho && !direct && !flowBasedRaw && looksLikeResultReturn(rt)
         val echoProp =
             if (unitEcho) {
-                updatedStatePropertyNameForEntityFqn(
+                unitEchoStatePropertyNameFor(
+                    uc,
                     resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage),
                 )
             } else {
                 ""
             }
+        val echoParamName = if (unitEcho) uc.parameters.single().name else ""
         val innerRt = PagePagingDetector.extractResultInnerType(rt)
         val itemRaw = innerRt?.let { PagePagingDetector.extractPageResultItemRaw(it) } ?: ""
         val pagedItemFqnForUc = if (itemRaw.isNotBlank()) {
@@ -283,7 +285,7 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             },
             "unitEntityEchoToState" to unitEcho,
             "unitEchoStatePropertyName" to echoProp,
-            "unitEchoParamName" to if (unitEcho) "entity" else "",
+            "unitEchoParamName" to echoParamName,
             "directReturnToState" to direct,
             "directStatePropertyName" to if (direct) uc.camelName else "",
         )
@@ -399,23 +401,31 @@ private fun shouldEmitStateFieldForReturnType(returnType: String): Boolean {
     return true
 }
 
-private fun isUnitUpdateEntityEchoUseCase(
+private fun isUnitParamEchoUseCase(
     uc: UseCaseInfo,
-    modelPackage: String,
-    modulePackage: String,
+    @Suppress("UNUSED_PARAMETER") modelPackage: String,
+    @Suppress("UNUSED_PARAMETER") modulePackage: String,
 ): Boolean {
-    if (!uc.name.startsWith("Update") || !uc.name.endsWith("UseCase")) return false
+    if (!uc.name.endsWith("UseCase")) return false
     val rt = uc.returnType?.trim()
     if (!rt.isNullOrBlank() && rt != "Unit" && rt != "kotlin.Unit") return false
-    if (uc.parameters.size != 1 || uc.parameters.single().name != "entity") return false
-    val fqn = resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
-    return fqn.trimEnd('?').substringAfterLast(".").endsWith("Entity")
+    if (uc.parameters.size != 1) return false
+    val base = uc.name.removeSuffix("UseCase")
+    return UNIT_ECHO_PREFIX_REGEX.containsMatchIn(base)
 }
 
-private fun updatedStatePropertyNameForEntityFqn(entityFqn: String): String {
-    val simple = entityFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
-    require(simple.isNotEmpty()) { "expected *Entity type, got $entityFqn" }
-    return "updated" + simple.replaceFirstChar { it.uppercase() }
+private val UNIT_ECHO_PREFIX_REGEX =
+    Regex("""^(UpdateAll|InsertAll|DeleteAll|Update|Insert|Delete|Set)(?=[A-Z]|$)""")
+
+private fun unitEchoStatePropertyNameFor(uc: UseCaseInfo, paramFqn: String): String {
+    val base = uc.name.removeSuffix("UseCase")
+    if (base.startsWith("Update") && !base.startsWith("UpdateAll")) {
+        val simple = paramFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
+        if (simple.isNotEmpty() && paramFqn.trimEnd('?').substringAfterLast(".").endsWith("Entity")) {
+            return "updated" + simple.replaceFirstChar { it.uppercase() }
+        }
+    }
+    return uc.camelName
 }
 
 private fun isDirectReturnToStateUseCase(
@@ -427,7 +437,7 @@ private fun isDirectReturnToStateUseCase(
     if (rt.isBlank()) return false
     if (looksLikeFlowReturn(rt)) return false
     if (looksLikeResultReturn(rt)) return false
-    if (isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return false
+    if (isUnitParamEchoUseCase(uc, modelPackage, modulePackage)) return false
     if (!shouldEmitStateFieldForReturnType(rt)) return false
     return true
 }
