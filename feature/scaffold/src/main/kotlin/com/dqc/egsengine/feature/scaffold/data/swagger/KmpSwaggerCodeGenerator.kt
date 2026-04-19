@@ -23,6 +23,7 @@ class KmpSwaggerCodeGenerator(
     private val repositoryImplGenerator: KmpRepositoryImplGenerator,
 ) {
     private val logger = LoggerFactory.getLogger(KmpSwaggerCodeGenerator::class.java)
+    private val pagingInferrer = SwaggerPagingInferrer()
 
     fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec, projectRoot: File? = null): List<GeneratedFile> =
         generate(template, spec, projectRoot).map { GeneratedFile(it.path, it.content) }
@@ -55,6 +56,7 @@ class KmpSwaggerCodeGenerator(
         val ctx = KmpSwaggerGeneratorContext(template)
 
         val adjustedSpec = adjustSpecForKmp(spec)
+        val specForGen = pagingInferrer.enrich(adjustedSpec)
         val (wrapperSchemas, dataSchemas) = spec.schemas.partition { isCommonResultWrapper(it) }
         val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
             schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
@@ -80,19 +82,19 @@ class KmpSwaggerCodeGenerator(
             moduleDir,
             ctx.servicePackage,
             ctx.serviceName,
-            renderer.renderKtorfitServiceInterface(adjustedSpec, ctx),
+            renderer.renderKtorfitServiceInterface(specForGen, ctx),
         )
         files.addCommonMain(
             moduleDir,
             ctx.domainRepositoryPackage,
             ctx.apiRepositoryName,
-            renderer.renderRepositoryInterface(adjustedSpec, ctx),
+            renderer.renderRepositoryInterface(specForGen, ctx),
         )
         files.addCommonMain(
             moduleDir,
             ctx.dataRepositoryPackage,
             ctx.apiRepositorySupportName,
-            renderer.renderApiRepositorySupport(adjustedSpec, ctx),
+            renderer.renderApiRepositorySupport(specForGen, ctx),
         )
         val renderedDataModule = renderer.renderGeneratedDataModule(ctx)
         val mergedDataModule = projectRoot?.let { root ->
@@ -118,10 +120,10 @@ class KmpSwaggerCodeGenerator(
             moduleDir,
             ctx.generateDiPackage,
             "GeneratedDomainModule",
-            renderer.renderGeneratedDomainModule(adjustedSpec, ctx, preservedDb, preservedPrefs),
+            renderer.renderGeneratedDomainModule(specForGen, ctx, preservedDb, preservedPrefs),
         )
 
-        adjustedSpec.operations.forEach { op ->
+        specForGen.operations.forEach { op ->
             val useCaseName = "${op.operationId.toSafePascal()}UseCase"
             files.addCommonMain(
                 moduleDir,

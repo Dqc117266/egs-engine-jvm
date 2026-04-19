@@ -116,6 +116,49 @@ class ClientApiSyncCommandUnitTest {
     }
 
     @Test
+    fun `api sync without --swagger passes null swaggerUrl for workspace resolver`() {
+        val apiSync = mockk<ApiSyncScaffolder>()
+        every {
+            apiSync.syncClientApi(any(), any(), any(), any(), any())
+        } returns ApiSyncScaffolder.ApiSyncResult(
+            clientModule = "todo",
+            backendModule = "todo",
+            files = emptyList(),
+            dryRun = true,
+        )
+
+        startKoin {
+            modules(
+                module {
+                    single { apiSync }
+                },
+            )
+        }
+
+        val projectRoot = createTempProjectDir()
+        ClientCommand.withSubcommands().main(
+            listOf(
+                "api",
+                "sync",
+                "todo",
+                "--project",
+                projectRoot.absolutePath,
+                "--dry-run",
+            ),
+        )
+
+        verify(exactly = 1) {
+            apiSync.syncClientApi(
+                any(),
+                "todo",
+                "todo",
+                null,
+                true,
+            )
+        }
+    }
+
+    @Test
     fun `positional module works as shortcut`() {
         val apiSync = mockk<ApiSyncScaffolder>()
         every {

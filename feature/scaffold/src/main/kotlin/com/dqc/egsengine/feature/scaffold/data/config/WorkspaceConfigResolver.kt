@@ -51,6 +51,35 @@ class WorkspaceConfigResolver(
         val workspace = readWorkspace(projectRoot)
         val swagger = workspace.swagger
             ?: throw IllegalStateException("No swagger sync config in workspace.json")
-        return "${swagger.baseUrl}${swagger.docPath}"
+        return joinSwaggerUrl(swagger.baseUrl, swagger.docPath)
+    }
+
+    /**
+     * Resolves Swagger URL for a client feature module using [SwaggerSyncConfig.modules] when present.
+     * Priority: per-module [SwaggerModuleConfig.url] > per-module [SwaggerModuleConfig.docPath] > global doc path.
+     */
+    fun resolveSwaggerUrl(projectRoot: File, clientModule: String): String {
+        val workspace = readWorkspace(projectRoot)
+        val swagger = workspace.swagger
+            ?: throw IllegalStateException("No swagger sync config in workspace.json")
+        val mod = swagger.modules[clientModule]
+        when {
+            !mod?.url.isNullOrBlank() -> return mod!!.url!!.trim()
+            !mod?.docPath.isNullOrBlank() -> {
+                val p = mod!!.docPath!!.trim()
+                return if (p.startsWith("http://") || p.startsWith("https://")) {
+                    p
+                } else {
+                    joinSwaggerUrl(swagger.baseUrl, p)
+                }
+            }
+            else -> return joinSwaggerUrl(swagger.baseUrl, swagger.docPath)
+        }
+    }
+
+    private fun joinSwaggerUrl(baseUrl: String, docPath: String): String {
+        val base = baseUrl.trimEnd('/')
+        val path = if (docPath.startsWith("/")) docPath else "/$docPath"
+        return base + path
     }
 }

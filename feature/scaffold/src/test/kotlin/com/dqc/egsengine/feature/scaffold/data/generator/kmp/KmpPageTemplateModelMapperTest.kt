@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
+import com.dqc.egsengine.feature.scaffold.data.generator.common.PagePagingDetector
 import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
@@ -70,6 +71,12 @@ class KmpPageTemplateModelMapperTest {
         @Suppress("UNCHECKED_CAST")
         val imports = m["contractImports"] as List<String>
         assertTrue(imports.any { it.contains("com.example.domain.model.PageResultAppAiChatSessionRespVO") })
+    }
+
+    @Test
+    fun `swagger style Result PageResult Item matches PagePagingDetector offset auto`() {
+        val returnType = "Result<PageResult<User>>"
+        assertTrue(PagePagingDetector.isOffsetPageResultUseCase(returnType, "auto"))
     }
 
     @Test

@@ -39,6 +39,7 @@ fun EgsConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean): Base
         baseViewModel = namedVm ?: defaultVm,
         baseFragment = resolveNamedBaseClass("BaseFragment"),
         resultClass = bp?.let { "$it.feature.base.domain.result.Result" },
+        pageResultClass = bp?.let { "$it.feature.base.domain.pagination.PageResult" },
         retrofitProvider = if (includeRetrofitProvider) {
             bp?.let { "$it.feature.common.network.DynamicRetrofitProvider" }
         } else {
@@ -75,6 +76,7 @@ fun SubProjectConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean
                 ?: "$bp.feature.base.presentation.viewmodel.BaseViewModel",
             baseFragment = resolveNamedBaseClass("BaseFragment"),
             resultClass = "$bp.feature.base.domain.result.Result",
+            pageResultClass = "$bp.feature.base.domain.pagination.PageResult",
             retrofitProvider = if (includeRetrofitProvider) {
                 "$bp.feature.common.network.DynamicRetrofitProvider"
             } else {
@@ -85,6 +87,7 @@ fun SubProjectConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean
             baseViewModel = resolveNamedBaseClass("BaseViewModel"),
             baseFragment = resolveNamedBaseClass("BaseFragment"),
             resultClass = "$bp.feature.base.domain.result.Result",
+            pageResultClass = "$bp.feature.base.domain.pagination.PageResult",
             retrofitProvider = if (includeRetrofitProvider) {
                 "$bp.feature.common.network.DynamicRetrofitProvider"
             } else {

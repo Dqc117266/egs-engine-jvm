@@ -35,7 +35,7 @@ class ApiSyncScaffolder(
         swaggerUrl: String? = null,
         dryRun: Boolean = false,
     ): ApiSyncResult {
-        val url = swaggerUrl ?: workspaceResolver.resolveSwaggerUrl(projectRoot)
+        val url = swaggerUrl ?: workspaceResolver.resolveSwaggerUrl(projectRoot, clientModuleName)
         val clientConfig = workspaceResolver.resolveClient(projectRoot)
 
         val spec = swaggerParser.parse(url)

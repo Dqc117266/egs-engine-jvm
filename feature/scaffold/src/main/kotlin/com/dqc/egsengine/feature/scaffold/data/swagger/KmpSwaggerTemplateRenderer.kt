@@ -168,7 +168,7 @@ class KmpSwaggerTemplateRenderer(
             val bodyType = op.requestBody?.let { ctx.resolveType(it, forDomain = true) }
             mapOf(
                 "operationId" to op.operationId,
-                "returnType" to ctx.repositoryReturnType(op.responseBody),
+                "returnType" to ctx.repositoryReturnType(op),
                 "params" to params,
                 "hasBody" to (op.requestBody != null),
                 "bodyType" to bodyType,
@@ -182,7 +182,7 @@ class KmpSwaggerTemplateRenderer(
                 op.requestBody?.let { body ->
                     addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainRepositoryPackage))
                 }
-                addAll(ctx.importsForRepositoryReturnType(op.responseBody))
+                addAll(ctx.importsForRepositoryReturnType(op))
             }
         }.sorted()
         return engine.render(
@@ -206,7 +206,11 @@ class KmpSwaggerTemplateRenderer(
             callArgs.add("body.toData()")
         }
         val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
-        val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
+        val mapperExpr = if (op.paging != null) {
+            ctx.pagingRepositoryMapExpression(op, "it")
+        } else {
+            ctx.repositoryResponseMapExpression(op.responseBody, "it")
+        }
         return if (ctx.hasResultWrappers()) {
             if (mapperExpr != null) {
                 "return $serviceCall.toResult { $mapperExpr }"
@@ -215,7 +219,11 @@ class KmpSwaggerTemplateRenderer(
             }
         } else {
             if (mapperExpr != null) {
-                val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
+                val mapped = if (op.paging != null) {
+                    ctx.pagingRepositoryMapExpression(op, serviceCall)
+                } else {
+                    ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
+                }
                 "return $mapped"
             } else {
                 "return $serviceCall"
@@ -240,14 +248,14 @@ class KmpSwaggerTemplateRenderer(
             val stmt = defaultRepositorySupportStatement(op, ctx)
             mapOf(
                 "operationId" to op.operationId,
-                "returnType" to ctx.repositoryReturnType(op.responseBody),
+                "returnType" to ctx.repositoryReturnType(op),
                 "params" to params,
                 "hasBody" to (op.requestBody != null),
                 "bodyType" to op.requestBody?.let { ctx.resolveType(it, forDomain = true) },
                 "statement" to statementOverride(op, stmt),
             )
         }
-        val needsToDomainImport = spec.operations.any { ctx.requiresToDomainImport(it.responseBody) }
+        val needsToDomainImport = spec.operations.any { ctx.requiresToDomainImportForOperation(it) }
         val needsToDataImport = spec.operations.any { it.requestBody != null }
         val needsToResult = ctx.hasResultWrappers()
         val toResultPackage = ctx.template.toResultPackage ?: ""
@@ -259,7 +267,7 @@ class KmpSwaggerTemplateRenderer(
                 op.requestBody?.let { body ->
                     addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.dataRepositoryPackage))
                 }
-                addAll(ctx.importsForRepositoryReturnType(op.responseBody))
+                addAll(ctx.importsForRepositoryReturnType(op))
             }
             add("${ctx.servicePackage}.${ctx.serviceName}")
             add("${ctx.domainRepositoryPackage}.${ctx.apiRepositoryName}")
@@ -365,7 +373,7 @@ class KmpSwaggerTemplateRenderer(
             op.requestBody?.let { body ->
                 addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainUseCasePackage))
             }
-            addAll(ctx.importsForRepositoryReturnType(op.responseBody))
+            addAll(ctx.importsForRepositoryReturnType(op))
             add("${ctx.domainRepositoryPackage}.${ctx.combinedRepositoryName}")
         }.sorted()
         return engine.render(
@@ -374,7 +382,7 @@ class KmpSwaggerTemplateRenderer(
                 "packageName" to ctx.domainUseCasePackage,
                 "useCaseName" to useCaseName,
                 "repositoryName" to ctx.combinedRepositoryName,
-                "returnType" to ctx.repositoryReturnType(op.responseBody),
+                "returnType" to ctx.repositoryReturnType(op),
                 "params" to params,
                 "hasBody" to (op.requestBody != null),
                 "bodyType" to bodyType,

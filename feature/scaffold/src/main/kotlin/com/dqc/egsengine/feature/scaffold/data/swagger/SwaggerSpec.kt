@@ -24,6 +24,19 @@ data class SwaggerOperation(
     val params: List<SwaggerParameter>,
     val requestBody: SwaggerType?,
     val responseBody: SwaggerType?,
+    /** Set by Swagger paging inference for KMP codegen when the contract is a paged payload. */
+    val paging: PagingInfo? = null,
+)
+
+/**
+ * Inferred pagination: domain [itemType] is the element type of the list inside [pageResultClass].
+ */
+data class PagingInfo(
+    val itemType: SwaggerType,
+    /** Kotlin property name on the API model for the list field (e.g. `list`, `records`). */
+    val listPropertyName: String,
+    val pageParam: String = "page",
+    val sizeParam: String = "pageSize",
 )
 
 data class SwaggerParameter(

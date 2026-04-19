@@ -32,6 +32,7 @@ class KmpSwaggerCodeGeneratorTest {
             basePackage = "org.example",
             baseClassPackages = BaseClassPackages(
                 resultClass = "template.core.base.network.domain.Result",
+                pageResultClass = "template.core.base.network.pagination.PageResult",
             ),
             apiResultClass = "template.core.base.network.NetworkResult",
             commonResultClass = "template.core.base.network.data.CommonResult",

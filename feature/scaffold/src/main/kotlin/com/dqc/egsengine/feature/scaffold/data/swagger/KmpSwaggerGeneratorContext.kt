@@ -65,6 +65,27 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
     }
 
     /**
+     * When [SwaggerOperation.paging] is set, returns `Result<PageResult<Item>>` (or plain `PageResult<Item>`)
+     * using [ModuleTemplate.baseClassPackages.pageResultClass].
+     */
+    fun repositoryReturnType(op: SwaggerOperation): String {
+        val p = op.paging
+        val bodyType = if (p != null) {
+            val item = resolveType(p.itemType, forDomain = true)
+            "${pageResultShortName()}<$item>"
+        } else {
+            resolveType(op.responseBody ?: SwaggerType.Unknown, forDomain = true)
+        }
+        if (template.baseClassPackages.resultClass != null && hasResultWrappers()) {
+            return "Result<$bodyType>"
+        }
+        return bodyType
+    }
+
+    private fun pageResultShortName(): String =
+        template.baseClassPackages.pageResultClass?.substringAfterLast('.') ?: "PageResult"
+
+    /**
      * Short Kotlin type names (imports via [importsForType] / [importsForServiceReturnType]).
      */
     fun resolveType(type: SwaggerType, forDomain: Boolean): String = when (type) {
@@ -127,6 +148,32 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
             return inner + buildSet { template.baseClassPackages.resultClass?.let { add(it) } }
         }
         return inner
+    }
+
+    /** Imports when [SwaggerOperation.paging] drives `Result<PageResult<Item>>`. */
+    fun importsForRepositoryReturnType(op: SwaggerOperation): Set<String> {
+        val p = op.paging ?: return importsForRepositoryReturnType(op.responseBody)
+        val inner = importsForType(p.itemType, forDomain = true, currentPackage = null).toMutableSet()
+        template.baseClassPackages.pageResultClass?.let { inner.add(it) }
+        if (template.baseClassPackages.resultClass != null && hasResultWrappers()) {
+            template.baseClassPackages.resultClass?.let { inner.add(it) }
+        }
+        return inner
+    }
+
+    /**
+     * Maps an API page envelope (Ktorfit `it`) to domain [pageResultShortName] using list [PagingInfo.listPropertyName].
+     */
+    fun pagingRepositoryMapExpression(op: SwaggerOperation, sourceExpr: String): String {
+        val p = op.paging ?: error("Expected paging for ${op.operationId}")
+        val pr = pageResultShortName()
+        val rowMapping = mapExpressionNonNull(p.itemType, "row", "toDomain")
+        return "$pr(list = $sourceExpr.${p.listPropertyName}.map { row -> $rowMapping }, total = $sourceExpr.total, page = $sourceExpr.page, pageSize = $sourceExpr.pageSize, totalPages = $sourceExpr.totalPages)"
+    }
+
+    fun requiresToDomainImportForOperation(op: SwaggerOperation): Boolean {
+        op.paging?.let { if (requiresToDomainImport(it.itemType)) return true }
+        return requiresToDomainImport(op.responseBody)
     }
 
     fun ktorfitMethodAnnotationImport(method: String): String = when (method.uppercase()) {

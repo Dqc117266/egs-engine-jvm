@@ -191,6 +191,7 @@ class AndroidModuleGenerator(
                 baseViewModel = baseViewModel,
                 baseFragment = baseFragment,
                 resultClass = bp?.let { "$it.feature.base.domain.result.Result" },
+                pageResultClass = bp?.let { "$it.feature.base.domain.pagination.PageResult" },
                 retrofitProvider = bp?.let { "$it.feature.common.network.DynamicRetrofitProvider" },
             )
         }

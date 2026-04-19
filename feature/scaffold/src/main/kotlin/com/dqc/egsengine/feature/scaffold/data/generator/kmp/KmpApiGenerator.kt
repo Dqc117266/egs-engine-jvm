@@ -43,6 +43,7 @@ internal fun SubProjectConfig.toKmpSwaggerModuleTemplate(moduleName: String): Mo
             baseViewModel = base.baseClassPackages.baseViewModel,
             baseFragment = base.baseClassPackages.baseFragment,
             resultClass = KMP_DOMAIN_RESULT_CLASS,
+            pageResultClass = KMP_PAGE_RESULT_CLASS,
             retrofitProvider = base.baseClassPackages.retrofitProvider,
         ),
         apiResultClass = NETWORK_RESULT_CLASS,
@@ -55,3 +56,4 @@ private const val NETWORK_RESULT_CLASS = "template.core.base.network.NetworkResu
 private const val COMMON_RESULT_CLASS = "template.core.base.network.data.CommonResult"
 private const val TO_RESULT_PACKAGE = "template.core.base.network.data"
 private const val KMP_DOMAIN_RESULT_CLASS = "template.core.base.network.domain.Result"
+private const val KMP_PAGE_RESULT_CLASS = "template.core.base.network.pagination.PageResult"

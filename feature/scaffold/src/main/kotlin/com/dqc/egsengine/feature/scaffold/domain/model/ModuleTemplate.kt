@@ -24,5 +24,7 @@ data class BaseClassPackages(
     val baseViewModel: String? = null,
     val baseFragment: String? = null,
     val resultClass: String? = null,
+    /** FQN of shared [PageResult] for paged API responses (Swagger paging inference). */
+    val pageResultClass: String? = null,
     val retrofitProvider: String? = null,
 )

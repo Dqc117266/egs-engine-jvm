@@ -28,6 +28,22 @@ data class SwaggerSyncConfig(
     val clientProject: String = "client",
     val baseUrl: String = "http://localhost:8080",
     val docPath: String = "/v3/api-docs",
+    /**
+     * Per client feature module: override Swagger URL or path for that module only.
+     * Key = client module name (e.g. `todolist`). Priority: [SwaggerModuleConfig.url] >
+     * [SwaggerModuleConfig.docPath] > global [docPath].
+     */
+    val modules: Map<String, SwaggerModuleConfig> = emptyMap(),
+)
+
+@Serializable
+data class SwaggerModuleConfig(
+    /** Optional label for documentation; not used by the resolver. */
+    val backendModule: String? = null,
+    /** Path appended to [SwaggerSyncConfig.baseUrl], e.g. `/v3/api-docs/todo`. */
+    val docPath: String? = null,
+    /** Full URL override; takes precedence over [docPath]. */
+    val url: String? = null,
 )
 
 /**

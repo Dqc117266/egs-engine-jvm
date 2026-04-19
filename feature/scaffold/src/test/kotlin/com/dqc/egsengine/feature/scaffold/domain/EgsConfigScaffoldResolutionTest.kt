@@ -64,4 +64,13 @@ class EgsConfigScaffoldResolutionTest {
             c.resolveScaffoldBaseClasses(includeRetrofitProvider = true).retrofitProvider,
         )
     }
+
+    @Test
+    fun `resolveScaffoldBaseClasses includes pageResultClass for KMP`() {
+        val c = minimalConfig(basePackage = "com.example")
+        assertEquals(
+            "com.example.feature.base.domain.pagination.PageResult",
+            c.resolveScaffoldBaseClasses(includeRetrofitProvider = false).pageResultClass,
+        )
+    }
 }
