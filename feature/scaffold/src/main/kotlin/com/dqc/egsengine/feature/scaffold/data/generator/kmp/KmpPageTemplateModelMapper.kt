@@ -93,7 +93,8 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         val rt = uc.returnType.orEmpty()
         val flowBased = looksLikeFlowReturn(rt)
         val unitEcho = isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)
-        val resultBased = !unitEcho && !flowBased && looksLikeResultReturn(rt)
+        val direct = isDirectReturnToStateUseCase(uc, modelPackage, modulePackage)
+        val resultBased = !unitEcho && !direct && !flowBased && looksLikeResultReturn(rt)
         val echoProp =
             if (unitEcho) {
                 updatedStatePropertyNameForEntityFqn(
@@ -110,10 +111,12 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             "paramPassArgs" to uc.parameters.joinToString(", ") { "${it.name} = ${it.name}" },
             "showLoading" to !rt.contains("SseEmitter"),
             "resultBased" to resultBased,
-            "flowBased" to (!unitEcho && flowBased),
+            "flowBased" to (!unitEcho && !direct && flowBased),
             "unitEntityEchoToState" to unitEcho,
             "unitEchoStatePropertyName" to echoProp,
             "unitEchoParamName" to if (unitEcho) "entity" else "",
+            "directReturnToState" to direct,
+            "directStatePropertyName" to if (direct) uc.camelName else "",
         )
     }
 
@@ -183,6 +186,20 @@ private fun updatedStatePropertyNameForEntityFqn(entityFqn: String): String {
     val simple = entityFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
     require(simple.isNotEmpty()) { "expected *Entity type, got $entityFqn" }
     return "updated" + simple.replaceFirstChar { it.uppercase() }
+}
+
+private fun isDirectReturnToStateUseCase(
+    uc: UseCaseInfo,
+    modelPackage: String,
+    modulePackage: String,
+): Boolean {
+    val rt = uc.returnType?.trim() ?: return false
+    if (rt.isBlank()) return false
+    if (looksLikeFlowReturn(rt)) return false
+    if (looksLikeResultReturn(rt)) return false
+    if (isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return false
+    if (!shouldEmitStateFieldForReturnType(rt)) return false
+    return true
 }
 
 /**

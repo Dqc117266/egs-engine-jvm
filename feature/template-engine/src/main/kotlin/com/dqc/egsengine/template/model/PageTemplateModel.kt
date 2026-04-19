@@ -68,6 +68,13 @@ data class PageUseCaseHandlerModel(
     val unitEchoStatePropertyName: String = "",
     /** Parameter name to assign from (always `entity` when [unitEntityEchoToState]). */
     val unitEchoParamName: String = "",
+    /**
+     * True when the use case returns a plain value (e.g. prefs `Get*UseCase` → [String]) — not [Result], not Flow, not Unit echo.
+     * Generated handler assigns `val ret = …()` then [copy] [directStatePropertyName] = ret.
+     */
+    val directReturnToState: Boolean = false,
+    /** State property name; same as use-case camelName (e.g. `getUserId`). */
+    val directStatePropertyName: String = "",
 )
 
 /** Freemarker root model for android page templates. */

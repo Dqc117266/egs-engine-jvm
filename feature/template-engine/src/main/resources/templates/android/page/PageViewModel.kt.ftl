@@ -86,6 +86,18 @@ internal class ${pascalName}ViewModel(
         }
     }
 
+<#elseif h.directReturnToState>
+    private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>, </#if></#list>) {
+        launchRequest {
+<#if uc.parameters?has_content>
+            val ret = ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
+<#else>
+            val ret = ${h.useCaseCamel}()
+</#if>
+            updateState { copy(${h.directStatePropertyName} = ret, error = null) }
+        }
+    }
+
 <#else>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinTypeContractRef}<#if p_has_next>, </#if></#list>) {
         launchRequest {

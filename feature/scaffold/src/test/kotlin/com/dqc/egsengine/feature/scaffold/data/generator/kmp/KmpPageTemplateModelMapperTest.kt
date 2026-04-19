@@ -215,6 +215,37 @@ class KmpPageTemplateModelMapperTest {
     }
 
     @Test
+    fun `Get prefs UseCase with plain String return uses directReturnToState in ViewModel`() {
+        val uc = UseCaseInfo(
+            name = "GetUserIdUseCase",
+            packageName = "p",
+            path = "x",
+            returnType = "String",
+            parameters = emptyList(),
+        )
+        val pt = PageTemplate(
+            pageName = "Todolists",
+            moduleName = "todolist",
+            modulePackage = "org.mifos.feature.todolist",
+            useCases = listOf(uc),
+            basePackage = null,
+            baseClassPackages = BaseClassPackages(),
+        )
+        val m = pt.toKmpPageTemplateMap()
+        @Suppress("UNCHECKED_CAST")
+        val handlers = m["useCaseHandlers"] as List<Map<String, Any?>>
+        val h = handlers.single()
+        assertEquals(true, h["directReturnToState"])
+        assertEquals("getUserId", h["directStatePropertyName"])
+
+        val engine = TemplateEngine(TemplateRegistry())
+        val renderer = KmpPageTemplateRenderer(engine, pt, "src/commonMain/kotlin")
+        val vm = renderer.renderViewModel()
+        assertTrue(vm.contains("updateState { copy(getUserId = ret, error = null) }"), vm)
+        assertFalse(vm.contains("// TODO: map result to State"), vm)
+    }
+
+    @Test
     fun `Update UseCase with Unit return echoes entity into stateFields and ViewModel`() {
         val uc = UseCaseInfo(
             name = "UpdateUserSessionUseCase",

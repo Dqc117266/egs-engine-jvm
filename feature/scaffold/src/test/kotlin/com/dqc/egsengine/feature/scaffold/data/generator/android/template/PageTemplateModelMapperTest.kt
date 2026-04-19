@@ -154,6 +154,33 @@ class PageTemplateModelMapperTest {
     }
 
     @Test
+    fun `Get prefs UseCase with plain return maps to State via directReturnToState`() {
+        val uc = UseCaseInfo(
+            name = "GetUserIdUseCase",
+            packageName = "p",
+            path = "x",
+            returnType = "String",
+            parameters = emptyList(),
+        )
+        val m = PageTemplate(
+            pageName = "Todolists",
+            moduleName = "todo",
+            modulePackage = "com.dqc.androidtest.feature.todo",
+            useCases = listOf(uc),
+            basePackage = "com.dqc.androidtest",
+            baseClassPackages = BaseClassPackages(),
+        ).toPageTemplateModel()
+        assertEquals("getUserId", m.stateFields.single().name)
+        val h = m.useCaseHandlers.single()
+        assertTrue(h.directReturnToState)
+        assertEquals("getUserId", h.directStatePropertyName)
+        assertFalse(h.resultBased)
+        assertFalse(h.flowBased)
+        assertFalse(h.unitEntityEchoToState)
+        assertFalse(m.hasResultBasedHandler)
+    }
+
+    @Test
     fun `Update UseCase with Unit return echoes entity into State and generated handler`() {
         val unitUc = UseCaseInfo(
             name = "UpdateUserSessionUseCase",

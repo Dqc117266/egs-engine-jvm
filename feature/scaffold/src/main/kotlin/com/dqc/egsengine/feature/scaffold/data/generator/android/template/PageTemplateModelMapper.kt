@@ -84,7 +84,8 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
         val rt = uc.returnType.orEmpty()
         val flowBased = looksLikeFlowReturn(rt)
         val unitEcho = isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)
-        val resultBased = !unitEcho && !flowBased && looksLikeResultReturn(rt)
+        val direct = isDirectReturnToStateUseCase(uc, modelPackage, modulePackage)
+        val resultBased = !unitEcho && !direct && !flowBased && looksLikeResultReturn(rt)
         val echoProp =
             if (unitEcho) {
                 updatedStatePropertyNameForEntityFqn(
@@ -101,10 +102,12 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
             paramPassArgs = uc.parameters.joinToString(", ") { "${it.name} = ${it.name}" },
             showLoading = !(uc.returnType?.contains("SseEmitter") == true),
             resultBased = resultBased,
-            flowBased = !unitEcho && flowBased,
+            flowBased = !unitEcho && !direct && flowBased,
             unitEntityEchoToState = unitEcho,
             unitEchoStatePropertyName = echoProp,
             unitEchoParamName = if (unitEcho) "entity" else "",
+            directReturnToState = direct,
+            directStatePropertyName = if (direct) uc.camelName else "",
         )
     }
     val hasResultBasedHandler = useCaseHandlers.any { it.resultBased }
@@ -206,6 +209,24 @@ private fun updatedStatePropertyNameForEntityFqn(entityFqn: String): String {
     val simple = entityFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
     require(simple.isNotEmpty()) { "expected *Entity type, got $entityFqn" }
     return "updated" + simple.replaceFirstChar { it.uppercase() }
+}
+
+/**
+ * Prefs `Get*UseCase` / plain suspend APIs that return a value directly (not [Result], not Flow).
+ * Maps invoke result into State under [UseCaseInfo.camelName].
+ */
+private fun isDirectReturnToStateUseCase(
+    uc: UseCaseInfo,
+    modelPackage: String,
+    modulePackage: String,
+): Boolean {
+    val rt = uc.returnType?.trim() ?: return false
+    if (rt.isBlank()) return false
+    if (looksLikeFlowReturn(rt)) return false
+    if (looksLikeResultReturn(rt)) return false
+    if (isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return false
+    if (!shouldEmitStateFieldForReturnType(rt)) return false
+    return true
 }
 
 /** No [State] field for Flow returns or for Unit / Result<Unit> (side-effect DB writes). */
