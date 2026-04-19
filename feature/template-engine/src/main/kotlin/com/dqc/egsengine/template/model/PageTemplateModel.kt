@@ -59,6 +59,15 @@ data class PageUseCaseHandlerModel(
     val resultBased: Boolean,
     /** True when return type is Flow / StateFlow / etc. */
     val flowBased: Boolean,
+    /**
+     * True for generated Room `Update*UseCase` with `Unit` return and a single `entity: *Entity` param:
+     * after success, the entity is copied into [unitEchoStatePropertyName] for Compose.
+     */
+    val unitEntityEchoToState: Boolean = false,
+    /** State property name (e.g. `updatedUserSession`); meaningful when [unitEntityEchoToState]. */
+    val unitEchoStatePropertyName: String = "",
+    /** Parameter name to assign from (always `entity` when [unitEntityEchoToState]). */
+    val unitEchoParamName: String = "",
 )
 
 /** Freemarker root model for android page templates. */

@@ -34,7 +34,7 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             "parameters" to uc.parameters.map { p ->
                 mapOf(
                     "name" to p.name,
-                    "kotlinType" to resolveParamTypeString(p.type, modelPackage),
+                    "kotlinType" to resolveParamTypeString(p.type, modelPackage, modulePackage),
                 )
             },
         )
@@ -43,7 +43,7 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
     val stateFields = buildList {
         useCases.forEach { uc ->
             val rt = uc.returnType ?: return@forEach
-            if (looksLikeFlowReturn(rt)) return@forEach
+            if (!shouldEmitStateFieldForReturnType(rt)) return@forEach
             val propName = uc.camelName
             val typeStr = resolveStatePropertyTypeString(rt, modelPackage)
             add(
@@ -51,6 +51,20 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
                     "name" to propName,
                     "typeFqn" to typeStr,
                     "typeContractRef" to contractShortTypeDisplay(typeStr),
+                    "nullable" to true,
+                ),
+            )
+        }
+        useCases.forEach { uc ->
+            if (!isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return@forEach
+            val entityFqn =
+                resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
+            val propName = updatedStatePropertyNameForEntityFqn(entityFqn)
+            add(
+                mapOf(
+                    "name" to propName,
+                    "typeFqn" to entityFqn,
+                    "typeContractRef" to contractShortTypeDisplay(entityFqn),
                     "nullable" to true,
                 ),
             )
@@ -68,7 +82,7 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             "params" to uc.parameters.map { p ->
                 mapOf(
                     "name" to p.name,
-                    "kotlinType" to resolveParamTypeString(p.type, modelPackage),
+                    "kotlinType" to resolveParamTypeString(p.type, modelPackage, modulePackage),
                 )
             },
         )
@@ -78,7 +92,16 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         val intentName = uc.name.removeSuffix("UseCase")
         val rt = uc.returnType.orEmpty()
         val flowBased = looksLikeFlowReturn(rt)
-        val resultBased = !flowBased && looksLikeResultReturn(rt)
+        val unitEcho = isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)
+        val resultBased = !unitEcho && !flowBased && looksLikeResultReturn(rt)
+        val echoProp =
+            if (unitEcho) {
+                updatedStatePropertyNameForEntityFqn(
+                    resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage),
+                )
+            } else {
+                ""
+            }
         mapOf(
             "intentSimpleName" to intentName,
             "handlerName" to "handle${intentName.replaceFirstChar { it.uppercase() }}",
@@ -87,7 +110,10 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             "paramPassArgs" to uc.parameters.joinToString(", ") { "${it.name} = ${it.name}" },
             "showLoading" to !rt.contains("SseEmitter"),
             "resultBased" to resultBased,
-            "flowBased" to flowBased,
+            "flowBased" to (!unitEcho && flowBased),
+            "unitEntityEchoToState" to unitEcho,
+            "unitEchoStatePropertyName" to echoProp,
+            "unitEchoParamName" to if (unitEcho) "entity" else "",
         )
     }
 
@@ -125,6 +151,38 @@ private fun looksLikeResultReturn(returnType: String): Boolean {
         returnType.contains("base.domain.result.Result<") ||
         returnType.endsWith(".Result") ||
         returnType.contains("network.domain.Result")
+}
+
+private fun shouldEmitStateFieldForReturnType(returnType: String): Boolean {
+    if (returnType.isBlank()) return false
+    if (looksLikeFlowReturn(returnType)) return false
+    val norm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
+    val effective = extractResultInnerType(norm)
+        ?: Regex("""Result<([^>]+)>""").find(norm)?.groupValues?.get(1)?.trim()
+        ?: norm
+    val trimmed = effective.trimEnd('?')
+    val simple = trimmed.substringAfterLast(".")
+    if (simple == "Unit" || trimmed == "kotlin.Unit") return false
+    return true
+}
+
+private fun isUnitUpdateEntityEchoUseCase(
+    uc: UseCaseInfo,
+    modelPackage: String,
+    modulePackage: String,
+): Boolean {
+    if (!uc.name.startsWith("Update") || !uc.name.endsWith("UseCase")) return false
+    val rt = uc.returnType?.trim()
+    if (!rt.isNullOrBlank() && rt != "Unit" && rt != "kotlin.Unit") return false
+    if (uc.parameters.size != 1 || uc.parameters.single().name != "entity") return false
+    val fqn = resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
+    return fqn.trimEnd('?').substringAfterLast(".").endsWith("Entity")
+}
+
+private fun updatedStatePropertyNameForEntityFqn(entityFqn: String): String {
+    val simple = entityFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
+    require(simple.isNotEmpty()) { "expected *Entity type, got $entityFqn" }
+    return "updated" + simple.replaceFirstChar { it.uppercase() }
 }
 
 /**
@@ -287,7 +345,10 @@ private fun resolveBasicTypeString(simpleType: String, typePackage: String, mode
     }
 }
 
-private fun resolveParamTypeString(typeStr: String, modelPackage: String): String {
+private fun databaseEntityPackage(modulePackage: String): String =
+    "$modulePackage.generate.data.datasource.database.entity"
+
+private fun resolveParamTypeString(typeStr: String, modelPackage: String, modulePackage: String): String {
     val normalized = shortenKotlinStdlibPrimitiveFqns(typeStr.trim())
     val nullable = normalized.endsWith("?")
     val base = normalized.removeSuffix("?")
@@ -296,7 +357,7 @@ private fun resolveParamTypeString(typeStr: String, modelPackage: String): Strin
             val inner = extractFirstGenericArgument(base, "List<")
                 ?: Regex("""List<([^>]+)>""").find(base)?.groupValues?.get(1)
                 ?: return "List"
-            val innerType = resolveParamTypeString(inner, modelPackage)
+            val innerType = resolveParamTypeString(inner, modelPackage, modulePackage)
             "List<$innerType>"
         }
         else -> base.split(".").let { parts ->
@@ -312,6 +373,13 @@ private fun resolveParamTypeString(typeStr: String, modelPackage: String): Strin
                 else ->
                     if (simple.endsWith("ApiModel")) {
                         "$modelPackage.${simple.removeSuffix("ApiModel")}"
+                    } else if (simple.endsWith("Entity")) {
+                        val entityPkg = databaseEntityPackage(modulePackage)
+                        when {
+                            parts.size == 1 -> "$entityPkg.$simple"
+                            pkg == modelPackage || pkg.endsWith(".generate.domain.model") -> "$entityPkg.$simple"
+                            else -> "$pkg.$simple"
+                        }
                     } else {
                         "$pkg.$simple"
                     }

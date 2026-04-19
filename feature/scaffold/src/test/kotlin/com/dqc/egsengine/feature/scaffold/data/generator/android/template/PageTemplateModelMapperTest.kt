@@ -154,7 +154,7 @@ class PageTemplateModelMapperTest {
     }
 
     @Test
-    fun `plain Unit return does not add state field and uses non-result handler`() {
+    fun `Update UseCase with Unit return echoes entity into State and generated handler`() {
         val unitUc = UseCaseInfo(
             name = "UpdateUserSessionUseCase",
             packageName = "p",
@@ -170,10 +170,18 @@ class PageTemplateModelMapperTest {
             basePackage = "com.dqc.androidtest",
             baseClassPackages = BaseClassPackages(),
         ).toPageTemplateModel()
-        assertTrue(m.stateFields.isEmpty())
+        val f = m.stateFields.single()
+        assertEquals("updatedUserSession", f.name)
+        assertEquals(
+            "com.dqc.androidtest.feature.todo.generate.data.datasource.database.entity.UserSessionEntity",
+            f.typeFqn,
+        )
         val h = m.useCaseHandlers.single()
         assertFalse(h.resultBased)
         assertFalse(h.flowBased)
+        assertTrue(h.unitEntityEchoToState)
+        assertEquals("updatedUserSession", h.unitEchoStatePropertyName)
+        assertEquals("entity", h.unitEchoParamName)
         assertFalse(m.hasResultBasedHandler)
     }
 

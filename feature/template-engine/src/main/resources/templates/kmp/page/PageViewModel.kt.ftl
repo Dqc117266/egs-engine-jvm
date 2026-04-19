@@ -70,6 +70,18 @@ internal class ${pascalName}ViewModel(
         }
     }
 
+<#elseif h.unitEntityEchoToState>
+    private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
+        launchRequest {
+<#if uc.parameters?has_content>
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
+            updateState { copy(${h.unitEchoStatePropertyName} = ${h.unitEchoParamName}, error = null) }
+<#else>
+            ${h.useCaseCamel}()
+</#if>
+        }
+    }
+
 <#else>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launchRequest {

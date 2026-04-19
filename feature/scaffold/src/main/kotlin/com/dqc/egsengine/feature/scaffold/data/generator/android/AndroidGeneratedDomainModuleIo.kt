@@ -11,7 +11,7 @@ package com.dqc.egsengine.feature.scaffold.data.generator.android
 object AndroidGeneratedDomainModuleIo {
 
     private val dbBlockPattern = Regex(
-        """//\s*egs-gen:db-usecases-begin\s*\n([\s\S]*?)\n\s*//\s*egs-gen:db-usecases-end""",
+        """//\s*egs-gen:db-usecases-begin\s*\n([\s\S]*?)\s*//\s*egs-gen:db-usecases-end""",
         RegexOption.MULTILINE,
     )
 

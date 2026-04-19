@@ -213,4 +213,40 @@ class KmpPageTemplateModelMapperTest {
             "State field should use short type name when import is present",
         )
     }
+
+    @Test
+    fun `Update UseCase with Unit return echoes entity into stateFields and ViewModel`() {
+        val uc = UseCaseInfo(
+            name = "UpdateUserSessionUseCase",
+            packageName = "p",
+            path = "x",
+            returnType = "Unit",
+            parameters = listOf(UseCaseParam("entity", "UserSessionEntity")),
+        )
+        val pt = PageTemplate(
+            pageName = "Todolists",
+            moduleName = "todolist",
+            modulePackage = "org.mifos.feature.todolist",
+            useCases = listOf(uc),
+            basePackage = null,
+            baseClassPackages = BaseClassPackages(),
+        )
+        val m = pt.toKmpPageTemplateMap()
+        @Suppress("UNCHECKED_CAST")
+        val fields = m["stateFields"] as List<Map<String, Any?>>
+        assertEquals("updatedUserSession", fields.single()["name"])
+        @Suppress("UNCHECKED_CAST")
+        val handlers = m["useCaseHandlers"] as List<Map<String, Any?>>
+        val h = handlers.single()
+        assertEquals(true, h["unitEntityEchoToState"])
+        assertEquals("updatedUserSession", h["unitEchoStatePropertyName"])
+        assertEquals("entity", h["unitEchoParamName"])
+        assertEquals(false, h["resultBased"])
+
+        val engine = TemplateEngine(TemplateRegistry())
+        val renderer = KmpPageTemplateRenderer(engine, pt, "src/commonMain/kotlin")
+        val vm = renderer.renderViewModel()
+        assertTrue(vm.contains("updateState { copy(updatedUserSession = entity, error = null) }"), vm)
+        assertFalse(vm.contains("// TODO: map result to State"), vm)
+    }
 }

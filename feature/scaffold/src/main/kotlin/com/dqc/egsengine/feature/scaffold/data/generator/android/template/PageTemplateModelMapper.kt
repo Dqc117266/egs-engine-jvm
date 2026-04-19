@@ -51,6 +51,20 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
                 ),
             )
         }
+        useCases.forEach { uc ->
+            if (!isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)) return@forEach
+            val entityFqn =
+                resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
+            val propName = updatedStatePropertyNameForEntityFqn(entityFqn)
+            add(
+                PageStateFieldModel(
+                    name = propName,
+                    typeFqn = entityFqn,
+                    typeContractRef = contractShortTypeDisplay(entityFqn),
+                    nullable = true,
+                ),
+            )
+        }
     }
 
     val intentInners = useCases.map { uc ->
@@ -69,7 +83,16 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
         val intentName = uc.name.removeSuffix("UseCase")
         val rt = uc.returnType.orEmpty()
         val flowBased = looksLikeFlowReturn(rt)
-        val resultBased = !flowBased && looksLikeResultReturn(rt)
+        val unitEcho = isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)
+        val resultBased = !unitEcho && !flowBased && looksLikeResultReturn(rt)
+        val echoProp =
+            if (unitEcho) {
+                updatedStatePropertyNameForEntityFqn(
+                    resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage),
+                )
+            } else {
+                ""
+            }
         PageUseCaseHandlerModel(
             intentSimpleName = intentName,
             handlerName = "handle${intentName.replaceFirstChar { it.uppercase() }}",
@@ -78,7 +101,10 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
             paramPassArgs = uc.parameters.joinToString(", ") { "${it.name} = ${it.name}" },
             showLoading = !(uc.returnType?.contains("SseEmitter") == true),
             resultBased = resultBased,
-            flowBased = flowBased,
+            flowBased = !unitEcho && flowBased,
+            unitEntityEchoToState = unitEcho,
+            unitEchoStatePropertyName = echoProp,
+            unitEchoParamName = if (unitEcho) "entity" else "",
         )
     }
     val hasResultBasedHandler = useCaseHandlers.any { it.resultBased }
@@ -156,6 +182,30 @@ private fun looksLikeResultReturn(returnType: String): Boolean {
         returnType.contains("base.domain.result.Result<") ||
         returnType.endsWith(".Result") ||
         returnType.contains("network.domain.Result")
+}
+
+/**
+ * Room-generated `Update*UseCase` with [Unit] return and `entity: *Entity` — echo the written entity into State
+ * (`updatedFoo` for `FooEntity`) so Compose can read the last successful value.
+ */
+private fun isUnitUpdateEntityEchoUseCase(
+    uc: UseCaseInfo,
+    modelPackage: String,
+    modulePackage: String,
+): Boolean {
+    if (!uc.name.startsWith("Update") || !uc.name.endsWith("UseCase")) return false
+    val rt = uc.returnType?.trim()
+    if (!rt.isNullOrBlank() && rt != "Unit" && rt != "kotlin.Unit") return false
+    if (uc.parameters.size != 1 || uc.parameters.single().name != "entity") return false
+    val fqn = resolveParamTypeString(uc.parameters.single().type, modelPackage, modulePackage)
+    return fqn.trimEnd('?').substringAfterLast(".").endsWith("Entity")
+}
+
+/** e.g. `…UserSessionEntity` → `updatedUserSession`. */
+private fun updatedStatePropertyNameForEntityFqn(entityFqn: String): String {
+    val simple = entityFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
+    require(simple.isNotEmpty()) { "expected *Entity type, got $entityFqn" }
+    return "updated" + simple.replaceFirstChar { it.uppercase() }
 }
 
 /** No [State] field for Flow returns or for Unit / Result<Unit> (side-effect DB writes). */
