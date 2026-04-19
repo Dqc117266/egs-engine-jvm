@@ -33,10 +33,43 @@ class FeatureDiUpdaterKmpTest {
             pageName = "TodoDetail",
             useCases = emptyList(),
             kotlinRootRel = "src/commonMain/kotlin",
-            useKmpPresentationLayout = true,
+            useScreenPresentationLayout = true,
         )
 
         val text = pm.readText()
         assertTrue(text.contains("import com.example.feature.task.presentation.screen.todoDetail.TodoDetailViewModel"))
+    }
+
+    @Test
+    fun `updatePresentationModule uses presentation fragment package when useScreenPresentationLayout false`() {
+        val root = kotlin.io.path.createTempDirectory("feature-di-frag").toFile()
+        val pkg = "com.example.feature.legacy"
+        val pkgPath = pkg.replace(".", "/")
+        val pm = root.resolve("feature/legacy/src/main/kotlin/$pkgPath/presentation/PresentationModule.kt")
+        pm.parentFile.mkdirs()
+        pm.writeText(
+            """
+            package com.example.feature.legacy.presentation
+
+            import org.koin.dsl.module
+
+            internal val presentationModule = module {
+            }
+            """.trimIndent(),
+        )
+
+        val updater = FeatureDiUpdater()
+        updater.updatePresentationModule(
+            projectRoot = root,
+            moduleName = "legacy",
+            modulePackage = pkg,
+            pageName = "OldPage",
+            useCases = emptyList(),
+            kotlinRootRel = "src/main/kotlin",
+            useScreenPresentationLayout = false,
+        )
+
+        val text = pm.readText()
+        assertTrue(text.contains("import com.example.feature.legacy.presentation.fragment.oldPage.OldPageViewModel"))
     }
 }

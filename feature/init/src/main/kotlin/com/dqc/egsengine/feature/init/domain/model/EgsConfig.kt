@@ -7,6 +7,12 @@ data class ScaffoldOverrides(
     val baseViewModelFqn: String? = null,
     val baseFragmentFqn: String? = null,
     val basePackage: String? = null,
+    /**
+     * Where generated ViewModels live under `presentation/` for Koin imports: `"screen"` (default for `create screen`
+     * output) or `"fragment"` (legacy). When null, `create screen` detects from existing `presentation/screen` vs
+     * `presentation/fragment` directories.
+     */
+    val androidPresentationLayout: String? = null,
 )
 
 @Serializable

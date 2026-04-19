@@ -114,6 +114,15 @@ class PageScaffolder(
             screenFile.writeText(renderer.renderScreen(projectRoot))
         }
 
+        val useScreenPresentationLayout = resolveUseScreenPresentationLayout(
+            projectRoot = projectRoot,
+            moduleName = moduleName,
+            modulePackage = modulePackage,
+            kotlinRootRel = kotlinRootRel,
+            useKmpPageTemplates = useKmpPageTemplates,
+            androidPresentationLayoutOverride = config.scaffoldOverrides?.androidPresentationLayout,
+        )
+
         diUpdater.updatePresentationModule(
             projectRoot = projectRoot,
             moduleName = moduleName,
@@ -121,7 +130,7 @@ class PageScaffolder(
             pageName = template.pageName,
             useCases = resolvedUseCases,
             kotlinRootRel = kotlinRootRel,
-            useKmpPresentationLayout = useKmpPageTemplates,
+            useScreenPresentationLayout = useScreenPresentationLayout,
         )
 
         logger.info("Successfully scaffolded page '${template.pageName}' in module '$moduleName'")
@@ -144,6 +153,37 @@ class PageScaffolder(
         val t = config.projectType.uppercase()
         if (t in setOf("KMP", "KMP_ANDROID")) return true
         return kotlinRootRel == "src/commonMain/kotlin"
+    }
+
+    /**
+     * [PageKotlinTemplateRenderer] emits under `presentation.screen.<page>`; Koin imports must match.
+     * KMP projects always use screen. Pure Android: optional [androidPresentationLayoutOverride], else detect
+     * `presentation/screen` vs `presentation/fragment`, defaulting to screen for greenfield modules.
+     */
+    private fun resolveUseScreenPresentationLayout(
+        projectRoot: File,
+        moduleName: String,
+        modulePackage: String,
+        kotlinRootRel: String,
+        useKmpPageTemplates: Boolean,
+        androidPresentationLayoutOverride: String?,
+    ): Boolean {
+        if (useKmpPageTemplates) return true
+        when (androidPresentationLayoutOverride?.lowercase()?.trim()) {
+            "screen" -> return true
+            "fragment" -> return false
+        }
+        val pkgPath = modulePackage.replace(".", "/")
+        val presentation = projectRoot.resolve("feature/$moduleName/$kotlinRootRel/$pkgPath/presentation")
+        if (!presentation.isDirectory) return true
+        val hasScreen = presentation.resolve("screen").isDirectory
+        val hasFragment = presentation.resolve("fragment").isDirectory
+        return when {
+            hasScreen && !hasFragment -> true
+            hasFragment && !hasScreen -> false
+            hasScreen && hasFragment -> true
+            else -> true
+        }
     }
 
     private fun previewFiles(

@@ -21,8 +21,11 @@ class FeatureDiUpdater {
         pageName: String,
         useCases: List<UseCaseInfo>,
         kotlinRootRel: String = "src/main/kotlin",
-        /** KMP uses `presentation.screen.<pageCamel>`; Android legacy uses `presentation.fragment.<pageCamel>`. */
-        useKmpPresentationLayout: Boolean = false,
+        /**
+         * When true, Koin import uses `presentation.screen.<pageCamel>.ViewModel` (matches `create screen` output).
+         * When false, uses `presentation.fragment.<pageCamel>` (legacy). Resolved by [PageScaffolder] via config + filesystem.
+         */
+        useScreenPresentationLayout: Boolean = false,
     ): Boolean {
         val presentationModuleFile = findPresentationModuleFile(projectRoot, moduleName, modulePackage)
             ?: createPresentationModuleFile(projectRoot, moduleName, modulePackage, kotlinRootRel)
@@ -32,7 +35,7 @@ class FeatureDiUpdater {
             pageName,
             useCases,
             modulePackage,
-            useKmpPresentationLayout,
+            useScreenPresentationLayout,
         )
     }
 
@@ -100,7 +103,7 @@ class FeatureDiUpdater {
         pageName: String,
         useCases: List<UseCaseInfo>,
         modulePackage: String,
-        useKmpPresentationLayout: Boolean,
+        useScreenPresentationLayout: Boolean,
     ): Boolean {
         val content = file.readText()
         val pascalName = pageName.replaceFirstChar { it.uppercase() }
@@ -113,7 +116,7 @@ class FeatureDiUpdater {
         }
 
         // 添加 import
-        val viewModelImport = if (useKmpPresentationLayout) {
+        val viewModelImport = if (useScreenPresentationLayout) {
             "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
         } else {
             "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
@@ -166,13 +169,13 @@ class FeatureDiUpdater {
         modulePackage: String,
         pageName: String,
         useCases: List<UseCaseInfo>,
-        useKmpPresentationLayout: Boolean = false,
+        useScreenPresentationLayout: Boolean = false,
     ): String {
         val pascalName = pageName.replaceFirstChar { it.uppercase() }
         val camelName = pageName.replaceFirstChar { it.lowercase() }
 
         val binding = "viewModelOf(::$pascalName" + "ViewModel)"
-        val importLine = if (useKmpPresentationLayout) {
+        val importLine = if (useScreenPresentationLayout) {
             "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
         } else {
             "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
