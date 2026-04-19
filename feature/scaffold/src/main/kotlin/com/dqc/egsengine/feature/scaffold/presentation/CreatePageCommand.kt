@@ -57,6 +57,16 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         help = "Preview only; do not write files"
     ).flag()
 
+    private val paging by option(
+        "--paging",
+        help = "Pagination UI codegen: auto, offset, paging3, none (default: auto)",
+    ).default("auto")
+
+    private val skipNav by option("--skip-nav", help = "Do not edit app NavigationRoute / MainTemplateScreen").flag()
+    private val skipAppWire by option("--skip-app-wire", help = "Do not edit app Gradle / App.kt Koin").flag()
+
+    private val withViewModelTest by option("--with-test", help = "Emit minimal ViewModelTest skeleton").flag()
+
     override fun run() {
         try {
             val workspaceRoot = ProjectRootResolver.resolve(projectPath)
@@ -103,6 +113,10 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
             useCases = selectedUseCases,
             dryRun = dryRun,
             workspaceRoot = workspaceRoot,
+            pagingOption = paging,
+            skipNav = skipNav,
+            skipAppWire = skipAppWire,
+            withViewModelTest = withViewModelTest,
         )
 
         printResult(result)
@@ -173,6 +187,10 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
             useCases = selectedUseCases,
             dryRun = dryRun,
             workspaceRoot = workspaceRoot,
+            pagingOption = paging,
+            skipNav = skipNav,
+            skipAppWire = skipAppWire,
+            withViewModelTest = withViewModelTest,
         )
 
         printResult(result)

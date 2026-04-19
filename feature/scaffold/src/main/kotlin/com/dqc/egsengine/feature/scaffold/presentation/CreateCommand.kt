@@ -24,6 +24,7 @@ class CreateCommand : CliktCommand(name = "create") {
                 CreateApiCommand(),
                 CreateScreenCommand(),
                 CreatePageCommand(), // backward compatibility
+                CreateUseCaseCommand(),
             )
     }
 }

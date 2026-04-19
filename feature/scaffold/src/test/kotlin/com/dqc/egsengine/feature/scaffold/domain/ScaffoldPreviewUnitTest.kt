@@ -2,6 +2,7 @@ package com.dqc.egsengine.feature.scaffold.domain
 
 import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
+import com.dqc.egsengine.feature.scaffold.data.ClientAppNavigationWiring
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
@@ -56,6 +57,7 @@ class ScaffoldPreviewUnitTest {
             useCaseScanner = UseCaseScanner(),
             diUpdater = FeatureDiUpdater(),
             templateEngine = TemplateEngine(TemplateRegistry()),
+            clientAppNavigationWiring = ClientAppNavigationWiring(),
         )
 
         val result = pageScaffolder.scaffold(
@@ -93,6 +95,7 @@ class ScaffoldPreviewUnitTest {
             useCaseScanner = UseCaseScanner(),
             diUpdater = FeatureDiUpdater(),
             templateEngine = TemplateEngine(TemplateRegistry()),
+            clientAppNavigationWiring = ClientAppNavigationWiring(),
         )
 
         val result = pageScaffolder.scaffold(

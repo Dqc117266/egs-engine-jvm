@@ -78,7 +78,7 @@ class CreateCommandsUnitTest {
         )
         every { useCaseScanner.scanByModule(any(), "task") } returns listOf(topicUseCase)
         every {
-            pageScaffolder.scaffold(any(), any(), any(), any(), any(), any())
+            pageScaffolder.scaffold(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } returns PageScaffoldResult(
             pageName = "TaskList",
             moduleName = "task",
@@ -119,6 +119,10 @@ class CreateCommandsUnitTest {
                 listOf(topicUseCase),
                 true,
                 any(),
+                "auto",
+                false,
+                false,
+                false,
             )
         }
     }

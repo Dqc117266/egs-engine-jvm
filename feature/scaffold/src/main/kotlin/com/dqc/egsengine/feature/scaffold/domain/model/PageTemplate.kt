@@ -10,6 +10,11 @@ data class PageTemplate(
     val useCases: List<UseCaseInfo>,
     val basePackage: String?,
     val baseClassPackages: BaseClassPackages,
+    /**
+     * Pagination codegen for `create screen`: `auto` infers from UseCase return types,
+     * `offset` forces `Result<PageResult<T>>` list UI, `paging3` for `Flow<PagingData<T>>`, `none` disables.
+     */
+    val pagingOption: String = "auto",
 )
 
 /**

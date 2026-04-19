@@ -16,12 +16,16 @@ internal interface ${pascalName}Contract {
         val isLoading: Boolean = false,
         val error: String? = null,
 <#list stateFields as f>
+<#if f.nullable>
         val ${f.name}: ${f.typeContractRef}? = null,
+<#else>
+        val ${f.name}: ${f.typeContractRef} = <#if f.name == "items">emptyList()<#elseif f.name == "page">0<#elseif f.name == "pageSize">20<#elseif f.name == "total">0L<#elseif f.name == "totalPages">0<#elseif f.name == "endReached" || f.name == "isRefreshing" || f.name == "isLoadingMore">false<#else>emptyList()</#if>,
+</#if>
 </#list>
     ) : UiState
 
     sealed class Intent : UiIntent {
-<#if hasUseCases>
+<#if hasUseCases || hasPagedOffset>
 <#list intentInners as intent>
 <#if intent.emptyParams>
         data object ${intent.simpleName} : Intent()

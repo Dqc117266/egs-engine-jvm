@@ -188,6 +188,7 @@ class ClientGenCommand : CliktCommand(name = "gen") {
             ClientGenCommand().subcommands(
                 ClientGenDatabaseCommand(),
                 ClientGenPrefsCommand(),
+                ClientGenStringsCommand(),
             )
     }
 }

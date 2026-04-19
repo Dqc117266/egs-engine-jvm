@@ -5,6 +5,7 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
+import com.dqc.egsengine.feature.scaffold.data.generator.common.PagePagingDetector
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 
@@ -20,6 +21,7 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
     val screenPkg = "$modulePackage.presentation.screen.$camelName"
     val resultClassFqn =
         baseClassPackages.resultClass ?: "template.core.base.network.domain.Result"
+    val pagingOpt = PagePagingDetector.normalizePagingOption(pagingOption)
 
     val useCaseRows = useCases.map { uc ->
         val intentName = uc.name.removeSuffix("UseCase")
@@ -40,9 +42,52 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         )
     }
 
+    val hasPagedOffset = useCases.any { PagePagingDetector.isOffsetPageResultUseCase(it.returnType, pagingOpt) }
+    val hasPagedFlow = useCases.any { PagePagingDetector.isPaging3FlowUseCase(it.returnType, pagingOpt) }
+    val primaryOffsetUc = useCases.firstOrNull { PagePagingDetector.isOffsetPageResultUseCase(it.returnType, pagingOpt) }
+    val primaryFlowUc = useCases.firstOrNull { PagePagingDetector.isPaging3FlowUseCase(it.returnType, pagingOpt) }
+
+    val primaryPagedArgList: String =
+        if (primaryOffsetUc != null) {
+            val h = PagePagingDetector.detectPageParams(primaryOffsetUc.parameters)
+            buildPagedUseCaseArgumentList(primaryOffsetUc, h.page, h.pageSize)
+        } else {
+            ""
+        }
+
+    var pagedItemFqn = ""
+    var pagedItemContractRef = ""
+    if (primaryOffsetUc != null) {
+        val inner = PagePagingDetector.extractResultInnerType(primaryOffsetUc.returnType.orEmpty()) ?: ""
+        val rawItem = PagePagingDetector.extractPageResultItemRaw(inner) ?: ""
+        pagedItemFqn = resolveParamTypeString(rawItem, modelPackage, modulePackage)
+        pagedItemContractRef = contractShortTypeDisplay(pagedItemFqn)
+    }
+    var flowPagedItemContractRef = ""
+    if (primaryFlowUc != null) {
+        val raw = PagePagingDetector.extractPagingDataItemType(primaryFlowUc.returnType.orEmpty()) ?: ""
+        val fqn = resolveParamTypeString(raw, modelPackage, modulePackage)
+        flowPagedItemContractRef = contractShortTypeDisplay(fqn)
+    }
+
     val stateFields = buildList {
         useCases.forEach { uc ->
             val rt = uc.returnType ?: return@forEach
+            if (PagePagingDetector.isOffsetPageResultUseCase(rt, pagingOpt)) return@forEach
+            if (PagePagingDetector.isPaging3FlowUseCase(rt, pagingOpt)) return@forEach
+            if (PagePagingDetector.looksLikeFlowReturn(rt) && extractFlowInnerType(rt) != null) {
+                val inner = extractFlowInnerType(rt)!!.trim()
+                val typeStr = resolveParamTypeString(inner, modelPackage, modulePackage)
+                add(
+                    mapOf(
+                        "name" to uc.camelName,
+                        "typeFqn" to typeStr,
+                        "typeContractRef" to contractShortTypeDisplay(typeStr),
+                        "nullable" to true,
+                    ),
+                )
+                return@forEach
+            }
             if (!shouldEmitStateFieldForReturnType(rt)) return@forEach
             val propName = uc.camelName
             val typeStr = resolveStatePropertyTypeString(rt, modelPackage)
@@ -52,6 +97,72 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
                     "typeFqn" to typeStr,
                     "typeContractRef" to contractShortTypeDisplay(typeStr),
                     "nullable" to true,
+                ),
+            )
+        }
+        if (hasPagedOffset && primaryOffsetUc != null) {
+            add(
+                mapOf(
+                    "name" to "items",
+                    "typeFqn" to "List<$pagedItemFqn>",
+                    "typeContractRef" to "List<$pagedItemContractRef>",
+                    "nullable" to false,
+                ),
+            )
+            add(
+                mapOf(
+                    "name" to "page",
+                    "typeFqn" to "Int",
+                    "typeContractRef" to "Int",
+                    "nullable" to false,
+                ),
+            )
+            add(
+                mapOf(
+                    "name" to "pageSize",
+                    "typeFqn" to "Int",
+                    "typeContractRef" to "Int",
+                    "nullable" to false,
+                ),
+            )
+            add(
+                mapOf(
+                    "name" to "total",
+                    "typeFqn" to "Long",
+                    "typeContractRef" to "Long",
+                    "nullable" to false,
+                ),
+            )
+            add(
+                mapOf(
+                    "name" to "totalPages",
+                    "typeFqn" to "Int",
+                    "typeContractRef" to "Int",
+                    "nullable" to false,
+                ),
+            )
+            add(
+                mapOf(
+                    "name" to "endReached",
+                    "typeFqn" to "Boolean",
+                    "typeContractRef" to "Boolean",
+                    "nullable" to false,
+                ),
+            )
+            add(
+                mapOf(
+                    "name" to "isRefreshing",
+                    "typeFqn" to "Boolean",
+                    "typeContractRef" to "Boolean",
+                    "nullable" to false,
+                ),
+            )
+            add(
+                mapOf(
+                    "name" to "isLoadingMore",
+                    "typeFqn" to "Boolean",
+                    "typeContractRef" to "Boolean",
+                    "nullable" to false,
                 ),
             )
         }
@@ -73,28 +184,60 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
 
     val contractImports = buildContractImports(stateFields)
 
-    val intentInners = useCases.map { uc ->
-        val intentName = uc.name.removeSuffix("UseCase")
-        val emptyParams = uc.parameters.isEmpty()
-        mapOf(
-            "simpleName" to intentName,
-            "emptyParams" to emptyParams,
-            "params" to uc.parameters.map { p ->
+    val intentInners = buildList {
+        if (hasPagedOffset) {
+            add(
                 mapOf(
-                    "name" to p.name,
-                    "kotlinType" to resolveParamTypeString(p.type, modelPackage, modulePackage),
-                )
-            },
-        )
+                    "simpleName" to "Refresh",
+                    "emptyParams" to true,
+                    "params" to emptyList<Map<String, String>>(),
+                ),
+            )
+            add(
+                mapOf(
+                    "simpleName" to "LoadMore",
+                    "emptyParams" to true,
+                    "params" to emptyList<Map<String, String>>(),
+                ),
+            )
+            add(
+                mapOf(
+                    "simpleName" to "Retry",
+                    "emptyParams" to true,
+                    "params" to emptyList<Map<String, String>>(),
+                ),
+            )
+        }
+        useCases.filterNot { PagePagingDetector.isOffsetPageResultUseCase(it.returnType, pagingOpt) }.forEach { uc ->
+            val intentName = uc.name.removeSuffix("UseCase")
+            val emptyParams = uc.parameters.isEmpty()
+            add(
+                mapOf(
+                    "simpleName" to intentName,
+                    "emptyParams" to emptyParams,
+                    "params" to uc.parameters.map { p ->
+                        mapOf(
+                            "name" to p.name,
+                            "kotlinType" to resolveParamTypeString(p.type, modelPackage, modulePackage),
+                        )
+                    },
+                ),
+            )
+        }
     }
 
     val useCaseHandlers = useCases.map { uc ->
         val intentName = uc.name.removeSuffix("UseCase")
         val rt = uc.returnType.orEmpty()
-        val flowBased = looksLikeFlowReturn(rt)
+        val offsetPaged = PagePagingDetector.isOffsetPageResultUseCase(rt, pagingOpt)
+        val flowPaged = PagePagingDetector.isPaging3FlowUseCase(rt, pagingOpt)
+        val pageParams = PagePagingDetector.detectPageParams(uc.parameters)
+        val flowBasedRaw = PagePagingDetector.looksLikeFlowReturn(rt)
         val unitEcho = isUnitUpdateEntityEchoUseCase(uc, modelPackage, modulePackage)
         val direct = isDirectReturnToStateUseCase(uc, modelPackage, modulePackage)
-        val resultBased = !unitEcho && !direct && !flowBased && looksLikeResultReturn(rt)
+        val flowBased = !unitEcho && !direct && flowBasedRaw && !flowPaged
+        val resultBased =
+            !offsetPaged && !flowPaged && !unitEcho && !direct && !flowBasedRaw && looksLikeResultReturn(rt)
         val echoProp =
             if (unitEcho) {
                 updatedStatePropertyNameForEntityFqn(
@@ -103,6 +246,16 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             } else {
                 ""
             }
+        val innerRt = PagePagingDetector.extractResultInnerType(rt)
+        val itemRaw = innerRt?.let { PagePagingDetector.extractPageResultItemRaw(it) } ?: ""
+        val pagedItemFqnForUc = if (itemRaw.isNotBlank()) {
+            resolveParamTypeString(itemRaw, modelPackage, modulePackage)
+        } else {
+            ""
+        }
+        val flowItemRaw = PagePagingDetector.extractPagingDataItemType(rt) ?: ""
+        val flowItemFqnForUc =
+            if (flowItemRaw.isNotBlank()) resolveParamTypeString(flowItemRaw, modelPackage, modulePackage) else ""
         mapOf(
             "intentSimpleName" to intentName,
             "handlerName" to "handle${intentName.replaceFirstChar { it.uppercase() }}",
@@ -111,13 +264,33 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
             "paramPassArgs" to uc.parameters.joinToString(", ") { "${it.name} = ${it.name}" },
             "showLoading" to !rt.contains("SseEmitter"),
             "resultBased" to resultBased,
-            "flowBased" to (!unitEcho && !direct && flowBased),
+            "flowBased" to flowBased,
+            "pagedBased" to offsetPaged,
+            "pagedFlowBased" to flowPaged,
+            "pageParam" to pageParams.page,
+            "pageSizeParam" to pageParams.pageSize,
+            "pagedItemTypeFqn" to pagedItemFqnForUc,
+            "pagedItemTypeContractRef" to if (pagedItemFqnForUc.isNotBlank()) {
+                contractShortTypeDisplay(pagedItemFqnForUc)
+            } else {
+                ""
+            },
+            "flowPagedItemTypeFqn" to flowItemFqnForUc,
+            "flowPagedItemTypeContractRef" to if (flowItemFqnForUc.isNotBlank()) {
+                contractShortTypeDisplay(flowItemFqnForUc)
+            } else {
+                ""
+            },
             "unitEntityEchoToState" to unitEcho,
             "unitEchoStatePropertyName" to echoProp,
             "unitEchoParamName" to if (unitEcho) "entity" else "",
             "directReturnToState" to direct,
             "directStatePropertyName" to if (direct) uc.camelName else "",
         )
+    }
+
+    val hasResultBasedHandler = useCaseHandlers.any {
+        it["resultBased"] == true || it["pagedBased"] == true
     }
 
     return mapOf(
@@ -133,7 +306,64 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         "contractImports" to contractImports,
         "intentInners" to intentInners,
         "useCaseHandlers" to useCaseHandlers,
+        "hasPagedOffset" to hasPagedOffset,
+        "hasPagedFlow" to hasPagedFlow,
+        "pagedItemTypeContractRef" to pagedItemContractRef,
+        "pagedItemTypeFqn" to pagedItemFqn,
+        "flowPagedItemTypeContractRef" to flowPagedItemContractRef,
+        "defaultPageSize" to 20,
+        "pagingOption" to pagingOpt,
+        "hasResultBasedHandler" to hasResultBasedHandler,
+        "primaryPagedArgList" to primaryPagedArgList,
+        "primaryPagedUseCaseCamel" to (primaryOffsetUc?.camelName ?: ""),
     )
+}
+
+/** Inner type of `Flow<T>` / `StateFlow<T>` when [T] is not `PagingData<*>`. */
+private fun extractFlowInnerType(returnType: String): String? {
+    val m =
+        Regex(
+            """\b(?:kotlinx\.coroutines\.flow\.)?(?:Flow|StateFlow|SharedFlow|MutableStateFlow|MutableSharedFlow)\s*<\s*([^>]+)\s*>""",
+        ).find(returnType) ?: return null
+    val inner = m.groupValues[1].trim()
+    if (inner.contains("PagingData")) return null
+    val simple = inner.substringAfterLast(".")
+    if (simple == "Unit" || inner == "kotlin.Unit") return null
+    return inner
+}
+
+private fun buildPagedUseCaseArgumentList(
+    uc: UseCaseInfo,
+    pageParam: String,
+    pageSizeParam: String,
+): String =
+    uc.parameters.joinToString(",\n            ") { p ->
+        val value = when (p.name) {
+            pageParam -> "nextPage"
+            pageSizeParam -> "state.value.pageSize"
+            else -> defaultLiteralForUseCaseParamType(p.type)
+        }
+        "${p.name} = $value"
+    }
+
+private fun defaultLiteralForUseCaseParamType(type: String): String {
+    val t = type.trim()
+    if (t.endsWith("?")) return "null"
+    val base = t.removeSuffix("?").substringAfterLast(".")
+    return when (base) {
+        "Long" -> "0L"
+        "Int" -> "0"
+        "String" -> "\"\""
+        "Boolean" -> "false"
+        "Float" -> "0f"
+        "Double" -> "0.0"
+        else ->
+            if (t.startsWith("List<") || t.contains(".List<")) {
+                "emptyList()"
+            } else {
+                "null"
+            }
+    }
 }
 
 private fun looksLikeFlowReturn(returnType: String): Boolean {
@@ -160,7 +390,7 @@ private fun shouldEmitStateFieldForReturnType(returnType: String): Boolean {
     if (returnType.isBlank()) return false
     if (looksLikeFlowReturn(returnType)) return false
     val norm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
-    val effective = extractResultInnerType(norm)
+    val effective = PagePagingDetector.extractResultInnerType(norm)
         ?: Regex("""Result<([^>]+)>""").find(norm)?.groupValues?.get(1)?.trim()
         ?: norm
     val trimmed = effective.trimEnd('?')
@@ -217,33 +447,12 @@ private fun shortenKotlinStdlibPrimitiveFqns(typeStr: String): String {
 
 private fun resolveStatePropertyTypeString(returnType: String, modelPackage: String): String {
     val returnTypeNorm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
-    val innerType = extractResultInnerType(returnTypeNorm)
+    val innerType = PagePagingDetector.extractResultInnerType(returnTypeNorm)
         ?: Regex("""Result<([^>]+)>""").find(returnTypeNorm)?.groupValues?.get(1)?.trim()
         ?: returnTypeNorm
     val simpleType = innerType.substringAfterLast(".")
     val typePackage = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
     return resolveBasicTypeString(simpleType, typePackage, modelPackage)
-}
-
-/**
- * Extracts the type argument of the first `Result<...>` in [returnType], supporting nested generics
- * (e.g. `Result<PageResult<Foo>>`).
- */
-private fun extractResultInnerType(returnType: String): String? {
-    val idx = returnType.indexOf("Result<")
-    if (idx < 0) return null
-    var start = idx + "Result<".length
-    var depth = 1
-    var i = start
-    while (i < returnType.length && depth > 0) {
-        when (returnType[i]) {
-            '<' -> depth++
-            '>' -> depth--
-        }
-        i++
-    }
-    if (depth != 0) return null
-    return returnType.substring(start, i - 1).trim()
 }
 
 /**

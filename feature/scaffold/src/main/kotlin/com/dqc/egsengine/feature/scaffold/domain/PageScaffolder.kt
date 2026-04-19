@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.domain
 
+import com.dqc.egsengine.feature.scaffold.data.ClientAppNavigationWiring
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
@@ -24,6 +25,7 @@ class PageScaffolder(
     private val useCaseScanner: UseCaseScanner,
     private val diUpdater: FeatureDiUpdater,
     private val templateEngine: TemplateEngine,
+    private val clientAppNavigationWiring: ClientAppNavigationWiring,
 ) {
     private val logger = LoggerFactory.getLogger(PageScaffolder::class.java)
 
@@ -35,6 +37,11 @@ class PageScaffolder(
         dryRun: Boolean = false,
         /** Workspace root when [projectRoot] is `client/` (for `.egs/workspace.json`). */
         workspaceRoot: File = projectRoot,
+        /** See [com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate.pagingOption]. */
+        pagingOption: String = "auto",
+        skipNav: Boolean = false,
+        skipAppWire: Boolean = false,
+        withViewModelTest: Boolean = false,
     ): PageScaffoldResult {
         logger.info("Scaffolding page '$pageName' in module '$moduleName'")
 
@@ -65,8 +72,15 @@ class PageScaffolder(
             useCases = resolvedUseCases,
             basePackage = basePackage,
             baseClassPackages = pageBaseClasses,
+            pagingOption = pagingOption,
         )
-        val previewFiles = previewFiles(template, projectRoot, kotlinRootRel, useKmpPageTemplates)
+        val previewFiles = previewFiles(
+            template,
+            projectRoot,
+            kotlinRootRel,
+            useKmpPageTemplates,
+            withViewModelTest,
+        )
 
         if (dryRun) {
             return PageScaffoldResult(
@@ -99,6 +113,16 @@ class PageScaffolder(
             val screenFile = projectRoot.resolve("feature/$moduleName/${kmpRenderer.pathScreen()}")
             screenFile.parentFile.mkdirs()
             screenFile.writeText(kmpRenderer.renderScreen(projectRoot))
+            if (withViewModelTest) {
+                writeViewModelTest(
+                    projectRoot = projectRoot,
+                    moduleName = moduleName,
+                    modulePackage = modulePackage,
+                    kotlinRootRel = kotlinRootRel,
+                    pascalName = template.pageName,
+                    useKmp = true,
+                )
+            }
         } else {
             val renderer = PageKotlinTemplateRenderer(templateEngine, template, kotlinRootRel)
             val contractFile = projectRoot.resolve("feature/$moduleName/${renderer.pathContract()}")
@@ -112,6 +136,16 @@ class PageScaffolder(
             val screenFile = projectRoot.resolve("feature/$moduleName/${renderer.pathScreen()}")
             screenFile.parentFile.mkdirs()
             screenFile.writeText(renderer.renderScreen(projectRoot))
+            if (withViewModelTest) {
+                writeViewModelTest(
+                    projectRoot = projectRoot,
+                    moduleName = moduleName,
+                    modulePackage = modulePackage,
+                    kotlinRootRel = kotlinRootRel,
+                    pascalName = template.pageName,
+                    useKmp = false,
+                )
+            }
         }
 
         val useScreenPresentationLayout = resolveUseScreenPresentationLayout(
@@ -131,6 +165,15 @@ class PageScaffolder(
             useCases = resolvedUseCases,
             kotlinRootRel = kotlinRootRel,
             useScreenPresentationLayout = useScreenPresentationLayout,
+        )
+
+        clientAppNavigationWiring.wireIfPossible(
+            clientRoot = projectRoot,
+            moduleName = moduleName,
+            modulePackage = modulePackage,
+            pageName = template.pageName,
+            skipNav = skipNav,
+            skipAppWire = skipAppWire,
         )
 
         logger.info("Successfully scaffolded page '${template.pageName}' in module '$moduleName'")
@@ -191,9 +234,10 @@ class PageScaffolder(
         projectRoot: File,
         kotlinRootRel: String,
         useKmpPageTemplates: Boolean,
+        withViewModelTest: Boolean,
     ): List<GeneratedFileInfo> {
         val modulePath = "feature/${template.moduleName}"
-        return if (useKmpPageTemplates) {
+        val base = if (useKmpPageTemplates) {
             val kmpRenderer = KmpPageTemplateRenderer(templateEngine, template, kotlinRootRel)
             listOf(
                 GeneratedFileInfo("$modulePath/${kmpRenderer.pathContract()}", kmpRenderer.renderContract(projectRoot)),
@@ -207,6 +251,57 @@ class PageScaffolder(
                 GeneratedFileInfo("$modulePath/${renderer.pathViewModel()}", renderer.renderViewModel(projectRoot)),
                 GeneratedFileInfo("$modulePath/${renderer.pathScreen()}", renderer.renderScreen(projectRoot)),
             )
+        }.toMutableList()
+        if (withViewModelTest) {
+            val testPath = viewModelTestPath(modulePath, kotlinRootRel, template.modulePackage, template.pageName, useKmpPageTemplates)
+            base.add(GeneratedFileInfo(testPath, "// ViewModel test placeholder\n"))
         }
+        return base
+    }
+
+    private fun viewModelTestPath(
+        modulePath: String,
+        kotlinRootRel: String,
+        modulePackage: String,
+        pageName: String,
+        useKmp: Boolean,
+    ): String {
+        val camel = pageName.replaceFirstChar { it.lowercase() }
+        val pascal = pageName.replaceFirstChar { it.uppercase() }
+        val testRoot = if (useKmp) "src/commonTest/kotlin" else "src/test/kotlin"
+        val pkgPath = modulePackage.replace(".", "/")
+        return "$modulePath/$testRoot/$pkgPath/presentation/screen/$camel/${pascal}ViewModelTest.kt"
+    }
+
+    private fun writeViewModelTest(
+        projectRoot: File,
+        moduleName: String,
+        modulePackage: String,
+        kotlinRootRel: String,
+        pascalName: String,
+        useKmp: Boolean,
+    ) {
+        val camel = pascalName.replaceFirstChar { it.lowercase() }
+        val pkgPath = modulePackage.replace(".", "/")
+        val testRoot = projectRoot.resolve(
+            "feature/$moduleName/${if (useKmp) "src/commonTest/kotlin" else "src/test/kotlin"}/$pkgPath/presentation/screen/$camel",
+        )
+        val f = testRoot.resolve("${pascalName}ViewModelTest.kt")
+        if (f.exists()) return
+        testRoot.mkdirs()
+        f.writeText(
+            """
+            package $modulePackage.presentation.screen.$camel
+
+            import kotlin.test.Test
+
+            class ${pascalName}ViewModelTest {
+                @Test
+                fun smoke_placeholder() {
+                    // Wire fakes + turbine if needed
+                }
+            }
+            """.trimIndent(),
+        )
     }
 }

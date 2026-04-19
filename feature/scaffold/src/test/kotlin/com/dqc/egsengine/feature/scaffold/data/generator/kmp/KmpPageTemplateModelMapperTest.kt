@@ -73,7 +73,7 @@ class KmpPageTemplateModelMapperTest {
     }
 
     @Test
-    fun `nested Result inner type is extracted for state field`() {
+    fun `nested Result PageResult T expands to offset paging state fields`() {
         val uc = UseCaseInfo(
             name = "NestedUseCase",
             packageName = "p",
@@ -90,13 +90,14 @@ class KmpPageTemplateModelMapperTest {
             baseClassPackages = BaseClassPackages(),
         )
         val m = pt.toKmpPageTemplateMap()
+        assertEquals(true, m["hasPagedOffset"])
         @Suppress("UNCHECKED_CAST")
         val fields = m["stateFields"] as List<Map<String, Any?>>
-        assertEquals(1, fields.size)
-        assertEquals(
-            "PageResult<com.example.domain.model.RowVO>",
-            fields[0]["typeFqn"] as String,
-        )
+        assertEquals(8, fields.size)
+        val names = fields.map { it["name"] as String }
+        assertTrue(names.contains("items"))
+        assertTrue(names.contains("page"))
+        assertTrue(names.contains("endReached"))
     }
 
     @Test

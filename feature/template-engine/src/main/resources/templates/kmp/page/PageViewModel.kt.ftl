@@ -4,7 +4,9 @@
 package ${screenPkg}
 
 import template.core.base.ui.BaseViewModel
+<#if hasResultBasedHandler>
 import ${resultClassFqn}
+</#if>
 <#list useCases as uc>
 import ${uc.packageName}.${uc.name}
 </#list>
@@ -20,27 +22,98 @@ internal class ${pascalName}ViewModel(
 ) {
 
     override fun registerIntents() {
-<#if hasUseCases>
-<#list useCases as uc>
-        registerIntent<${pascalName}Contract.Intent.${uc.intentName}> {
-<#if uc.parameters?has_content>
-            ${uc.handlerName}(<#list uc.parameters as p>it.${p.name}<#if p_has_next>, </#if></#list>)
+<#if hasUseCases || hasPagedOffset>
+<#list intentInners as intent>
+        registerIntent<${pascalName}Contract.Intent.${intent.simpleName}> {
+<#if hasPagedOffset && (intent.simpleName == "Refresh" || intent.simpleName == "Retry")>
+            runPagedLoad(refresh = true)
+<#elseif hasPagedOffset && intent.simpleName == "LoadMore">
+            runPagedLoad(refresh = false)
 <#else>
+<#list useCases as uc>
+<#if uc.intentName == intent.simpleName>
+<#if intent.emptyParams>
             ${uc.handlerName}()
+<#else>
+            ${uc.handlerName}(<#list intent.params as p>it.${p.name}<#if p_has_next>, </#if></#list>)
+</#if>
+</#if>
+</#list>
 </#if>
         }
 
 </#list>
 <#else>
         registerIntent<${pascalName}Contract.Intent.Load> {
-            // TODO: load data
+            // No use cases: add intents or wire loading here
         }
 </#if>
     }
 
+<#if hasPagedOffset && primaryPagedUseCaseCamel?has_content>
+    private fun runPagedLoad(refresh: Boolean) {
+        val s = currentState
+        if (!refresh && s.isLoadingMore) return
+        if (!refresh && s.endReached) return
+        val nextPage = if (refresh) 0 else s.page + 1
+        launchRequest(showLoading = false) {
+            if (refresh) {
+                updateState { copy(isRefreshing = true, error = null) }
+            } else {
+                updateState { copy(isLoadingMore = true, error = null) }
+            }
+            when (val result = ${primaryPagedUseCaseCamel}(${primaryPagedArgList})) {
+                is Result.Success -> {
+                    val pageResult = result.value
+                    val merged = if (refresh) {
+                        pageResult.list
+                    } else {
+                        currentState.items + pageResult.list
+                    }
+                    val ended = pageResult.page + 1 >= pageResult.totalPages
+                    updateState {
+                        copy(
+                            items = merged,
+                            page = pageResult.page,
+                            pageSize = pageResult.pageSize,
+                            total = pageResult.total,
+                            totalPages = pageResult.totalPages,
+                            endReached = ended,
+                            isRefreshing = false,
+                            isLoadingMore = false,
+                            error = null,
+                        )
+                    }
+                }
+                is Result.Failure -> {
+                    updateState {
+                        copy(
+                            error = result.throwable?.message,
+                            isRefreshing = false,
+                            isLoadingMore = false,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+</#if>
 <#list useCases as uc>
 <#assign h = useCaseHandlers[uc_index] />
-<#if h.resultBased>
+<#if h.pagedBased>
+<#-- paged: handled by runPagedLoad -->
+<#elseif h.pagedFlowBased>
+    private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
+        launch {
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>).collect { pagingData ->
+                // Use androidx.paging.compose.collectAsLazyPagingItems(pagingData) on Android, or map PagingData in platform code.
+                updateState { copy(error = null) }
+            }
+        }
+    }
+
+<#elseif h.resultBased>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launchRequest(showLoading = ${h.showLoading?c}) {
 <#if uc.parameters?has_content>
@@ -62,11 +135,12 @@ internal class ${pascalName}ViewModel(
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launch {
 <#if uc.parameters?has_content>
-            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
+            ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>).collect { value ->
 <#else>
-            ${h.useCaseCamel}()
+            ${h.useCaseCamel}().collect { value ->
 </#if>
-            // TODO: collect Flow and update State
+                updateState { copy(${h.useCaseCamel} = value, error = null) }
+            }
         }
     }
 
@@ -102,7 +176,7 @@ internal class ${pascalName}ViewModel(
 <#else>
             ${h.useCaseCamel}()
 </#if>
-            // TODO: map result to State (or add Result return type to UseCase)
+            // TODO: map result to State (or add Result / Flow return type to UseCase)
         }
     }
 

@@ -3,9 +3,12 @@
  */
 package ${screenPkg}
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,30 +23,62 @@ internal fun ${pascalName}Screen(
 ) {
     val viewModel: ${pascalName}ViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+<#if hasPagedOffset>
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.layoutInfo.totalItemsCount, uiState.endReached) {
+        val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@LaunchedEffect
+        if (uiState.endReached || uiState.items.isEmpty()) return@LaunchedEffect
+        if (lastVisible >= uiState.items.size - 1) {
+            viewModel.dispatch(${pascalName}Contract.Intent.LoadMore)
+        }
+    }
+</#if>
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is ${pascalName}Contract.Effect.ShowToast -> {
-                    // TODO: Show toast (Snackbar, platform dialog, etc.)
+                    // Show toast (Snackbar, platform dialog, etc.)
                 }
             }
         }
     }
+
+<#if hasPagedOffset>
+    LaunchedEffect(Unit) {
+        viewModel.dispatch(${pascalName}Contract.Intent.Refresh)
+    }
+</#if>
 
     Column(
         modifier = modifier.fillMaxSize().padding(16.dp),
     ) {
         when {
             uiState.isLoading -> {
-                // TODO: LoadingIndicator
+                // LoadingIndicator
             }
             uiState.error != null -> {
-                // TODO: Error UI
+                // Error UI; retry:
+                // viewModel.sendIntent(${pascalName}Contract.Intent.Retry)
             }
+<#if hasPagedOffset>
             else -> {
-                // TODO: Content
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(uiState.items.size) { index ->
+                        val item = uiState.items[index]
+                        // TODO: row UI for ${pagedItemTypeContractRef}
+                    }
+                }
             }
+<#else>
+            else -> {
+                // Content
+            }
+</#if>
         }
     }
 }

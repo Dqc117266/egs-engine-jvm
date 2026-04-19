@@ -75,6 +75,16 @@ data class PageUseCaseHandlerModel(
     val directReturnToState: Boolean = false,
     /** State property name; same as use-case camelName (e.g. `getUserId`). */
     val directStatePropertyName: String = "",
+    /** True when return type is `Result<PageResult<T>>` (offset pagination). */
+    val pagedBased: Boolean = false,
+    /** True when return type is `Flow<PagingData<T>>`. */
+    val pagedFlowBased: Boolean = false,
+    val pageParam: String = "page",
+    val pageSizeParam: String = "pageSize",
+    val pagedItemTypeFqn: String = "",
+    val pagedItemTypeContractRef: String = "",
+    val flowPagedItemTypeFqn: String = "",
+    val flowPagedItemTypeContractRef: String = "",
 )
 
 /** Freemarker root model for android page templates. */
@@ -103,4 +113,13 @@ data class PageTemplateModel(
     val useCaseHandlers: List<PageUseCaseHandlerModel>,
     /** When false, ViewModel template omits `import …Result` (plain/Flow-only handlers). */
     val hasResultBasedHandler: Boolean,
+    val pagingOption: String = "auto",
+    val hasPagedOffset: Boolean = false,
+    val hasPagedFlow: Boolean = false,
+    val pagedItemTypeContractRef: String = "",
+    val pagedItemTypeFqn: String = "",
+    val flowPagedItemTypeContractRef: String = "",
+    val defaultPageSize: Int = 20,
+    val primaryPagedArgList: String = "",
+    val primaryPagedUseCaseCamel: String = "",
 )

@@ -2,6 +2,7 @@ package com.dqc.egsengine.feature.scaffold.di
 
 import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
+import com.dqc.egsengine.feature.scaffold.data.ClientAppNavigationWiring
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
@@ -59,6 +60,7 @@ import com.dqc.egsengine.feature.scaffold.domain.KmpDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.CreateUseCaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.PageScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.swagger.SwaggerApiScaffolder
 import org.koin.core.qualifier.named
@@ -146,7 +148,9 @@ val featureScaffoldModule = module {
     // Domain layer
     single { ModuleScaffolder(get(), get(), get(), get(), get(named("platformModuleGenerators"))) }
     single { SwaggerApiScaffolder(get(), get(), get()) }
-    single { PageScaffolder(get(), get(), get(), get()) }
+    single { ClientAppNavigationWiring() }
+    single { CreateUseCaseScaffolder(get()) }
+    single { PageScaffolder(get(), get(), get(), get(), get()) }
     single {
         ApiSyncScaffolder(
             workspaceResolver = get(),

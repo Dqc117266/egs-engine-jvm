@@ -12,6 +12,7 @@ import com.dqc.egsengine.feature.scaffold.di.featureScaffoldModule
 import com.dqc.egsengine.feature.scaffold.presentation.BackendCommand
 import com.dqc.egsengine.feature.scaffold.presentation.ClientCommand
 import com.dqc.egsengine.feature.scaffold.presentation.CreateCommand
+import com.dqc.egsengine.feature.scaffold.presentation.FlowCommand
 import com.dqc.egsengine.feature.scaffold.presentation.LintCommand
 import com.dqc.egsengine.feature.scaffold.presentation.NewCommand
 import com.dqc.egsengine.feature.scaffold.presentation.WebCommand
@@ -48,6 +49,7 @@ fun main(args: Array<String>) {
             ScriptCommand(),
             InitCommand(),
             CreateCommand.withSubcommands(),
+            FlowCommand.withSubcommands(),
             NewCommand.withSubcommands(),
             BackendCommand.withSubcommands(),
             ClientCommand.withSubcommands(),

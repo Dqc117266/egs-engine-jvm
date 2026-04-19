@@ -83,6 +83,26 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         help = "Preview only; do not write files"
     ).flag()
 
+    private val paging by option(
+        "--paging",
+        help = "Pagination UI codegen: auto (default), offset (Result<PageResult<T>>), paging3 (Flow<PagingData<T>>), none",
+    ).default("auto")
+
+    private val skipNav by option(
+        "--skip-nav",
+        help = "Do not edit app NavigationRoute / MainTemplateScreen",
+    ).flag()
+
+    private val skipAppWire by option(
+        "--skip-app-wire",
+        help = "Do not edit app build.gradle.kts or App.kt Koin modules",
+    ).flag()
+
+    private val withViewModelTest by option(
+        "--with-test",
+        help = "Also emit a minimal ViewModelTest skeleton (commonTest or test)",
+    ).flag()
+
     override fun run() {
         try {
             val workspaceRoot = ProjectRootResolver.resolve(projectPath)
@@ -133,6 +153,10 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
             useCases = selectedUseCases,
             dryRun = dryRun,
             workspaceRoot = workspaceRoot,
+            pagingOption = paging,
+            skipNav = skipNav,
+            skipAppWire = skipAppWire,
+            withViewModelTest = withViewModelTest,
         )
 
         printResult(result)
@@ -203,6 +227,10 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
             useCases = selectedUseCases,
             dryRun = dryRun,
             workspaceRoot = workspaceRoot,
+            pagingOption = paging,
+            skipNav = skipNav,
+            skipAppWire = skipAppWire,
+            withViewModelTest = withViewModelTest,
         )
 
         printResult(result)
