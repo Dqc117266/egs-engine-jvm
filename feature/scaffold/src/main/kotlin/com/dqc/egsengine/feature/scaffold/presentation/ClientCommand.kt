@@ -29,6 +29,7 @@ class ClientCommand : CliktCommand(name = "client") {
                 ClientListCommand.withSubcommands(),
                 ClientApiCommand.withSubcommands(),
                 ClientGenCommand.withSubcommands(),
+                ClientEditCommand.withSubcommands(),
             )
     }
 }

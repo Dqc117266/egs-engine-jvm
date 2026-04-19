@@ -1,5 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.data
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -71,5 +73,42 @@ class FeatureDiUpdaterKmpTest {
 
         val text = pm.readText()
         assertTrue(text.contains("import com.example.feature.legacy.presentation.fragment.oldPage.OldPageViewModel"))
+    }
+
+    @Test
+    fun `updatePresentationModule is idempotent when ViewModel already registered`() {
+        val root = kotlin.io.path.createTempDirectory("feature-di-kmp-idem").toFile()
+        val pkg = "com.example.feature.task"
+        val pkgPath = pkg.replace(".", "/")
+        val pm = root.resolve("feature/task/src/commonMain/kotlin/$pkgPath/presentation/PresentationModule.kt")
+        pm.parentFile.mkdirs()
+        pm.writeText(
+            """
+            package com.example.feature.task.presentation
+
+            import com.example.feature.task.presentation.screen.todoDetail.TodoDetailViewModel
+            import org.koin.core.module.dsl.viewModelOf
+            import org.koin.dsl.module
+
+            internal val presentationModule = module {
+                viewModelOf(::TodoDetailViewModel)
+            }
+            """.trimIndent(),
+        )
+
+        val updater = FeatureDiUpdater()
+        val second =
+            updater.updatePresentationModule(
+                projectRoot = root,
+                moduleName = "task",
+                modulePackage = pkg,
+                pageName = "TodoDetail",
+                useCases = emptyList(),
+                kotlinRootRel = "src/commonMain/kotlin",
+                useScreenPresentationLayout = true,
+            )
+
+        assertFalse(second)
+        assertEquals(1, pm.readText().lines().count { it.contains("viewModelOf(::TodoDetailViewModel)") })
     }
 }

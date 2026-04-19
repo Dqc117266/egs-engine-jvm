@@ -62,6 +62,7 @@ import com.dqc.egsengine.feature.scaffold.domain.EntityScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.CreateUseCaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.PageScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.ViewModelEditScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.swagger.SwaggerApiScaffolder
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -151,6 +152,7 @@ val featureScaffoldModule = module {
     single { ClientAppNavigationWiring() }
     single { CreateUseCaseScaffolder(get()) }
     single { PageScaffolder(get(), get(), get(), get(), get()) }
+    single { ViewModelEditScaffolder(get(), get(), get()) }
     single {
         ApiSyncScaffolder(
             workspaceResolver = get(),
