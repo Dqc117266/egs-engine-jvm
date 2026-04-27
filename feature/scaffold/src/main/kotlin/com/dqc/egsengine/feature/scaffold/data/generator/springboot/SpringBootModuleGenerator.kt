@@ -34,10 +34,33 @@ class SpringBootModuleGenerator(
 
         files.add(GeneratedFile("$moduleDir/build.gradle.kts", generateBuildFile(config)))
 
-        val layers = listOf("data/entity", "data/repository", "domain/model", "domain/repository", "domain/service", "presentation/controller", "presentation/dto")
+        // Aligns with egs-server-template `feature/demo` (generate/ + three data sources + thin shells).
+        val layers =
+            listOf(
+                "api/controller",
+                "config",
+                "data/mapper",
+                "data/repository",
+                "generate/api/controller",
+                "generate/api/dto",
+                "generate/config",
+                "generate/data/datasource/cache",
+                "generate/data/datasource/cache/key",
+                "generate/data/datasource/cache/model",
+                "generate/data/datasource/jpa",
+                "generate/data/datasource/jpa/entity",
+                "generate/data/datasource/httpclient",
+                "generate/data/datasource/httpclient/model",
+                "generate/data/mapper",
+                "generate/data/repository",
+                "generate/domain/model",
+                "generate/domain/repository",
+                "generate/domain/usecase",
+            )
         for (layer in layers) {
             files.add(GeneratedFile("$moduleDir/src/main/kotlin/$pkgPath/$layer/.gitkeep", ""))
         }
+        files.add(GeneratedFile("$moduleDir/GENERATOR.md", placeholderGeneratorReadme(moduleName)))
 
         return files
     }
@@ -75,18 +98,65 @@ class SpringBootModuleGenerator(
         settingsUpdater.update(subProjectRoot, moduleName)
     }
 
-    private fun generateBuildFile(config: SubProjectConfig): String = buildString {
-        appendLine("plugins {")
-        if (config.conventionPluginId != null) {
-            appendLine("    id(\"${config.conventionPluginId}\")")
-        } else {
-            appendLine("    id(\"org.jetbrains.kotlin.jvm\")")
+    private fun generateBuildFile(config: SubProjectConfig): String {
+        val egsServer = config.conventionPluginId?.contains("egs.server") == true
+        return buildString {
+            appendLine("plugins {")
+            if (config.conventionPluginId != null) {
+                appendLine("    id(\"${config.conventionPluginId}\")")
+            } else {
+                appendLine("    id(\"org.jetbrains.kotlin.jvm\")")
+            }
+            appendLine("}")
+            appendLine()
+            appendLine("group = \"${config.basePackage}\"")
+            appendLine("version = rootProject.version")
+            appendLine()
+            if (egsServer) {
+                appendLine("dependencies {")
+                appendLine("    // Cache + HTTP client layers (mirrors KMP `preferences` + `api` datasources).")
+                appendLine("    implementation(libs.spring.boot.starter.data.redis)")
+                appendLine("    implementation(libs.spring.boot.starter.web)")
+                appendLine("    implementation(libs.spring.boot.starter.security)")
+                appendLine("    implementation(libs.spring.boot.starter.aop)")
+                appendLine("}")
+            } else {
+                appendLine("dependencies {")
+                appendLine("    implementation(project(\":core\"))")
+                appendLine("    implementation(project(\":shared\"))")
+                appendLine("}")
+            }
         }
-        appendLine("}")
-        appendLine()
-        appendLine("dependencies {")
-        appendLine("    implementation(project(\":core\"))")
-        appendLine("    implementation(project(\":shared\"))")
-        appendLine("}")
     }
+
+    private fun placeholderGeneratorReadme(moduleName: String): String =
+        """
+        # feature:$moduleName
+
+        Empty module skeleton aligned with `egs-server-template/feature/demo` package layout.
+
+        ## Next step: fill CRUD from SQL
+
+        From the **backend** repo root:
+
+        ```bash
+        egs-engine backend gen database path/to/table.sql --module=$moduleName
+        ```
+
+        That command **overwrites** everything under `generate/` (domain model/entity, JPA + cache + HTTP
+        datasources, repository interfaces + `Generated*Support` + mappers, seven use cases, DTOs,
+        `Generated*Controller`, `Generated*Config`) and writes `.egs-generated.json` so the next run can
+        delete stale generated files first.
+
+        It also creates **hand-written shells** when missing (`api/controller/*Controller.kt`,
+        `data/repository/*RepositoryImpl.kt`, cache/HTTP repository impls, `data/mapper/*Mapper.kt`,
+        `config/*Properties.kt`, `config/*FeatureConfig.kt`). Existing shells are left alone unless you pass
+        `--force`.
+
+        In the default **opinionated** mode it matches the demo stack (status enum, audit columns,
+        soft-delete, optimistic lock, `@PreAuthorize`, Flyway `V*__feature_*_audit_fields.sql` when columns
+        are missing). Use `--no-audit`, `--no-soft-delete`, or `--no-status-enum` to turn pieces off.
+
+        If `feature/$moduleName` does not exist yet, `gen database` will run `backend module create` for you.
+        """.trimIndent()
 }
