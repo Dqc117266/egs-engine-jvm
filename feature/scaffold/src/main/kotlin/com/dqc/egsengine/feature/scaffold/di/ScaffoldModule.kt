@@ -44,6 +44,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootAp
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootCrudGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootGeneratedPathsManifest
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootHandWrittenShellGenerator
+import com.dqc.egsengine.feature.scaffold.domain.AdminVueCrudScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.SpringBootDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ApiGenerator
@@ -150,8 +151,10 @@ val featureScaffoldModule = module {
     single { SpringBootCrudGenerator(get()) }
     single { SpringBootGeneratedPathsManifest() }
     single { SpringBootHandWrittenShellGenerator() }
+    single { AdminVueCrudScaffolder(get(), get()) }
     single {
         SpringBootDatabaseScaffolder(
+            get(),
             get(),
             get(),
             get(),

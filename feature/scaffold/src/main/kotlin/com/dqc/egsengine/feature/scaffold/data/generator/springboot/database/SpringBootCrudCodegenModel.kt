@@ -6,6 +6,9 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.springboot.database
 
 import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.KotlinToTsTypeMapper
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
 
@@ -18,7 +21,10 @@ data class CodegenColumn(
     val isPk: Boolean,
     /** Suffix for property default, e.g. ` = 0L`, ` = null`, or empty. */
     val defaultSuffix: String,
-)
+) {
+    /** FreeMarker: `col.isPk` collides with JavaBean `isPk()`; use `col.pk` in `.ftl`. */
+    val pk: Boolean get() = isPk
+}
 
 object SpringBootCodegenTableValidator {
     fun validateTableForV1(table: TableSchema) {
@@ -31,15 +37,36 @@ object SpringBootCodegenTableValidator {
     }
 }
 
+/** Shared column + trait computation for FreeMarker model and backend manifest. */
+internal data class SharedCodegenContext(
+    val traits: SchemaTraits,
+    val codegenCols: List<CodegenColumn>,
+    val entityPascal: String,
+    val entityCamel: String,
+    val restPath: String,
+    val sharedRoot: String,
+    val featureSegment: String,
+    val featurePkg: String,
+    val generatePkg: String,
+    val pkCol: com.dqc.egsengine.feature.scaffold.data.ddl.model.ColumnSchema,
+    val pkProp: String,
+    val auditSnake: Set<String>,
+    val entityBodyCols: List<CodegenColumn>,
+    val finderNameCol: CodegenColumn?,
+    val businessNonPk: List<CodegenColumn>,
+    val cacheModelColumns: List<CodegenColumn>,
+    val configHttpClientParamLine: String,
+)
+
 class SpringBootCodegenModelBuilder(
     private val traitInferrer: SchemaTraitInferrer,
 ) {
-    fun build(
+    private fun buildSharedContext(
         table: TableSchema,
         moduleName: String,
         config: SubProjectConfig,
         options: SpringBootOpinionatedOptions,
-    ): Map<String, Any?> {
+    ): SharedCodegenContext {
         SpringBootCodegenTableValidator.validateTableForV1(table)
         val traits = traitInferrer.infer(table, options)
         val entityPascal = SqlNaming.tableToEntityPascal(table.tableName)
@@ -84,12 +111,6 @@ class SpringBootCodegenModelBuilder(
             it.kotlinName == "name" && it.kotlinType == "String"
         }
 
-        val importsDomain = linkedSetOf<String>()
-        for (c in codegenCols) {
-            if (!c.isPk && c.kotlinType == "Instant") importsDomain.add("java.time.Instant")
-        }
-        val kotlinImportsDomain = importsDomain.sorted()
-
         val businessNonPk = codegenCols.filter {
             !it.isPk && it.sqlName.lowercase() !in auditSnake
         }
@@ -106,38 +127,104 @@ class SpringBootCodegenModelBuilder(
             append(".http.base-url:}\") baseUrl: String,")
         }
 
-        val notice = "${ "/" + "*" } WARNING: generated - do not edit. Regenerator overwrites this file. ${ "*" + "/" }"
+        return SharedCodegenContext(
+            traits = traits,
+            codegenCols = codegenCols,
+            entityPascal = entityPascal,
+            entityCamel = entityCamel,
+            restPath = restPath,
+            sharedRoot = sharedRoot,
+            featureSegment = featureSegment,
+            featurePkg = featurePkg,
+            generatePkg = generatePkg,
+            pkCol = pkCol,
+            pkProp = pkProp,
+            auditSnake = auditSnake,
+            entityBodyCols = entityBodyCols,
+            finderNameCol = finderNameCol,
+            businessNonPk = businessNonPk,
+            cacheModelColumns = cacheModelColumns,
+            configHttpClientParamLine = configHttpClientParamLine,
+        )
+    }
+
+    fun buildBackendCodegenManifest(
+        table: TableSchema,
+        backendModuleName: String,
+        config: SubProjectConfig,
+        options: SpringBootOpinionatedOptions,
+    ): BackendCodegenManifest {
+        val ctx = buildSharedContext(table, backendModuleName, config, options)
+        val cols = ctx.codegenCols.map { c ->
+            BackendCodegenManifestColumn(
+                kotlinName = c.kotlinName,
+                kotlinType = c.kotlinType,
+                tsType = KotlinToTsTypeMapper.toTsType(c.kotlinType),
+                nullable = c.nullable,
+                isPk = c.isPk,
+                inBusinessForm = ctx.businessNonPk.any { it.kotlinName == c.kotlinName },
+            )
+        }
+        return BackendCodegenManifest(
+            entityPascal = ctx.entityPascal,
+            entityCamel = ctx.entityCamel,
+            restPath = ctx.restPath,
+            tableSqlName = table.tableName,
+            backendModuleName = backendModuleName,
+            basePackage = config.basePackage,
+            pkField = ctx.pkProp,
+            pkTsType = KotlinToTsTypeMapper.toTsType(ctx.pkCol.kotlinType),
+            columns = cols,
+        )
+    }
+
+    fun build(
+        table: TableSchema,
+        moduleName: String,
+        config: SubProjectConfig,
+        options: SpringBootOpinionatedOptions,
+    ): Map<String, Any?> {
+        val ctx = buildSharedContext(table, moduleName, config, options)
+
+        val importsDomain = linkedSetOf<String>()
+        for (c in ctx.codegenCols) {
+            if (!c.isPk && c.kotlinType == "Instant") importsDomain.add("java.time.Instant")
+        }
+        val kotlinImportsDomain = importsDomain.sorted()
+
+        val notice =
+            "${ "/" + "*" } WARNING: generated - do not edit. Regenerator overwrites this file. ${ "*" + "/" }"
         return mapOf(
             "warningGenerated" to notice,
             "moduleName" to moduleName,
-            "entityPascal" to entityPascal,
-            "entityCamel" to entityCamel,
+            "entityPascal" to ctx.entityPascal,
+            "entityCamel" to ctx.entityCamel,
             "tableSqlName" to table.tableName,
-            "restPath" to restPath,
-            "pkKotlinType" to pkCol.kotlinType,
-            "pkKotlinName" to SqlNaming.snakeToLowerCamel(pkCol.name),
-            "pkProp" to pkProp,
+            "restPath" to ctx.restPath,
+            "pkKotlinType" to ctx.pkCol.kotlinType,
+            "pkKotlinName" to SqlNaming.snakeToLowerCamel(ctx.pkCol.name),
+            "pkProp" to ctx.pkProp,
             "basePackage" to config.basePackage,
-            "featurePackage" to featurePkg,
-            "generatePackage" to generatePkg,
-            "sharedRoot" to sharedRoot,
-            "traits" to traits,
-            "useJpaAuditingBase" to traits.useJpaAuditingBase,
-            "hasStatus" to traits.hasStatusColumn,
-            "featureSegment" to featureSegment,
-            "columns" to codegenCols,
-            "nonPkColumns" to codegenCols.filter { !it.isPk },
-            "dtoNeedsInstantImport" to businessNonPk.any { it.kotlinType == "Instant" },
-            "responseNeedsInstantImport" to codegenCols.any { !it.isPk && it.kotlinType == "Instant" },
-            "entityBodyColumns" to entityBodyCols,
+            "featurePackage" to ctx.featurePkg,
+            "generatePackage" to ctx.generatePkg,
+            "sharedRoot" to ctx.sharedRoot,
+            "traits" to ctx.traits,
+            "useJpaAuditingBase" to ctx.traits.useJpaAuditingBase,
+            "hasStatus" to ctx.traits.hasStatusColumn,
+            "featureSegment" to ctx.featureSegment,
+            "columns" to ctx.codegenCols,
+            "nonPkColumns" to ctx.codegenCols.filter { !it.isPk },
+            "dtoNeedsInstantImport" to ctx.businessNonPk.any { it.kotlinType == "Instant" },
+            "responseNeedsInstantImport" to ctx.codegenCols.any { !it.isPk && it.kotlinType == "Instant" },
+            "entityBodyColumns" to ctx.entityBodyCols,
             "domainImports" to kotlinImportsDomain,
-            "jpaFinderNameColumn" to finderNameCol,
+            "jpaFinderNameColumn" to ctx.finderNameCol,
             "options" to options,
-            "cacheModelColumns" to cacheModelColumns,
-            "hasNameStringColumn" to businessNonPk.any { it.kotlinName == "name" && it.kotlinType == "String" },
-            "businessNonPkColumns" to businessNonPk,
-            "featurePackagePath" to featurePkg.replace('.', '/'),
-            "configHttpClientParamLine" to configHttpClientParamLine,
+            "cacheModelColumns" to ctx.cacheModelColumns,
+            "hasNameStringColumn" to ctx.businessNonPk.any { it.kotlinName == "name" && it.kotlinType == "String" },
+            "businessNonPkColumns" to ctx.businessNonPk,
+            "featurePackagePath" to ctx.featurePkg.replace('.', '/'),
+            "configHttpClientParamLine" to ctx.configHttpClientParamLine,
         )
     }
 }

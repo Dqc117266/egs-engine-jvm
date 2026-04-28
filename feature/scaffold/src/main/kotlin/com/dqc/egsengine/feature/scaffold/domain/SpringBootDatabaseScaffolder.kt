@@ -27,6 +27,7 @@ class SpringBootDatabaseScaffolder(
     private val moduleScaffolder: ModuleScaffolder,
     private val manifest: SpringBootGeneratedPathsManifest,
     private val shells: SpringBootHandWrittenShellGenerator,
+    private val adminVueCrudScaffolder: AdminVueCrudScaffolder,
 ) {
     private val logger = LoggerFactory.getLogger(SpringBootDatabaseScaffolder::class.java)
 
@@ -35,6 +36,7 @@ class SpringBootDatabaseScaffolder(
         val tableName: String,
         val files: List<GeneratedFile>,
         val dryRun: Boolean,
+        val adminFiles: List<GeneratedFile> = emptyList(),
     )
 
     fun scaffoldDatabase(
@@ -45,6 +47,7 @@ class SpringBootDatabaseScaffolder(
         force: Boolean = false,
         mainTable: String? = null,
         options: SpringBootOpinionatedOptions = SpringBootOpinionatedOptions(),
+        withAdmin: Boolean = false,
     ): Result {
         val backendCfg = workspaceConfigResolver.resolveBackend(projectRoot)
         require(backendCfg.platform == Platform.SPRING_BOOT) {
@@ -83,6 +86,8 @@ class SpringBootDatabaseScaffolder(
         val entityPascal = SqlNaming.tableToEntityPascal(table.tableName)
         val entityCamel = entityPascal.replaceFirstChar { it.lowercase() }
 
+        val codegenManifest = crudGenerator.buildCodegenManifest(table, moduleName, backendCfg, options)
+
         if (!dryRun && force) {
             manifest.read(backendRoot, moduleName)?.let { dto ->
                 manifest.deleteTrackedFiles(backendRoot, dto)
@@ -110,7 +115,7 @@ class SpringBootDatabaseScaffolder(
                 target.parentFile?.mkdirs()
                 file.content?.let { target.writeText(it) }
             }
-            manifest.write(backendRoot, moduleName, table.tableName, all.map { it.path })
+            manifest.write(backendRoot, moduleName, table.tableName, all.map { it.path }, codegenManifest)
             logger.info(
                 "SpringBoot database scaffold: table '{}' -> module '{}' ({} files)",
                 table.tableName,
@@ -119,11 +124,23 @@ class SpringBootDatabaseScaffolder(
             )
         }
 
+        val adminFiles =
+            if (withAdmin) {
+                adminVueCrudScaffolder.scaffoldFromCodegen(
+                    projectRoot = projectRoot,
+                    codegen = codegenManifest,
+                    dryRun = dryRun,
+                ).files
+            } else {
+                emptyList()
+            }
+
         return Result(
             moduleName = moduleName,
             tableName = table.tableName,
             files = all,
             dryRun = dryRun,
+            adminFiles = adminFiles,
         )
     }
 }

@@ -109,6 +109,11 @@ class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent
 
     private val force by option("--force", help = "Remove paths listed in `.egs-generated.json` before rewriting").flag()
 
+    private val withAdmin by option(
+        "--with-admin",
+        help = "Also emit admin Vue CRUD (api/types/views/stores/router) from the same codegen manifest",
+    ).flag()
+
     private val mainTable by option(
         "--main-table",
         help = "Table name when DDL contains multiple CREATE TABLE statements",
@@ -143,11 +148,16 @@ class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent
                 force = force,
                 mainTable = mainTable,
                 options = options,
+                withAdmin = withAdmin,
             )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run — ${result.tableName} → module '${result.moduleName}' (${result.files.size} files):"))
                 result.files.forEach { echo("  ${it.path}") }
+                if (result.adminFiles.isNotEmpty()) {
+                    echo(CliFormatter.formatInfo("Dry run — admin (${result.adminFiles.size} files):"))
+                    result.adminFiles.forEach { echo("  ${it.path}") }
+                }
             } else {
                 echo(
                     CliFormatter.formatSuccess(
@@ -155,6 +165,10 @@ class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent
                     ),
                 )
                 result.files.forEach { echo("    ${it.path}") }
+                if (result.adminFiles.isNotEmpty()) {
+                    echo(CliFormatter.formatSuccess("Admin Vue (${result.adminFiles.size} files)"))
+                    result.adminFiles.forEach { echo("    ${it.path}") }
+                }
             }
         } catch (e: IllegalArgumentException) {
             echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)

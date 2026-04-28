@@ -11,7 +11,7 @@ open class Generated${entityPascal}EntityMapper {
     open fun toDomain(entity: ${entityPascal}Entity): ${entityPascal} =
         ${entityPascal}(
 <#list columns as col>
-            ${col.kotlinName} = <#if col.isPk>entity.${pkProp}<#elseif useJpaAuditingBase && col.sqlName?lower_case == "created_at">entity.createdAt<#elseif useJpaAuditingBase && col.sqlName?lower_case == "updated_at">entity.updatedAt<#else>entity.${col.kotlinName}</#if><#if col_has_next>,</#if>
+            ${col.kotlinName} = <#if col.pk>entity.${pkProp}<#elseif useJpaAuditingBase && col.sqlName?lower_case == "created_at">entity.createdAt<#elseif useJpaAuditingBase && col.sqlName?lower_case == "updated_at">entity.updatedAt<#else>entity.${col.kotlinName}</#if><#if col_has_next>,</#if>
 </#list>
         )
 

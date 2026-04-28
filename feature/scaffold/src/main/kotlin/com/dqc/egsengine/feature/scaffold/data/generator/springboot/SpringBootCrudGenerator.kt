@@ -49,4 +49,12 @@ class SpringBootCrudGenerator(
         options: SpringBootOpinionatedOptions,
         projectRoot: File?,
     ): List<GeneratedFile> = generate(table, moduleName, config, options, projectRoot)
+
+    fun buildCodegenManifest(
+        table: TableSchema,
+        moduleName: String,
+        config: SubProjectConfig,
+        options: SpringBootOpinionatedOptions,
+    ): com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest =
+        builder.buildBackendCodegenManifest(table, moduleName, config, options)
 }

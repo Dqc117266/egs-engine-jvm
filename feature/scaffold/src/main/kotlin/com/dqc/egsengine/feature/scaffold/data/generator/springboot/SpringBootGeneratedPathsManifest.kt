@@ -9,13 +9,14 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 data class SpringBootGeneratedManifestDto(
-    val version: Int = 1,
+    val version: Int,
     val module: String,
     val table: String?,
     val generatedPaths: List<String>,
+    val codegen: BackendCodegenManifest?,
 )
 
-/** Persists paths written under `feature/<module>/` (for stale cleanup with `--force`). */
+/** Persists paths under `feature/<module>/` and optional `codegen` for admin tooling. */
 class SpringBootGeneratedPathsManifest {
 
     private val logger = LoggerFactory.getLogger(SpringBootGeneratedPathsManifest::class.java)
@@ -30,7 +31,13 @@ class SpringBootGeneratedPathsManifest {
         return parseJson(f.readText())
     }
 
-    fun write(backendRoot: File, moduleName: String, tableName: String?, paths: Collection<String>) {
+    fun write(
+        backendRoot: File,
+        moduleName: String,
+        tableName: String?,
+        paths: Collection<String>,
+        codegen: BackendCodegenManifest?,
+    ) {
         val escapedPaths = paths.sorted().joinToString(",\n") { "    \"" + escapeJson(it) + "\"" }
         val tableJson =
             if (tableName == null) {
@@ -38,15 +45,22 @@ class SpringBootGeneratedPathsManifest {
             } else {
                 "\"" + escapeJson(tableName) + "\""
             }
+        val fileVersion = if (codegen != null) 2 else 1
+        val codegenBlock =
+            if (codegen == null) {
+                ""
+            } else {
+                ",\n  \"codegen\": ${codegenManifestToJson(codegen)}"
+            }
         val body =
             """
             {
-              "version": 1,
+              "version": $fileVersion,
               "module": "${escapeJson(moduleName)}",
               "table": $tableJson,
               "generatedPaths": [
             $escapedPaths
-              ]
+              ]$codegenBlock
             }
             """.trimIndent() + "\n"
         val f = moduleRoot(backendRoot, moduleName).resolve(FILE_NAME)
@@ -68,10 +82,33 @@ class SpringBootGeneratedPathsManifest {
         }
     }
 
+    fun readCodegenOnly(backendRoot: File, backendModuleName: String): BackendCodegenManifest? =
+        read(backendRoot, backendModuleName)?.codegen
+
+    private fun codegenManifestToJson(m: BackendCodegenManifest): String {
+        val cols =
+            m.columns.joinToString(separator = ",", prefix = "[", postfix = "]") { c ->
+                "{\"kotlinName\":\"${escapeJson(c.kotlinName)}\",\"kotlinType\":\"${escapeJson(c.kotlinType)}\",\"tsType\":\"${escapeJson(c.tsType)}\",\"nullable\":${c.nullable},\"isPk\":${c.isPk},\"inBusinessForm\":${c.inBusinessForm}}"
+            }
+        return "{" +
+            "\"schemaVersion\":${m.schemaVersion}," +
+            "\"entityPascal\":\"${escapeJson(m.entityPascal)}\"," +
+            "\"entityCamel\":\"${escapeJson(m.entityCamel)}\"," +
+            "\"restPath\":\"${escapeJson(m.restPath)}\"," +
+            "\"tableSqlName\":\"${escapeJson(m.tableSqlName)}\"," +
+            "\"backendModuleName\":\"${escapeJson(m.backendModuleName)}\"," +
+            "\"basePackage\":\"${escapeJson(m.basePackage)}\"," +
+            "\"pkField\":\"${escapeJson(m.pkField)}\"," +
+            "\"pkTsType\":\"${escapeJson(m.pkTsType)}\"," +
+            "\"columns\":$cols" +
+            "}"
+    }
+
     private fun parseJson(text: String): SpringBootGeneratedManifestDto? =
         try {
-            val pathsMatch = Regex("\"generatedPaths\"\\s*:\\s*\\[([^]]*)]", RegexOption.DOT_MATCHES_ALL).find(text)
-                ?: return null
+            val pathsMatch =
+                Regex("\"generatedPaths\"\\s*:\\s*\\[([^]]*)]", RegexOption.DOT_MATCHES_ALL).find(text)
+                    ?: return null
             val inner = pathsMatch.groupValues[1]
             val paths = Regex("\"([^\"]*)\"").findAll(inner).map { it.groupValues[1] }.toList()
             val module = Regex("\"module\"\\s*:\\s*\"([^\"]*)\"").find(text)?.groupValues?.getOrNull(1) ?: return null
@@ -80,10 +117,91 @@ class SpringBootGeneratedPathsManifest {
                 null, "null" -> null
                 else -> rawTable.groupValues.getOrNull(2)
             }
-            SpringBootGeneratedManifestDto(module = module, table = table, generatedPaths = paths)
+            val verMatch = Regex("\"version\"\\s*:\\s*([0-9]+)").find(text)
+            val version = verMatch?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
+            val codegen =
+                if (!text.contains("\"codegen\"")) {
+                    null
+                } else {
+                    parseCodegenEmbedded(text)
+                }
+            SpringBootGeneratedManifestDto(
+                version = version,
+                module = module,
+                table = table,
+                generatedPaths = paths,
+                codegen = codegen,
+            )
         } catch (_: Exception) {
             null
         }
+
+    private fun parseCodegenEmbedded(full: String): BackendCodegenManifest? {
+        val startIdx = full.indexOf("\"codegen\"")
+        if (startIdx < 0) return null
+        val braceStart = full.indexOf('{', startIdx)
+        if (braceStart < 0) return null
+        var depth = 0
+        var i = braceStart
+        while (i < full.length) {
+            when (full[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) {
+                        val objJson = full.substring(braceStart, i + 1)
+                        return parseCodegenObjectEmbedded(objJson)
+                    }
+                }
+            }
+            i++
+        }
+        return null
+    }
+
+    private fun parseCodegenObjectEmbedded(json: String): BackendCodegenManifest? {
+        fun str(key: String): String? =
+            Regex("\"$key\"\\s*:\\s*\"([^\"]*)\"").find(json)?.groupValues?.get(1)
+
+        fun intVal(key: String): Int =
+            Regex("\"$key\"\\s*:\\s*([0-9]+)").find(json)?.groupValues?.get(1)?.toIntOrNull() ?: 1
+
+        val entityPascal = str("entityPascal") ?: return null
+        val columns = extractColumnsFromCodegenJson(json)
+        return BackendCodegenManifest(
+            schemaVersion = intVal("schemaVersion"),
+            entityPascal = entityPascal,
+            entityCamel = str("entityCamel") ?: "",
+            restPath = str("restPath") ?: "",
+            tableSqlName = str("tableSqlName") ?: "",
+            backendModuleName = str("backendModuleName") ?: "",
+            basePackage = str("basePackage") ?: "",
+            pkField = str("pkField") ?: "id",
+            pkTsType = str("pkTsType") ?: "number",
+            columns = columns,
+        )
+    }
+
+    private fun extractColumnsFromCodegenJson(json: String): List<BackendCodegenManifestColumn> {
+        val cols = mutableListOf<BackendCodegenManifestColumn>()
+        val itemRe =
+            Regex(
+                """\{"kotlinName":"([^"]*)","kotlinType":"([^"]*)","tsType":"([^"]*)","nullable":(true|false),"isPk":(true|false),"inBusinessForm":(true|false)}""",
+            )
+        itemRe.findAll(json).forEach { m ->
+            cols.add(
+                BackendCodegenManifestColumn(
+                    kotlinName = m.groupValues[1],
+                    kotlinType = m.groupValues[2],
+                    tsType = m.groupValues[3],
+                    nullable = m.groupValues[4] == "true",
+                    isPk = m.groupValues[5] == "true",
+                    inBusinessForm = m.groupValues[6] == "true",
+                ),
+            )
+        }
+        return cols
+    }
 
     private fun escapeJson(s: String): String = s.replace("\\", "\\\\").replace("\"", "\\\"")
 
