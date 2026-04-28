@@ -1,33 +1,42 @@
 package com.dqc.egsengine.feature.scaffold.domain
 
-import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
-import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
-import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootCrudGenerator
-import org.slf4j.LoggerFactory
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootOpinionatedOptions
 import java.io.File
 
 /**
- * DDL -> backend CRUD code orchestrator.
- * Reads workspace config, parses DDL, delegates to [SpringBootCrudGenerator].
- *
- * Skeleton -- concrete orchestration to be implemented with the DDL parser.
+ * Workspace Spring Boot backend DDL → CRUD entry point (CLI also uses [SpringBootDatabaseScaffolder] directly).
  */
 class EntityScaffolder(
-    private val workspaceResolver: WorkspaceConfigResolver,
-    private val ddlParser: DdlParser,
-    private val crudGenerator: SpringBootCrudGenerator,
+    private val databaseScaffolder: SpringBootDatabaseScaffolder,
 ) {
-    private val logger = LoggerFactory.getLogger(EntityScaffolder::class.java)
-
     fun scaffold(
         projectRoot: File,
         moduleName: String,
         ddlSql: String,
+        ddlFileName: String = "ddl.sql",
         dryRun: Boolean = false,
+        options: SpringBootOpinionatedOptions = SpringBootOpinionatedOptions(),
     ): EntityScaffoldResult {
-        logger.info("EntityScaffolder.scaffold() called for module '{}' -- not yet implemented", moduleName)
-        TODO("Entity scaffolding not yet implemented")
+        val tmp = File.createTempFile("egs-ddl-", ddlFileName)
+        try {
+            tmp.writeText(ddlSql)
+            val r = databaseScaffolder.scaffoldDatabase(
+                projectRoot = projectRoot,
+                sqlFile = tmp,
+                moduleName = moduleName,
+                dryRun = dryRun,
+                options = options,
+            )
+            return EntityScaffoldResult(
+                moduleName = r.moduleName,
+                tables = listOf(r.tableName),
+                files = r.files,
+                dryRun = r.dryRun,
+            )
+        } finally {
+            tmp.delete()
+        }
     }
 
     fun scaffoldFromFile(
@@ -35,9 +44,21 @@ class EntityScaffolder(
         moduleName: String,
         ddlFile: File,
         dryRun: Boolean = false,
+        options: SpringBootOpinionatedOptions = SpringBootOpinionatedOptions(),
     ): EntityScaffoldResult {
-        require(ddlFile.exists()) { "DDL file not found: ${ddlFile.absolutePath}" }
-        return scaffold(projectRoot, moduleName, ddlFile.readText(), dryRun)
+        val r = databaseScaffolder.scaffoldDatabase(
+            projectRoot = projectRoot,
+            sqlFile = ddlFile,
+            moduleName = moduleName,
+            dryRun = dryRun,
+            options = options,
+        )
+        return EntityScaffoldResult(
+            moduleName = r.moduleName,
+            tables = listOf(r.tableName),
+            files = r.files,
+            dryRun = r.dryRun,
+        )
     }
 
     data class EntityScaffoldResult(

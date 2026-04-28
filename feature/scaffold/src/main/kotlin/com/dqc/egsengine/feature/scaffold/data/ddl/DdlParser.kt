@@ -188,8 +188,35 @@ class DdlParser {
         return parts
     }
 
+    /** Drops trailing `CHECK (...)` from a column line so tokenizer does not treat CHECK contents as type tokens. */
+    private fun stripInlineCheckConstraint(columnDef: String): String {
+        val lower = columnDef.lowercase()
+        val idx = lower.indexOf(" check")
+        if (idx < 0) return columnDef
+        var j = idx + 1
+        while (j < columnDef.length && columnDef[j].isWhitespace()) j++
+        if (j + 5 > columnDef.length ||
+            !columnDef.regionMatches(j, "check", 0, 5, ignoreCase = true)
+        ) {
+            return columnDef
+        }
+        j += 5
+        while (j < columnDef.length && columnDef[j].isWhitespace()) j++
+        if (j >= columnDef.length || columnDef[j] != '(') return columnDef.substring(0, idx).trimEnd()
+        var depth = 1
+        var k = j + 1
+        while (k < columnDef.length && depth > 0) {
+            when (columnDef[k]) {
+                '(' -> depth++
+                ')' -> depth--
+            }
+            k++
+        }
+        return if (depth == 0) columnDef.removeRange(idx, k).trimEnd() else columnDef
+    }
+
     private fun parseColumnLine(line: String, tablePk: Set<String>): ColumnSchema? {
-        val trimmed = line.trim()
+        val trimmed = stripInlineCheckConstraint(line.trim())
         if (trimmed.isEmpty()) return null
         val tokens = tokenizeColumnDef(trimmed)
         if (tokens.isEmpty()) return null
@@ -286,6 +313,7 @@ class DdlParser {
             base == "TINYINT" && length == 1 -> "Boolean"
             base == "TINYINT" -> "Int"
             base == "DOUBLE" || base == "FLOAT" || base == "REAL" -> "Double"
+            base == "TIMESTAMP" || base == "TIMESTAMPTZ" || base == "DATETIME" -> "Instant"
             base == "BOOLEAN" || base == "BOOL" -> "Boolean"
             base == "TEXT" || base.startsWith("VARCHAR") || base.startsWith("CHAR") ||
                 base == "JSON" || base == "BLOB" -> "String"

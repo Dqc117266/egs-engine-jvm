@@ -42,6 +42,9 @@ import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGener
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootCrudGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootGeneratedPathsManifest
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootHandWrittenShellGenerator
+import com.dqc.egsengine.feature.scaffold.domain.SpringBootDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ModuleGenerator
@@ -144,7 +147,19 @@ val featureScaffoldModule = module {
     }
 
     // Spring Boot specific
-    single { SpringBootCrudGenerator() }
+    single { SpringBootCrudGenerator(get()) }
+    single { SpringBootGeneratedPathsManifest() }
+    single { SpringBootHandWrittenShellGenerator() }
+    single {
+        SpringBootDatabaseScaffolder(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
 
     // Domain layer
     single { ModuleScaffolder(get(), get(), get(), get(), get(named("platformModuleGenerators"))) }
@@ -230,5 +245,5 @@ val featureScaffoldModule = module {
             get(),
         )
     }
-    single { EntityScaffolder(get(), get(), get()) }
+    single { EntityScaffolder(get()) }
 }

@@ -3,14 +3,18 @@ package com.dqc.egsengine.feature.scaffold.presentation
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.SpringBootDatabaseScaffolder
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootOpinionatedOptions
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.File
 
 class BackendCommand : CliktCommand(name = "backend") {
     override fun run() = Unit
@@ -19,6 +23,18 @@ class BackendCommand : CliktCommand(name = "backend") {
         fun withSubcommands(): BackendCommand =
             BackendCommand().subcommands(
                 BackendModuleCommand.withSubcommands(),
+                BackendGenCommand.withSubcommands(),
+            )
+    }
+}
+
+class BackendGenCommand : CliktCommand(name = "gen") {
+    override fun run() = Unit
+
+    companion object {
+        fun withSubcommands(): BackendGenCommand =
+            BackendGenCommand().subcommands(
+                BackendGenDatabaseCommand(),
             )
     }
 }
@@ -70,6 +86,80 @@ class BackendModuleCreateCommand : CliktCommand(name = "create"), KoinComponent 
             echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
         } catch (e: Exception) {
             echo(CliFormatter.formatError("Failed to create backend module: ${e.message}"), err = true)
+        }
+    }
+}
+
+class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent {
+
+    private val scaffolder: SpringBootDatabaseScaffolder by inject()
+
+    private val sqlFile by argument(help = "Path to SQL DDL file (CREATE TABLE)")
+
+    private val moduleName by option(
+        "--module",
+        "-m",
+        help = "Target backend feature module directory (feature/<module>)",
+    ).required()
+
+    private val projectPath by option("--project", "-p", help = "Workspace root path")
+        .default(".")
+
+    private val dryRun by option("--dry-run", help = "Preview paths without writing").flag()
+
+    private val force by option("--force", help = "Remove paths listed in `.egs-generated.json` before rewriting").flag()
+
+    private val mainTable by option(
+        "--main-table",
+        help = "Table name when DDL contains multiple CREATE TABLE statements",
+    )
+
+    private val noAudit by option("--no-audit", help = "Do not apply JPA auditing/BaseEntity treatment for created_at/updated_at").flag()
+
+    private val noSoftDelete by option("--no-soft-delete", help = "Ignore soft-delete column conventions").flag()
+
+    private val noStatusEnum by option(
+        "--no-status-enum",
+        help = "Skip opinionated status-column handling (column still mapped if present)",
+    ).flag()
+
+    override fun run() {
+        try {
+            val dir = ProjectRootResolver.resolve(projectPath)
+            val sqlPath = File(sqlFile)
+            val resolvedSql = if (sqlPath.isAbsolute) sqlPath else File(System.getProperty("user.dir")).resolve(sqlPath).normalize()
+
+            val options = SpringBootOpinionatedOptions(
+                auditColumns = !noAudit,
+                softDelete = !noSoftDelete,
+                statusEnum = !noStatusEnum,
+            )
+
+            val result = scaffolder.scaffoldDatabase(
+                projectRoot = dir,
+                sqlFile = resolvedSql,
+                moduleName = moduleName,
+                dryRun = dryRun,
+                force = force,
+                mainTable = mainTable,
+                options = options,
+            )
+
+            if (result.dryRun) {
+                echo(CliFormatter.formatInfo("Dry run — ${result.tableName} → module '${result.moduleName}' (${result.files.size} files):"))
+                result.files.forEach { echo("  ${it.path}") }
+            } else {
+                echo(
+                    CliFormatter.formatSuccess(
+                        "Spring Boot database codegen: table '${result.tableName}', module '${result.moduleName}' (${result.files.size} files)",
+                    ),
+                )
+                result.files.forEach { echo("    ${it.path}") }
+            }
+        } catch (e: IllegalArgumentException) {
+            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
+        } catch (e: Exception) {
+            echo(CliFormatter.formatError("Database codegen failed: ${e.message}"), err = true)
         }
     }
 }
