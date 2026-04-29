@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Wrapper: ./gradlew :app:run --args="$*"
+# Example: ./egs 'web crud gen-from-backend --module food -p /abs/workspace'
+set -e
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+exec ./gradlew :app:run --args="$*"

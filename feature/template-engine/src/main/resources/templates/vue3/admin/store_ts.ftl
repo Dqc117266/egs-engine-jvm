@@ -11,7 +11,7 @@ export const use${entityPascal}Store = defineStore('${moduleName}', () => {
   async function loadPage(page = 0, size = 20) {
     loading.value = true
     try {
-      const res: any = await list${entityPascal}(page, size)
+      const res: any = await list${entityPascal}({ pageNum: page + 1, pageSize: size })
       const payload = res.data ?? res
       rows.value =
         payload?.records ?? payload?.data?.records ?? payload?.content ?? []

@@ -37,6 +37,8 @@ class SpringBootDatabaseScaffolder(
         val files: List<GeneratedFile>,
         val dryRun: Boolean,
         val adminFiles: List<GeneratedFile> = emptyList(),
+        /** Emitted beside admin when `--with-admin`: Flyway INSERT for sys_menus (+ permissions). */
+        val sysMenuFlywayMigration: GeneratedFile? = null,
     )
 
     fun scaffoldDatabase(
@@ -124,16 +126,18 @@ class SpringBootDatabaseScaffolder(
             )
         }
 
-        val adminFiles =
+        val adminResult =
             if (withAdmin) {
                 adminVueCrudScaffolder.scaffoldFromCodegen(
                     projectRoot = projectRoot,
                     codegen = codegenManifest,
                     dryRun = dryRun,
-                ).files
+                )
             } else {
-                emptyList()
+                null
             }
+        val adminFiles = adminResult?.files ?: emptyList()
+        val sysMenuFlywayMigration = adminResult?.sysMenuFlywayMigration
 
         return Result(
             moduleName = moduleName,
@@ -141,6 +145,7 @@ class SpringBootDatabaseScaffolder(
             files = all,
             dryRun = dryRun,
             adminFiles = adminFiles,
+            sysMenuFlywayMigration = sysMenuFlywayMigration,
         )
     }
 }

@@ -1,11 +1,25 @@
 import request from '@/utils/request'
-import type { ${entityPascal}Item, ${entityPascal}CreateBody, ${entityPascal}UpdateBody } from '@/types/${moduleName}'
+import type { ${entityPascal}CreateBody, ${entityPascal}UpdateBody } from '@/types/${moduleName}'
 
-export function list${entityPascal}(page?: number, size?: number) {
+/**
+ * Pagination query aligns with Vue example pages (`pageNum` / `pageSize`);
+ * translates to backend Spring `page` (0-based) and `size` query params.
+ */
+export function list${entityPascal}(query?: Record<string, unknown>) {
+  const q = query ?? {}
+  const pageNum = q.pageNum != null ? Number(q.pageNum) : 1
+  const pageSize = q.pageSize != null ? Number(q.pageSize) : 10
+  const params: Record<string, unknown> = {
+    page: Math.max(0, pageNum - 1),
+    size: pageSize,
+  }
+  if (q.name != null && q.name !== '') {
+    params.name = q.name
+  }
   return request({
     url: '/api/${restPath}',
     method: 'get',
-    params: { page, size },
+    params,
   })
 }
 

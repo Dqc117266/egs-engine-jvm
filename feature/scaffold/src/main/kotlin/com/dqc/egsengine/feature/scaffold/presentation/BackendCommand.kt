@@ -158,6 +158,9 @@ class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent
                     echo(CliFormatter.formatInfo("Dry run — admin (${result.adminFiles.size} files):"))
                     result.adminFiles.forEach { echo("  ${it.path}") }
                 }
+                result.sysMenuFlywayMigration?.let { m ->
+                    echo(CliFormatter.formatInfo("Dry run — Flyway sys_menus (${m.path})"))
+                }
             } else {
                 echo(
                     CliFormatter.formatSuccess(
@@ -168,6 +171,9 @@ class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent
                 if (result.adminFiles.isNotEmpty()) {
                     echo(CliFormatter.formatSuccess("Admin Vue (${result.adminFiles.size} files)"))
                     result.adminFiles.forEach { echo("    ${it.path}") }
+                }
+                result.sysMenuFlywayMigration?.let { m ->
+                    echo(CliFormatter.formatSuccess("Flyway sidebar migration: ${m.path}"))
                 }
             }
         } catch (e: IllegalArgumentException) {

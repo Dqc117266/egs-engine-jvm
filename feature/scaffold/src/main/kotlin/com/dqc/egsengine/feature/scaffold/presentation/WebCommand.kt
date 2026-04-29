@@ -185,6 +185,9 @@ class WebCrudGenFromBackendCommand : CliktCommand(name = "gen-from-backend"), Ko
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run — admin module '${result.moduleName}' (${result.files.size} files):"))
                 result.files.forEach { echo("  ${it.path}") }
+                result.sysMenuFlywayMigration?.let {
+                    echo(CliFormatter.formatInfo("Dry run — Flyway sys_menus: ${it.path}"))
+                }
             } else {
                 echo(
                     CliFormatter.formatSuccess(
@@ -192,6 +195,9 @@ class WebCrudGenFromBackendCommand : CliktCommand(name = "gen-from-backend"), Ko
                     ),
                 )
                 result.files.forEach { echo("    ${it.path}") }
+                result.sysMenuFlywayMigration?.let {
+                    echo(CliFormatter.formatSuccess("Flyway sidebar migration: ${it.path}"))
+                }
             }
         } catch (e: IllegalArgumentException) {
             echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)

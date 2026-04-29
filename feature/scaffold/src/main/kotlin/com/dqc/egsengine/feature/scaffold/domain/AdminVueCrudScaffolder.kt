@@ -12,9 +12,15 @@ import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodeg
 import com.dqc.egsengine.template.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.Locale
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
 
 /**
  * Emits Vue3 admin CRUD files from [BackendCodegenManifest] (written by backend `gen database`).
+ *
+ * Sidebar routes are driven by Postgres sys_menus; the browser does not use hand-written vue-router modules as the authority.
+ * This scaffolder therefore also writes a Flyway migration under `backend/app/.../db/migration/` (see [writeSysMenuFlyway])
+ * so that starting the Spring Boot app runs Flyway and persists menu rows — that is intentional and part of the admin codegen contract.
  */
 class AdminVueCrudScaffolder(
     private val workspaceConfigResolver: WorkspaceConfigResolver,
@@ -26,6 +32,7 @@ class AdminVueCrudScaffolder(
         val moduleName: String,
         val files: List<GeneratedFile>,
         val dryRun: Boolean,
+        val sysMenuFlywayMigration: GeneratedFile? = null,
     )
 
     fun scaffoldFromCodegen(
@@ -38,6 +45,8 @@ class AdminVueCrudScaffolder(
             "admin gen from-backend requires workspace project 'admin' with platform vue3; got ${adminCfg.platform}"
         }
         val adminRoot = projectRoot.resolve(adminCfg.path).normalize()
+        val backendCfg = workspaceConfigResolver.resolveBackend(projectRoot)
+        val backendRoot = projectRoot.resolve(backendCfg.path).normalize()
         val module = codegen.backendModuleName
         val model = buildFreemarkerModel(codegen)
 
@@ -58,7 +67,37 @@ class AdminVueCrudScaffolder(
             logger.info("Admin Vue scaffold: module '{}' ({} files)", module, files.size)
         }
 
-        return Result(moduleName = module, files = files, dryRun = dryRun)
+        val flywayMigration = writeSysMenuFlyway(backendRoot, codegen, model, dryRun)
+
+        return Result(moduleName = module, files = files, dryRun = dryRun, sysMenuFlywayMigration = flywayMigration)
+    }
+
+    private fun writeSysMenuFlyway(
+        backendRoot: File,
+        codegen: BackendCodegenManifest,
+        model: Map<String, Any?>,
+        dryRun: Boolean,
+    ): GeneratedFile? {
+        val migrationDir = backendRoot.resolve("app/src/main/resources/db/migration").normalize()
+        val moduleSlug = codegen.backendModuleName
+        val sqlName = resolveSysMenuMigrationFileName(migrationDir, moduleSlug)
+
+        val relativeRef = "app/src/main/resources/db/migration/$sqlName"
+
+        val content = templateEngine.render("springboot/sys_menu_flyway.ftl", model, null)
+        val gf = GeneratedFile(path = relativeRef, content = content)
+
+        if (!dryRun) {
+            migrationDir.mkdirs()
+            val targetFile = migrationDir.resolve(sqlName)
+            targetFile.writeText(content.trimEnd() + "\n")
+            logger.info(
+                "Sys menu Flyway migration written: {} (same filename reused per module when re-running codegen.)",
+                targetFile.absolutePath,
+            )
+        }
+
+        return gf
     }
 
     private fun renderPair(template: String, relativePath: String, model: Map<String, Any?>): GeneratedFile {
@@ -69,18 +108,46 @@ class AdminVueCrudScaffolder(
     private fun buildFreemarkerModel(c: BackendCodegenManifest): Map<String, Any?> {
         val listCols = c.columns.filter { !it.isPk }
         val formCols = c.columns.filter { it.inBusinessForm }
+        val tableCols =
+            c.columns.sortedWith(
+                compareByDescending<BackendCodegenManifestColumn> { it.isPk }
+                    .thenBy { it.kotlinName },
+            )
         val pascal = c.entityPascal
+        val module = c.backendModuleName
         return mapOf(
             "entityPascal" to c.entityPascal,
             "entityCamel" to c.entityCamel,
             "restPath" to c.restPath,
             "pkField" to c.pkField,
             "pkTsType" to c.pkTsType,
-            "moduleName" to c.backendModuleName,
+            "moduleName" to module,
+            "menuOrderNum" to topLevelSidebarOrderFor(module),
             "columns" to c.columns,
             "listColumns" to listCols,
+            "tableColumns" to tableCols,
             "formColumns" to formCols,
+            "requiredFormColumns" to formCols.filter { !it.nullable },
+            "nameSearch" to c.columns.any { it.kotlinName == "name" && it.tsType == "string" },
+            "entityTitleZh" to moduleTitleZh(module, c.entityPascal),
             "pascal" to pascal,
         )
     }
+
+    private fun moduleTitleZh(moduleSlug: String, entityPascal: String): String =
+        when (moduleSlug.lowercase(Locale.US)) {
+            "food" -> "食物"
+            "cooking_steps" -> "烹饪步骤"
+            else -> entityPascal
+        }
+
+    /**
+     * [order_num] for root sidebar rows ([parent_id] IS NULL). Example seed uses ~1–99; snacks sit after Dashboard.
+     */
+    private fun topLevelSidebarOrderFor(moduleSlug: String): Int =
+        when (moduleSlug.lowercase(Locale.US)) {
+            "food" -> 4
+            "cooking_steps" -> 5
+            else -> 40 + kotlin.math.abs(moduleSlug.hashCode() % 39)
+        }
 }
