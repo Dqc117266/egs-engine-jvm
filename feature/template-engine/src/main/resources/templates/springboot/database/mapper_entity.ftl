@@ -24,7 +24,7 @@ open class Generated${entityPascal}EntityMapper {
 
     open fun toResponse(domain: ${entityPascal}): ${entityPascal}Response =
         ${entityPascal}Response(
-<#list nonPkColumns as col>
+<#list columns as col>
             ${col.kotlinName} = domain.${col.kotlinName}<#if col_has_next>,</#if>
 </#list>
         )
