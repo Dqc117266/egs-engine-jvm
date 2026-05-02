@@ -186,17 +186,27 @@ class SpringBootGeneratedPathsManifest {
         val cols = mutableListOf<BackendCodegenManifestColumn>()
         val itemRe =
             Regex(
-                """\{"kotlinName":"([^"]*)","kotlinType":"([^"]*)","tsType":"([^"]*)","nullable":(true|false),"isPk":(true|false),"inBusinessForm":(true|false)}""",
+                """\{"kotlinName":"([^"]*)","kotlinType":"([^"]*)","tsType":"([^"]*)","nullable":(true|false),"isPk":(true|false),"inBusinessForm":(true|false)(?:,"formControl":"([^"]*)")?}""",
             )
         itemRe.findAll(json).forEach { m ->
+            val kotlinName = m.groupValues[1]
+            val kotlinType = m.groupValues[2]
+            val tsType = m.groupValues[3]
+            val formControlStr = m.groupValues[7]
+            val formControl = if (formControlStr.isNotEmpty()) {
+                try { FormControl.valueOf(formControlStr) } catch (_: Exception) { FormControl.INPUT }
+            } else {
+                FormControl.infer(kotlinName, kotlinType, tsType)
+            }
             cols.add(
                 BackendCodegenManifestColumn(
-                    kotlinName = m.groupValues[1],
-                    kotlinType = m.groupValues[2],
-                    tsType = m.groupValues[3],
+                    kotlinName = kotlinName,
+                    kotlinType = kotlinType,
+                    tsType = tsType,
                     nullable = m.groupValues[4] == "true",
                     isPk = m.groupValues[5] == "true",
                     inBusinessForm = m.groupValues[6] == "true",
+                    formControl = formControl,
                 ),
             )
         }

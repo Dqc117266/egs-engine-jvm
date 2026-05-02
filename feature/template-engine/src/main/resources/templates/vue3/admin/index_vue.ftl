@@ -14,6 +14,10 @@
   <#elseif nm == 'instruction'><#return "步骤说明"/>
   <#elseif nm == 'stepOrder'><#return "步骤序号"/>
   <#elseif nm == 'foodItemId'><#return "关联食物"/>
+  <#elseif nm == 'imageUrl'><#return "图片"/>
+  <#elseif nm == 'avatar'><#return "头像"/>
+  <#elseif nm == 'icon'><#return "图标"/>
+  <#elseif nm == 'coverUrl'><#return "封面"/>
   <#elseif nm == 'createdAt'><#return "创建时间"/>
   <#elseif nm == 'updatedAt'><#return "更新时间"/>
   <#elseif nm == 'createTime'><#return "创建时间"/>
@@ -60,6 +64,13 @@
           <el-tag :type="scope.row.${col.kotlinName} === 1 ? 'success' : 'danger'">{{ scope.row.${col.kotlinName} === 1 ? '正常' : '停用' }}</el-tag>
         </template>
       </el-table-column>
+  <#elseif col.formControl == 'IMAGE_UPLOAD'>
+      <el-table-column label="${zhLabel(col.kotlinName)}" align="center" prop="${col.kotlinName}" width="120">
+        <template #default="scope">
+          <el-image v-if="scope.row.${col.kotlinName}" :src="scope.row.${col.kotlinName}" :preview-src-list="[scope.row.${col.kotlinName}]" fit="cover" style="width: 60px; height: 60px; border-radius: 4px;" />
+          <span v-else style="color: #999;">无图片</span>
+        </template>
+      </el-table-column>
   <#else>
       <el-table-column label="${zhLabel(col.kotlinName)}" align="center" prop="${col.kotlinName}"<#if col.kotlinName == 'instruction' || col.kotlinName == 'description'> :show-overflow-tooltip="true"<#elseif col.kotlinName == pkField || col.kotlinName=='id'> width="<#if col.kotlinType=='Long'>80<#else>100</#if>"</#if> />
   </#if>
@@ -78,19 +89,16 @@
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
 <#list formColumns as fc>
         <el-form-item label="${zhLabel(fc.kotlinName)}" prop="${fc.kotlinName}">
-  <#if fc.tsType == 'string'>
-          <#if fc.kotlinName=='description' || fc.kotlinName=='instruction' || (fc.kotlinName?lower_case)?contains('description')>
+  <#if fc.formControl == 'IMAGE_UPLOAD'>
+          <el-upload class="image-uploader" action="/api/common/upload" :headers="uploadHeaders" :show-file-list="false" :on-success="(res: any) => form.${fc.kotlinName} = res.data?.url || res.data" :before-upload="beforeImageUpload">
+            <img v-if="form.${fc.kotlinName}" :src="form.${fc.kotlinName}" class="uploaded-image" />
+            <el-icon v-else class="image-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+  <#elseif fc.formControl == 'TEXTAREA'>
           <el-input v-model="form.${fc.kotlinName}" type="textarea" :rows="4" placeholder="请输入${zhLabel(fc.kotlinName)}" />
-          <#else>
-          <el-input v-model="form.${fc.kotlinName}" placeholder="请输入${zhLabel(fc.kotlinName)}" />
-          </#if>
-  <#elseif fc.tsType == 'number'>
-          <#if fc.kotlinType == 'Int'>
+  <#elseif fc.formControl == 'NUMBER'>
           <el-input-number v-model="form.${fc.kotlinName}" :min="0" controls-position="right" style="width: 100%" />
-          <#else>
-          <el-input v-model.number="form.${fc.kotlinName}" placeholder="请输入${zhLabel(fc.kotlinName)}" />
-          </#if>
-  <#elseif fc.tsType == 'boolean'>
+  <#elseif fc.formControl == 'SWITCH'>
           <el-switch v-model="form.${fc.kotlinName}" />
   <#else>
           <el-input v-model="form.${fc.kotlinName}" placeholder="请输入${zhLabel(fc.kotlinName)}" />
@@ -110,6 +118,10 @@
 import { reactive, ref, onMounted } from 'vue'
 import type { FormInstance } from 'element-plus'
 import { ElMessageBox, ElMessage } from 'element-plus'
+<#if hasImageField>
+import { Plus } from '@element-plus/icons-vue'
+import { getToken } from '@/utils/auth'
+</#if>
 import {
   list${entityPascal},
   get${entityPascal},
@@ -251,4 +263,25 @@ async function submitForm() {
 }
 
 onMounted(() => getList())
+<#if hasImageField>
+
+// 图片上传
+const uploadHeaders = { Authorization: 'Bearer ' + getToken() }
+function beforeImageUpload(file: File) {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+  if (!isImage) { ElMessage.error('只能上传图片文件!'); return false }
+  if (!isLt2M) { ElMessage.error('图片大小不能超过 2MB!'); return false }
+  return true
+}
+</#if>
 </script>
+<#if hasImageField>
+
+<style scoped>
+.image-uploader { border: 1px dashed var(--el-border-color); border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; width: 120px; height: 120px; }
+.image-uploader:hover { border-color: var(--el-color-primary); }
+.image-uploader-icon { font-size: 28px; color: #8c939d; width: 120px; height: 120px; text-align: center; display: flex; align-items: center; justify-content: center; }
+.uploaded-image { width: 120px; height: 120px; object-fit: cover; display: block; }
+</style>
+</#if>

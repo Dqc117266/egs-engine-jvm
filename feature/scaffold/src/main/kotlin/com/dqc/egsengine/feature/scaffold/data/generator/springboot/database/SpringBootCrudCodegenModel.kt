@@ -8,6 +8,7 @@ package com.dqc.egsengine.feature.scaffold.data.generator.springboot.database
 import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.FormControl
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.KotlinToTsTypeMapper
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
@@ -156,13 +157,15 @@ class SpringBootCodegenModelBuilder(
     ): BackendCodegenManifest {
         val ctx = buildSharedContext(table, backendModuleName, config, options)
         val cols = ctx.codegenCols.map { c ->
+            val tsType = KotlinToTsTypeMapper.toTsType(c.kotlinType)
             BackendCodegenManifestColumn(
                 kotlinName = c.kotlinName,
                 kotlinType = c.kotlinType,
-                tsType = KotlinToTsTypeMapper.toTsType(c.kotlinType),
+                tsType = tsType,
                 nullable = c.nullable,
                 isPk = c.isPk,
                 inBusinessForm = ctx.businessNonPk.any { it.kotlinName == c.kotlinName },
+                formControl = FormControl.infer(c.kotlinName, c.kotlinType, tsType),
             )
         }
         return BackendCodegenManifest(

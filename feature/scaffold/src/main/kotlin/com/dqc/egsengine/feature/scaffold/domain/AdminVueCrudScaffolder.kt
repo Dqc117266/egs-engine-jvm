@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.Locale
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.FormControl
 
 /**
  * Emits Vue3 admin CRUD files from [BackendCodegenManifest] (written by backend `gen database`).
@@ -129,6 +130,7 @@ class AdminVueCrudScaffolder(
             "formColumns" to formCols,
             "requiredFormColumns" to formCols.filter { !it.nullable },
             "nameSearch" to c.columns.any { it.kotlinName == "name" && it.tsType == "string" },
+            "hasImageField" to c.columns.any { it.formControl == FormControl.IMAGE_UPLOAD },
             "entityTitleZh" to moduleTitleZh(module, c.entityPascal),
             "pascal" to pascal,
         )
