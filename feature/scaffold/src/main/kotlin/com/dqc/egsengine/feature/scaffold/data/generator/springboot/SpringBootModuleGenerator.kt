@@ -16,6 +16,7 @@ import java.io.File
  */
 class SpringBootModuleGenerator(
     private val settingsUpdater: SettingsGradleUpdater,
+    private val appDependencyUpdater: SpringBootAppDependencyUpdater,
 ) : PlatformModuleGenerator {
 
     private val logger = LoggerFactory.getLogger(SpringBootModuleGenerator::class.java)
@@ -70,11 +71,11 @@ class SpringBootModuleGenerator(
         moduleName: String,
         config: SubProjectConfig,
     ): List<File> {
-        val subProjectRoot = projectRoot.resolve(config.path)
+        // projectRoot is already the sub-project root (resolved by caller in scaffoldForProject)
         val created = mutableListOf<File>()
 
         for (entry in preview(projectRoot, moduleName, config)) {
-            val file = subProjectRoot.resolve(entry.path)
+            val file = projectRoot.resolve(entry.path)
             file.parentFile.mkdirs()
             if (entry.content != null) {
                 file.writeText(entry.content)
@@ -96,23 +97,21 @@ class SpringBootModuleGenerator(
     ) {
         val subProjectRoot = projectRoot.resolve(config.path)
         settingsUpdater.update(subProjectRoot, moduleName)
+        appDependencyUpdater.ensureFeatureDependency(subProjectRoot, moduleName)
     }
 
     private fun generateBuildFile(config: SubProjectConfig): String {
-        val egsServer = config.conventionPluginId?.contains("egs.server") == true
+        val conventionPluginId = config.conventionPluginId ?: "com.egs.server.convention.feature"
+        val isEgsServer = conventionPluginId.contains("egs.server")
         return buildString {
             appendLine("plugins {")
-            if (config.conventionPluginId != null) {
-                appendLine("    id(\"${config.conventionPluginId}\")")
-            } else {
-                appendLine("    id(\"org.jetbrains.kotlin.jvm\")")
-            }
+            appendLine("    id(\"$conventionPluginId\")")
             appendLine("}")
             appendLine()
             appendLine("group = \"${config.basePackage}\"")
             appendLine("version = rootProject.version")
             appendLine()
-            if (egsServer) {
+            if (isEgsServer) {
                 appendLine("dependencies {")
                 appendLine("    // Cache + HTTP client layers (mirrors KMP `preferences` + `api` datasources).")
                 appendLine("    implementation(libs.spring.boot.starter.data.redis)")
@@ -122,8 +121,10 @@ class SpringBootModuleGenerator(
                 appendLine("}")
             } else {
                 appendLine("dependencies {")
-                appendLine("    implementation(project(\":core\"))")
-                appendLine("    implementation(project(\":shared\"))")
+                appendLine("    // Spring Boot web is required for @RestController / @Controller")
+                appendLine("    implementation(libs.spring.boot.starter.web)")
+                appendLine("    implementation(libs.spring.boot.starter.security)")
+                appendLine("    implementation(libs.spring.boot.starter.aop)")
                 appendLine("}")
             }
         }

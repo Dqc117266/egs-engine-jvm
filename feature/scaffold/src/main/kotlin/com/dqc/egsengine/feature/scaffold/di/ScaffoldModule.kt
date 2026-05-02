@@ -41,6 +41,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootApiGenerator
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootAppDependencyUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootCrudGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootGeneratedPathsManifest
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootHandWrittenShellGenerator
@@ -118,7 +119,7 @@ val featureScaffoldModule = module {
     single { AndroidModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
     single { KmpModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
     single { ModuleGenerator(androidModuleGenerator = get()) }
-    single { SpringBootModuleGenerator(get()) }
+    single { SpringBootModuleGenerator(get(), get()) }
     single { Vue3ModuleGenerator() }
 
     single<Map<Platform, PlatformModuleGenerator>>(named("platformModuleGenerators")) {
@@ -151,9 +152,11 @@ val featureScaffoldModule = module {
     single { SpringBootCrudGenerator(get()) }
     single { SpringBootGeneratedPathsManifest() }
     single { SpringBootHandWrittenShellGenerator() }
+    single { SpringBootAppDependencyUpdater() }
     single { AdminVueCrudScaffolder(get(), get()) }
     single {
         SpringBootDatabaseScaffolder(
+            get(),
             get(),
             get(),
             get(),

@@ -181,6 +181,70 @@ class CreateCommandsIntegrationTest {
     }
 
     @Test
+    fun `create api derives descriptive names from weak operation ids`() {
+        startKoin { modules(featureInitModule, featureScaffoldModule) }
+        val projectRoot = createProjectFixture()
+        val swaggerFile = createWeakOperationSwaggerFixture(projectRoot)
+
+        CreateCommand.withSubcommands().main(
+            listOf(
+                "api",
+                "task",
+                "--swagger",
+                swaggerFile.absolutePath,
+                "--project",
+                projectRoot.absolutePath,
+            ),
+        )
+
+        val servicePath = projectRoot.resolve(
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/datasource/api/service/TaskRetrofitService.kt",
+        )
+        val repositoryPath = projectRoot.resolve(
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskApiRepository.kt",
+        )
+        val repositorySupportPath = projectRoot.resolve(
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskApiRepositorySupport.kt",
+        )
+        val getUseCasePath = projectRoot.resolve(
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/StepGetStepUseCase.kt",
+        )
+        val pageUseCasePath = projectRoot.resolve(
+            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/StepGetStepPageUseCase.kt",
+        )
+
+        assertTrue(servicePath.exists())
+        assertTrue(repositoryPath.exists())
+        assertTrue(repositorySupportPath.exists())
+        assertTrue(getUseCasePath.exists())
+        assertTrue(pageUseCasePath.exists())
+
+        val serviceText = servicePath.readText().replace("\\s+".toRegex(), " ")
+        assertTrue(serviceText.contains("suspend fun stepGetStep("))
+        assertTrue(serviceText.contains("suspend fun stepUpdateStep("))
+        assertTrue(serviceText.contains("suspend fun categoryDeleteCategory("))
+        assertTrue(serviceText.contains("suspend fun stepGetStepPage("))
+        assertTrue(serviceText.contains("suspend fun stepGetStepList("))
+        assertTrue(serviceText.contains("suspend fun stepCountStep("))
+        assertTrue(serviceText.contains("suspend fun stepGetAllStep("))
+        assertTrue(serviceText.contains("suspend fun stepGetNextStepNumber("))
+        assertFalse(serviceText.contains("suspend fun getById("))
+        assertFalse(serviceText.contains("suspend fun update1("))
+
+        val repositoryText = repositoryPath.readText().replace("\\s+".toRegex(), " ")
+        assertTrue(repositoryText.contains("suspend fun stepGetStep("))
+        assertTrue(repositoryText.contains("suspend fun stepGetStepPage("))
+        assertFalse(repositoryText.contains("suspend fun list1("))
+
+        val repositorySupportText = repositorySupportPath.readText().replace("\\s+".toRegex(), " ")
+        assertTrue(repositorySupportText.contains("service.stepGetStep(id).toResult"))
+        assertTrue(repositorySupportText.contains("service.stepUpdateStep(id, body.toData()).toResult"))
+        assertTrue(repositorySupportText.contains("service.stepGetStepPage(page, size).toResult"))
+        assertFalse(repositorySupportText.contains("service.getById("))
+        assertFalse(repositorySupportText.contains("service.update1("))
+    }
+
+    @Test
     fun `create api dry run does not write files`() {
         startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
@@ -299,6 +363,227 @@ class CreateCommandsIntegrationTest {
                       "code": { "type": "integer" },
                       "msg": { "type": "string" },
                       "data": { "type": "boolean" }
+                    }
+                  }
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+        return swaggerFile
+    }
+
+    private fun createWeakOperationSwaggerFixture(projectRoot: File): File {
+        val swaggerFile = projectRoot.resolve("weak-operation-swagger.json")
+        swaggerFile.writeText(
+            """
+            {
+              "openapi": "3.0.1",
+              "paths": {
+                "/api/steps/{id}": {
+                  "get": {
+                    "operationId": "getById",
+                    "parameters": [
+                      { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+                    ],
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultRecipeStepResponse" }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "put": {
+                    "operationId": "update1",
+                    "parameters": [
+                      { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+                    ],
+                    "requestBody": {
+                      "content": {
+                        "application/json": {
+                          "schema": { "${'$'}ref": "#/components/schemas/UpdateRecipeStepRequest" }
+                        }
+                      }
+                    },
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultRecipeStepResponse" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "/api/categories/{id}": {
+                  "delete": {
+                    "operationId": "delete1",
+                    "parameters": [
+                      { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+                    ],
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultBoolean" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "/api/steps": {
+                  "get": {
+                    "operationId": "list1",
+                    "parameters": [
+                      { "name": "page", "in": "query", "schema": { "type": "integer" } },
+                      { "name": "size", "in": "query", "schema": { "type": "integer" } }
+                    ],
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultPageResultRecipeStepResponse" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "/api/steps/list": {
+                  "get": {
+                    "operationId": "listPath1",
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultPageResultRecipeStepResponse" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "/api/steps/count": {
+                  "get": {
+                    "operationId": "count1",
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultLong" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "/api/steps/all": {
+                  "get": {
+                    "operationId": "all1",
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultListRecipeStepResponse" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "/api/steps/next-step-number": {
+                  "get": {
+                    "responses": {
+                      "200": {
+                        "content": {
+                          "application/json": {
+                            "schema": { "${'$'}ref": "#/components/schemas/CommonResultInt" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "components": {
+                "schemas": {
+                  "UpdateRecipeStepRequest": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" }
+                    }
+                  },
+                  "RecipeStepResponse": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer", "format": "int64" },
+                      "name": { "type": "string" }
+                    }
+                  },
+                  "PageResultRecipeStepResponse": {
+                    "type": "object",
+                    "properties": {
+                      "list": {
+                        "type": "array",
+                        "items": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                      },
+                      "total": { "type": "integer", "format": "int64" }
+                    }
+                  },
+                  "CommonResultRecipeStepResponse": {
+                    "type": "object",
+                    "properties": {
+                      "code": { "type": "integer" },
+                      "msg": { "type": "string" },
+                      "data": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                    }
+                  },
+                  "CommonResultPageResultRecipeStepResponse": {
+                    "type": "object",
+                    "properties": {
+                      "code": { "type": "integer" },
+                      "msg": { "type": "string" },
+                      "data": { "${'$'}ref": "#/components/schemas/PageResultRecipeStepResponse" }
+                    }
+                  },
+                  "CommonResultLong": {
+                    "type": "object",
+                    "properties": {
+                      "code": { "type": "integer" },
+                      "msg": { "type": "string" },
+                      "data": { "type": "integer", "format": "int64" }
+                    }
+                  },
+                  "CommonResultInt": {
+                    "type": "object",
+                    "properties": {
+                      "code": { "type": "integer" },
+                      "msg": { "type": "string" },
+                      "data": { "type": "integer" }
+                    }
+                  },
+                  "CommonResultBoolean": {
+                    "type": "object",
+                    "properties": {
+                      "code": { "type": "integer" },
+                      "msg": { "type": "string" },
+                      "data": { "type": "boolean" }
+                    }
+                  },
+                  "CommonResultListRecipeStepResponse": {
+                    "type": "object",
+                    "properties": {
+                      "code": { "type": "integer" },
+                      "msg": { "type": "string" },
+                      "data": {
+                        "type": "array",
+                        "items": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                      }
                     }
                   }
                 }

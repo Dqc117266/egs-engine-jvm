@@ -9,6 +9,7 @@ import com.dqc.egsengine.feature.init.domain.model.WorkspaceConfig
 import com.dqc.egsengine.feature.scaffold.data.GitHubCloneUrlPolicy
 import com.dqc.egsengine.feature.scaffold.data.NewProjectTemplateUrls
 import com.dqc.egsengine.feature.scaffold.data.ProjectTemplateCloner
+import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -32,6 +33,7 @@ class NewCommand : CliktCommand(name = "new") {
 class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
     private val workspaceConfigWriter: WorkspaceConfigWriter by inject()
+    private val workspaceConfigResolver: WorkspaceConfigResolver by inject()
 
     private val projectNameArg by argument(help = "Project name").optional()
 
@@ -145,12 +147,24 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
                 } else {
                     cloner.cloneAndCustomize(resolvedUrl, targetDir.resolve(backendPath), projectName)
                 }
-                projects["backend"] = SubProjectConfig(
-                    platform = Platform.SPRING_BOOT,
-                    path = backendPath,
-                    basePackage = packageName,
-                    templateUrl = resolvedUrl,
-                )
+                val backendConfig = if (dryRun) {
+                    SubProjectConfig(
+                        platform = Platform.SPRING_BOOT,
+                        path = backendPath,
+                        basePackage = packageName,
+                        templateUrl = resolvedUrl,
+                    )
+                } else {
+                    val backendRoot = targetDir.resolve(backendPath)
+                    SubProjectConfig(
+                        platform = Platform.SPRING_BOOT,
+                        path = backendPath,
+                        basePackage = workspaceConfigResolver.detectSpringBootBasePackage(backendRoot) ?: packageName,
+                        templateUrl = resolvedUrl,
+                        conventionPluginId = workspaceConfigResolver.detectSpringBootConventionPluginId(backendRoot),
+                    )
+                }
+                projects["backend"] = backendConfig
             }
 
             if (includeWeb) {

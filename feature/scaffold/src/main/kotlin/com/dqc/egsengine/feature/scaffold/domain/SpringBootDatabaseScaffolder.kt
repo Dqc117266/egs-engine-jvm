@@ -10,6 +10,7 @@ import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootAppDependencyUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootCrudGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootGeneratedPathsManifest
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootHandWrittenShellGenerator
@@ -27,6 +28,7 @@ class SpringBootDatabaseScaffolder(
     private val moduleScaffolder: ModuleScaffolder,
     private val manifest: SpringBootGeneratedPathsManifest,
     private val shells: SpringBootHandWrittenShellGenerator,
+    private val appDependencyUpdater: SpringBootAppDependencyUpdater,
     private val adminVueCrudScaffolder: AdminVueCrudScaffolder,
 ) {
     private val logger = LoggerFactory.getLogger(SpringBootDatabaseScaffolder::class.java)
@@ -51,7 +53,7 @@ class SpringBootDatabaseScaffolder(
         options: SpringBootOpinionatedOptions = SpringBootOpinionatedOptions(),
         withAdmin: Boolean = false,
     ): Result {
-        val backendCfg = workspaceConfigResolver.resolveBackend(projectRoot)
+        val backendCfg = workspaceConfigResolver.resolveEffectiveBackendConfig(projectRoot)
         require(backendCfg.platform == Platform.SPRING_BOOT) {
             "backend gen database requires workspace project 'backend' with platform spring_boot; got ${backendCfg.platform}"
         }
@@ -67,6 +69,10 @@ class SpringBootDatabaseScaffolder(
                 dryRun = false,
             )
             logger.info("Created missing backend module 'feature:{}' before codegen", moduleName)
+        }
+
+        if (!dryRun) {
+            appDependencyUpdater.ensureFeatureDependency(backendRoot, moduleName)
         }
 
         val tables = ddlParser.parseFile(sqlFile)

@@ -68,11 +68,15 @@ class SwaggerParser {
                 val opObj = pathObj.getAsJsonObject(method) ?: continue
                 val opLevelParams = parseParameters(opObj.getAsJsonArray("parameters"))
                 val allParams = (pathLevelParams + opLevelParams).distinctBy { "${it.location}:${it.name}" }
-
-                val operationId = opObj.get("operationId")?.asString
-                    ?: fallbackOperationId(method, path)
                 val requestBody = parseRequestBody(opObj.getAsJsonObject("requestBody"))
                 val responseBody = parseResponseBody(opObj.getAsJsonObject("responses"))
+                val operationId = resolveOperationId(
+                    method = method,
+                    path = path,
+                    rawOperationId = opObj.get("operationId")?.asString,
+                    params = allParams,
+                    responseBody = responseBody,
+                )
 
                 ops.add(
                     SwaggerOperation(
@@ -166,11 +170,215 @@ class SwaggerParser {
         return SwaggerType.Unknown
     }
 
+    private fun resolveOperationId(
+        method: String,
+        path: String,
+        rawOperationId: String?,
+        params: List<SwaggerParameter>,
+        responseBody: SwaggerType?,
+    ): String {
+        val preservedOperationId = rawOperationId?.takeIf { shouldPreserveOperationId(it) }
+        return preservedOperationId ?: deriveOperationIdFromPath(method, path, params, responseBody)
+    }
+
+    private fun shouldPreserveOperationId(rawOperationId: String): Boolean {
+        if (rawOperationId.isBlank() || isWeakOperationId(rawOperationId)) {
+            return false
+        }
+        if (rawOperationId.contains('_')) {
+            return true
+        }
+
+        val tokens = operationTokens(rawOperationId)
+        val firstActionIndex = tokens.indexOfFirst { it in ACTION_TOKENS }
+        return when {
+            firstActionIndex > 0 -> true
+            firstActionIndex == -1 -> tokens.size >= 3
+            else -> false
+        }
+    }
+
+    private fun isWeakOperationId(rawOperationId: String): Boolean {
+        val tokens = operationTokens(rawOperationId)
+        if (tokens.isEmpty()) return true
+
+        val compact = tokens.joinToString("")
+        if (compact in WEAK_OPERATION_IDS) return true
+        if (tokens.size == 1 && tokens.first() in ACTION_TOKENS) return true
+        if (tokens.first() in ACTION_TOKENS && tokens.drop(1).all { it in WEAK_OPERATION_SUFFIXES }) return true
+
+        return false
+    }
+
+    private fun deriveOperationIdFromPath(
+        method: String,
+        path: String,
+        params: List<SwaggerParameter>,
+        responseBody: SwaggerType?,
+    ): String {
+        val rawSegments = path.trim('/').split('/').filter { it.isNotBlank() }
+        if (rawSegments.isEmpty()) return fallbackOperationId(method, path)
+
+        val (basePrefixSegments, scopedSegments) = stripApiPrefix(rawSegments)
+        val nonParamSegments = scopedSegments.filterNot(::isPathParameter)
+        if (nonParamSegments.isEmpty()) return fallbackOperationId(method, path)
+
+        val itemPath = scopedSegments.lastOrNull()?.let(::isPathParameter) == true && nonParamSegments.isNotEmpty()
+        val tailSegment = when {
+            itemPath -> null
+            nonParamSegments.size > 1 -> nonParamSegments.last()
+            else -> null
+        }
+        val resourceSegments = when {
+            itemPath -> nonParamSegments
+            tailSegment != null -> nonParamSegments.dropLast(1)
+            else -> nonParamSegments
+        }.ifEmpty { nonParamSegments.take(1) }
+        if (resourceSegments.isEmpty()) return fallbackOperationId(method, path)
+
+        val targetName = singularizeSegment(resourceSegments.last()).toSafePascal()
+        val prefixName = buildPrefixName(
+            basePrefixSegments = basePrefixSegments,
+            contextSegments = resourceSegments.dropLast(1),
+            targetName = targetName,
+        )
+        val actionName = deriveActionName(method, tailSegment, itemPath, targetName, params, responseBody)
+        return "${prefixName}_${actionName}"
+    }
+
+    private fun stripApiPrefix(pathSegments: List<String>): Pair<List<String>, List<String>> {
+        val first = pathSegments.firstOrNull()?.lowercase() ?: return emptyList<String>() to pathSegments
+        return when (first) {
+            "app-api" -> listOf("app") to pathSegments.drop(1)
+            "admin-api", "api" -> emptyList<String>() to pathSegments.drop(1)
+            else -> emptyList<String>() to pathSegments
+        }
+    }
+
+    private fun buildPrefixName(
+        basePrefixSegments: List<String>,
+        contextSegments: List<String>,
+        targetName: String,
+    ): String {
+        val normalizedBase = basePrefixSegments.map { singularizeSegment(it).toSafePascal() }
+        val normalizedContext = contextSegments.map { singularizeSegment(it).toSafePascal() }
+        val prefixSegments = if (normalizedContext.size >= 2 || (normalizedBase.isNotEmpty() && normalizedContext.isNotEmpty())) {
+            normalizedBase + normalizedContext
+        } else {
+            emptyList()
+        }
+        return if (prefixSegments.isEmpty()) targetName else prefixSegments.joinToString("")
+    }
+
+    private fun deriveActionName(
+        method: String,
+        tailSegment: String?,
+        itemPath: Boolean,
+        targetName: String,
+        params: List<SwaggerParameter>,
+        responseBody: SwaggerType?,
+    ): String {
+        val upperMethod = method.uppercase()
+        return when {
+            itemPath -> when (upperMethod) {
+                "GET" -> "Get$targetName"
+                "PUT", "PATCH" -> "Update$targetName"
+                "DELETE" -> "Delete$targetName"
+                else -> "${defaultMethodVerb(upperMethod)}$targetName"
+            }
+
+            tailSegment == null -> when (upperMethod) {
+                "GET" -> if (isPagedOperation(params, responseBody)) {
+                    "Get${targetName}Page"
+                } else {
+                    "Get${targetName}List"
+                }
+                "POST" -> "Create$targetName"
+                "PUT", "PATCH" -> "Update$targetName"
+                "DELETE" -> "Delete$targetName"
+                else -> "${defaultMethodVerb(upperMethod)}$targetName"
+            }
+
+            else -> when (tailSegment.lowercase()) {
+                "count" -> "Count$targetName"
+                "all" -> "GetAll$targetName"
+                "list" -> "Get${targetName}List"
+                "page" -> "Get${targetName}Page"
+                else -> deriveCustomActionName(upperMethod, tailSegment, targetName)
+            }
+        }
+    }
+
+    private fun deriveCustomActionName(method: String, tailSegment: String, targetName: String): String {
+        val tailWords = operationTokens(tailSegment)
+        if (tailWords.isEmpty()) return "${defaultMethodVerb(method)}$targetName"
+
+        val action = tailWords.first()
+        val remainder = tailWords.drop(1).joinToString("") { it.toSafePascal() }
+        return when {
+            action == "delete" && remainder == "List" -> "Delete${targetName}List"
+            action == "export" && remainder.isNotBlank() -> "Export${targetName}$remainder"
+            action in CUSTOM_ACTION_TOKENS -> {
+                val actionName = action.toSafePascal()
+                if (remainder.isNotBlank()) "$actionName$remainder" else "$actionName$targetName"
+            }
+
+            else -> "${defaultMethodVerb(method)}${tailWords.joinToString("") { it.toSafePascal() }}"
+        }
+    }
+
+    private fun isPagedOperation(params: List<SwaggerParameter>, responseBody: SwaggerType?): Boolean {
+        val paramNames = params
+            .filter { it.location.lowercase() != "header" }
+            .map { it.originalName.lowercase() }
+            .toSet()
+        if (paramNames.any { it in PAGE_PARAM_NAMES }) return true
+
+        return when (responseBody) {
+            is SwaggerType.ModelRef -> responseBody.name.contains("PageResult", ignoreCase = true)
+            else -> false
+        }
+    }
+
+    private fun operationTokens(value: String): List<String> =
+        value.replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
+            .replace(Regex("[^A-Za-z0-9]+"), " ")
+            .trim()
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+            .mapNotNull { token ->
+                token.trimEnd { it.isDigit() }
+                    .lowercase()
+                    .takeIf { it.isNotBlank() }
+            }
+
+    private fun singularizeSegment(segment: String): String {
+        val lower = segment.lowercase()
+        return when {
+            lower.endsWith("ies") && lower.length > 3 -> lower.dropLast(3) + "y"
+            lower.endsWith("sses") || lower.endsWith("xes") || lower.endsWith("zes") ||
+                lower.endsWith("ches") || lower.endsWith("shes") -> lower.dropLast(2)
+            lower.endsWith("s") && !lower.endsWith("ss") && !lower.endsWith("us") -> lower.dropLast(1)
+            else -> lower
+        }
+    }
+
+    private fun isPathParameter(segment: String): Boolean =
+        segment.startsWith("{") && segment.endsWith("}")
+
     private fun fallbackOperationId(method: String, path: String): String {
         val clean = path.split("/", "-", "{", "}")
             .filter { it.isNotBlank() }
             .joinToString("") { it.replaceFirstChar(Char::uppercase) }
         return method.lowercase() + clean
+    }
+
+    private fun defaultMethodVerb(method: String): String = when (method.uppercase()) {
+        "GET" -> "Get"
+        "POST" -> "Post"
+        "PUT", "PATCH" -> "Update"
+        "DELETE" -> "Delete"
+        else -> method.lowercase().replaceFirstChar(Char::uppercase)
     }
 
     private fun sanitizeMethodName(name: String): String {
@@ -200,5 +408,21 @@ class SwaggerParser {
             "class", "object", "when", "is", "in", "val", "var",
             "fun", "return", "package", "interface", "data",
         )
+        val ACTION_TOKENS = setOf(
+            "get", "list", "create", "update", "delete", "count", "add", "remove",
+            "cancel", "check", "export", "sync", "refresh", "submit", "approve",
+            "reject", "reset", "send", "verify", "upload", "download", "save",
+            "post", "put", "patch",
+        )
+        val CUSTOM_ACTION_TOKENS = setOf(
+            "cancel", "check", "export", "sync", "refresh", "submit", "approve",
+            "reject", "reset", "send", "verify", "upload", "download",
+        )
+        val WEAK_OPERATION_IDS = setOf(
+            "get", "list", "create", "update", "delete", "count", "all",
+            "getbyid", "updatebyid", "deletebyid", "listpage", "listpath",
+        )
+        val WEAK_OPERATION_SUFFIXES = setOf("id", "path", "list", "page", "count", "all")
+        val PAGE_PARAM_NAMES = setOf("page", "size", "pageno", "pagesize")
     }
 }

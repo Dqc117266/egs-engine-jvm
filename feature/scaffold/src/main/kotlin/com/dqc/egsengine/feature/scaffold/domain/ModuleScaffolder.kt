@@ -66,11 +66,16 @@ class ModuleScaffolder(
         dryRun: Boolean = false,
     ): ScaffoldResult {
         val config = workspaceResolver.resolveByKey(projectRoot, projectKey)
-        val gen = platformGenerators[config.platform]
-            ?: throw IllegalArgumentException("No generator registered for platform: ${config.platform}")
+        val effectiveConfig = if (config.platform == Platform.SPRING_BOOT) {
+            workspaceResolver.resolveEffectiveBackendConfig(projectRoot)
+        } else {
+            config
+        }
+        val gen = platformGenerators[effectiveConfig.platform]
+            ?: throw IllegalArgumentException("No generator registered for platform: ${effectiveConfig.platform}")
 
-        val subProjectRoot = projectRoot.resolve(config.path)
-        val preview = gen.preview(subProjectRoot, moduleName, config)
+        val subProjectRoot = projectRoot.resolve(effectiveConfig.path)
+        val preview = gen.preview(subProjectRoot, moduleName, effectiveConfig)
 
         if (dryRun) {
             return ScaffoldResult(
@@ -80,10 +85,10 @@ class ModuleScaffolder(
             )
         }
 
-        gen.generate(subProjectRoot, moduleName, config)
-        gen.updateSettings(projectRoot, moduleName, config)
+        gen.generate(subProjectRoot, moduleName, effectiveConfig)
+        gen.updateSettings(projectRoot, moduleName, effectiveConfig)
 
-        logger.info("Scaffolded module '{}' for project '{}' (platform={})", moduleName, projectKey, config.platform)
+        logger.info("Scaffolded module '{}' for project '{}' (platform={})", moduleName, projectKey, effectiveConfig.platform)
 
         return ScaffoldResult(
             moduleName = moduleName,

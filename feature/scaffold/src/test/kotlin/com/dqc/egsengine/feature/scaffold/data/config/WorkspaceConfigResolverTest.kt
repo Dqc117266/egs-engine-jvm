@@ -2,6 +2,7 @@ package com.dqc.egsengine.feature.scaffold.data.config
 
 import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
@@ -103,6 +104,62 @@ class WorkspaceConfigResolverTest {
             """.trimIndent(),
         )
         assertEquals("http://other:9090/v3/api-docs/custom", resolver.resolveSwaggerUrl(root, "a"))
+    }
+
+    @Test
+    fun `detectSpringBootBasePackage prefers scanBasePackages`() {
+        val backendRoot = createTempDirectory("backend-root").toFile()
+        val appFile = backendRoot.resolve("app/src/main/kotlin/com/egs/server/app/EgsServerApplication.kt")
+        appFile.parentFile.mkdirs()
+        appFile.writeText(
+            """
+            package com.egs.server.app
+
+            @SpringBootApplication(scanBasePackages = ["com.egs.server"])
+            class EgsServerApplication
+            """.trimIndent(),
+        )
+
+        assertEquals("com.egs.server", resolver.detectSpringBootBasePackage(backendRoot))
+    }
+
+    @Test
+    fun `detectSpringBootBasePackage falls back to application package root`() {
+        val backendRoot = createTempDirectory("backend-root").toFile()
+        val appFile = backendRoot.resolve("app/src/main/kotlin/com/foo/bar/app/EgsServerApplication.kt")
+        appFile.parentFile.mkdirs()
+        appFile.writeText(
+            """
+            package com.foo.bar.app
+
+            @SpringBootApplication
+            class EgsServerApplication
+            """.trimIndent(),
+        )
+
+        assertEquals("com.foo.bar", resolver.detectSpringBootBasePackage(backendRoot))
+    }
+
+    @Test
+    fun `detectSpringBootConventionPluginId reads existing feature build file`() {
+        val backendRoot = createTempDirectory("backend-root").toFile()
+        val buildFile = backendRoot.resolve("feature/demo/build.gradle.kts")
+        buildFile.parentFile.mkdirs()
+        buildFile.writeText(
+            """
+            plugins {
+                id("com.egs.server.convention.feature")
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("com.egs.server.convention.feature", resolver.detectSpringBootConventionPluginId(backendRoot))
+    }
+
+    @Test
+    fun `detectSpringBootConventionPluginId returns null when feature build file missing`() {
+        val backendRoot = createTempDirectory("backend-root").toFile()
+        assertNull(resolver.detectSpringBootConventionPluginId(backendRoot))
     }
 
     private fun workspaceRoot(json: String): File {

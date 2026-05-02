@@ -15,7 +15,7 @@ data class Create${entityPascal}Request(
     @field:NotBlank
     </#if>
     <#if col.maxLength?? && col.kotlinType == "String">
-    @field:Size(max = ${col.maxLength})
+    @field:Size(max = ${col.maxLength?c})
     <#elseif col.kotlinType == "String">
     @field:Size(max = 65535)
     </#if>
@@ -23,10 +23,10 @@ data class Create${entityPascal}Request(
     @field:Min(0)
     @field:Max(2_000_000_000)
     </#if>
-    <#if col.nullable && col.kotlinType != "Int">
-    val ${col.kotlinName}: ${col.kotlinType}? = null<#if col_has_next>,</#if>
-    <#elseif col.kotlinType == "Int" && col.kotlinName == "status">
+    <#if col.kotlinType == "Int" && col.kotlinName == "status">
     val ${col.kotlinName}: Int? = 1<#if col_has_next>,</#if>
+    <#elseif col.nullable>
+    val ${col.kotlinName}: ${col.kotlinType}? = null<#if col_has_next>,</#if>
     <#else>
     val ${col.kotlinName}: ${col.kotlinType}<#if col_has_next>,</#if>
     </#if>
@@ -36,7 +36,7 @@ data class Create${entityPascal}Request(
 data class Update${entityPascal}Request(
 <#list businessNonPkColumns as col>
     <#if col.maxLength?? && col.kotlinType == "String">
-    @field:Size(max = ${col.maxLength})
+    @field:Size(max = ${col.maxLength?c})
     </#if>
     <#if col.kotlinType == "Int">
     @field:Min(0)
