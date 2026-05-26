@@ -4,5 +4,6 @@ plugins {
 
 dependencies {
     implementation(projects.feature.init)
+    implementation(projects.feature.templateEngine)
     implementation(libs.kotlinpoet)
 }

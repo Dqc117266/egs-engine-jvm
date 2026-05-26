@@ -2,6 +2,7 @@ package com.dqc.egsengine.feature.scaffold.domain.swagger
 
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
 import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
+import com.dqc.egsengine.feature.scaffold.data.swagger.FtlSwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
@@ -15,6 +16,7 @@ class SwaggerApiScaffolder(
     private val configReader: EgsConfigReader,
     private val swaggerParser: SwaggerParser,
     private val swaggerCodeGenerator: SwaggerCodeGenerator,
+    private val ftlSwaggerCodeGenerator: FtlSwaggerCodeGenerator = FtlSwaggerCodeGenerator(),
 ) {
     private val logger = LoggerFactory.getLogger(SwaggerApiScaffolder::class.java)
 
@@ -28,7 +30,11 @@ class SwaggerApiScaffolder(
         val config = configReader.read(projectRoot)
         val template = buildTemplate(config, moduleName, customPackage)
         val spec = swaggerParser.parse(swaggerLocation)
-        val generated = swaggerCodeGenerator.generate(template, spec)
+        val generated = if (useKotlinPoetGenerator()) {
+            swaggerCodeGenerator.generate(template, spec)
+        } else {
+            ftlSwaggerCodeGenerator.generate(projectRoot, template, spec)
+        }
 
         if (dryRun) {
             return Result(files = generated.map { it.path }, dryRun = true)
@@ -65,6 +71,12 @@ class SwaggerApiScaffolder(
             commonResultClass = nullableBase?.let { "$it.feature.base.data.retrofit.CommonResult" },
             toResultPackage = nullableBase?.let { "$it.feature.base.data.retrofit" },
         )
+    }
+
+    private fun useKotlinPoetGenerator(): Boolean {
+        val configured = System.getProperty("egs.swagger.generator")
+            ?: System.getenv("EGS_SWAGGER_GENERATOR")
+        return configured.equals("kotlinpoet", ignoreCase = true)
     }
 
     data class Result(

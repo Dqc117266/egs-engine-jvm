@@ -10,8 +10,9 @@ import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
-import java.nio.charset.MalformedInputException
 import java.util.Base64
+import com.dqc.egsengine.feature.scaffold.data.template.TemplatePackageRewriter
+import com.dqc.egsengine.feature.scaffold.data.template.TemplateRenameRecipes
 
 class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
@@ -232,169 +233,12 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         projectName: String,
         packageName: String,
     ) {
-        relocatePackageDirectories(
+        TemplatePackageRewriter().rewriteForward(
             projectDir = projectDir,
-            oldPackage = Template.OLD_PACKAGE,
+            recipe = TemplateRenameRecipes.ANDROID,
+            newProjectName = projectName,
             newPackage = packageName,
         )
-
-        val packageToken = packageName.substringAfterLast('.')
-        val replacements = linkedMapOf(
-            Template.OLD_PACKAGE to packageName,
-            Template.OLD_PACKAGE_PATH to packageName.replace('.', '/'),
-            Template.OLD_PROJECT_NAME to projectName,
-            Template.OLD_PROJECT_NAME_DISPLAY to projectName,
-            Template.OLD_PACKAGE_TOKEN to packageToken,
-        )
-
-        rewriteTextFiles(projectDir, replacements)
-    }
-
-    private fun rewriteTextFiles(projectDir: File, replacements: Map<String, String>) {
-        projectDir.walkTopDown()
-            .filter { it.isFile && isLikelyTextFile(it) }
-            .forEach { file ->
-                val original = file.readUtf8TextOrNull() ?: return@forEach
-
-                var updated = original
-                replacements.forEach { (from, to) ->
-                    updated = updated.replace(from, to)
-                }
-
-                if (updated != original) {
-                    file.writeText(updated)
-                }
-            }
-    }
-
-    private fun isLikelyTextFile(file: File): Boolean {
-        val binaryExtensions = setOf(
-            "png",
-            "jpg",
-            "jpeg",
-            "gif",
-            "webp",
-            "jar",
-            "zip",
-            "ico",
-            "keystore",
-            "jks",
-            "ttf",
-            "otf",
-            "so",
-            "pdf",
-            "mp3",
-            "mp4",
-            "wav",
-        )
-
-        if (file.extension.lowercase() in binaryExtensions) {
-            return false
-        }
-
-        val bytes = file.inputStream().use { input ->
-            val preview = ByteArray(8192)
-            val readSize = input.read(preview)
-            if (readSize <= 0) return true
-            preview.copyOf(readSize)
-        }
-
-        if (bytes.any { it == 0.toByte() }) {
-            return false
-        }
-
-        val controlChars = bytes.count {
-            val value = it.toInt() and 0xFF
-            value < 0x09 || (value in 0x0E..0x1F)
-        }
-        return controlChars < bytes.size / 3
-    }
-
-    private fun File.readUtf8TextOrNull(): String? =
-        try {
-            readText()
-        } catch (_: MalformedInputException) {
-            null
-        }
-
-    private fun relocatePackageDirectories(
-        projectDir: File,
-        oldPackage: String,
-        newPackage: String,
-    ) {
-        val oldPackagePath = oldPackage.replace('.', '/')
-        val newPackagePath = newPackage.replace('.', '/')
-
-        if (oldPackagePath == newPackagePath) return
-
-        val packageDirectories = projectDir.walkTopDown()
-            .filter { it.isDirectory }
-            .filter { directory ->
-                val relativePath = directory.relativeTo(projectDir).path.replace(File.separatorChar, '/')
-                relativePath.endsWith(oldPackagePath)
-            }
-            .toList()
-            .sortedByDescending { it.absolutePath.length }
-
-        packageDirectories.forEach { sourceDir ->
-            if (!sourceDir.exists()) return@forEach
-
-            val relativePath = sourceDir.relativeTo(projectDir).path.replace(File.separatorChar, '/')
-            val prefixPath = relativePath.removeSuffix(oldPackagePath).trimEnd('/')
-            val targetRelativePath = buildString {
-                if (prefixPath.isNotEmpty()) {
-                    append(prefixPath)
-                    append('/')
-                }
-                append(newPackagePath)
-            }
-
-            val targetDir = projectDir.resolve(targetRelativePath)
-            if (sourceDir.absolutePath == targetDir.absolutePath) return@forEach
-
-            moveDirectoryWithMerge(sourceDir, targetDir)
-            cleanupEmptyDirectories(sourceDir.parentFile, projectDir)
-        }
-    }
-
-    private fun moveDirectoryWithMerge(source: File, target: File) {
-        if (!target.exists()) {
-            target.parentFile?.mkdirs()
-            if (source.renameTo(target)) return
-        }
-
-        target.mkdirs()
-        source.listFiles().orEmpty().forEach { child ->
-            val destination = target.resolve(child.name)
-            if (child.isDirectory) {
-                moveDirectoryWithMerge(child, destination)
-            } else {
-                destination.parentFile?.mkdirs()
-                if (destination.exists()) {
-                    destination.delete()
-                }
-                if (!child.renameTo(destination)) {
-                    child.copyTo(destination, overwrite = true)
-                    child.delete()
-                }
-            }
-        }
-
-        if (source.exists()) {
-            source.deleteRecursively()
-        }
-    }
-
-    private fun cleanupEmptyDirectories(start: File?, stopAt: File) {
-        var current = start
-        while (current != null && current.absolutePath != stopAt.absolutePath) {
-            if (!current.exists() || !current.isDirectory || !current.listFiles().isNullOrEmpty()) {
-                break
-            }
-            val parent = current.parentFile
-            current.delete()
-            current = parent
-        }
     }
 
     private fun prepareGitHubLoginIfNeeded(templateUrl: String, workDir: File) {
@@ -472,10 +316,5 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
     private object Template {
         const val ANDROID_URL = "git@github.com:Dqc117266/egs-android-template.git"
-        const val OLD_PROJECT_NAME = "egs-android-template"
-        const val OLD_PROJECT_NAME_DISPLAY = "EGS-Android-Template"
-        const val OLD_PACKAGE = "com.example.egs_android_template"
-        const val OLD_PACKAGE_PATH = "com/example/egs_android_template"
-        const val OLD_PACKAGE_TOKEN = "egs_android_template"
     }
 }

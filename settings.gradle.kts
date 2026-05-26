@@ -10,6 +10,7 @@ include(
     ":feature:analyzer",
     ":feature:init",
     ":feature:scaffold",
+    ":feature:template-engine",
     ":konsist-test",)
 
 pluginManagement {

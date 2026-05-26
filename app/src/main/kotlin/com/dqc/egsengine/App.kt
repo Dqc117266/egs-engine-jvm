@@ -10,6 +10,7 @@ import com.dqc.egsengine.feature.init.di.featureInitModule
 import com.dqc.egsengine.feature.init.presentation.InitCommand
 import com.dqc.egsengine.feature.scaffold.di.featureScaffoldModule
 import com.dqc.egsengine.feature.scaffold.presentation.CreateCommand
+import com.dqc.egsengine.feature.scaffold.presentation.TemplateCommand
 import com.dqc.egsengine.feature.script.di.featureScriptModule
 import com.dqc.egsengine.feature.script.presentation.ScriptCommand
 import com.dqc.egsengine.feature.task.di.featureTaskModule
@@ -43,6 +44,7 @@ fun main(args: Array<String>) {
             ScriptCommand(),
             InitCommand(),
             CreateCommand.withSubcommands(),
+            TemplateCommand.withSubcommands(),
         )
         .main(args)
 }

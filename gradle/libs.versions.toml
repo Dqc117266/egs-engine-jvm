@@ -16,6 +16,7 @@ clikt = "5.0.2"
 gradle-tooling-api = "8.14"
 gson = "2.11.0"
 kotlinpoet = "2.2.0"
+freemarker = "2.3.33"
 
 spotless = "7.0.2"
 detekt = "1.23.7"
@@ -62,6 +63,7 @@ clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 gradle-tooling-api = { module = "org.gradle:gradle-tooling-api", version.ref = "gradle-tooling-api" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+freemarker = { module = "org.freemarker:freemarker", version.ref = "freemarker" }
 
 # Ktlint Rules
 ktlint-ruleset-standard = { module = "com.pinterest.ktlint:ktlint-ruleset-standard", version.ref = "ktlint-ruleset-standard" }
