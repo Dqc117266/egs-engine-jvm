@@ -23,10 +23,98 @@ java -jar app/build/libs/app-all.jar --help
 
 ## 开发与测试
 
+所有命令均在 `egs-engine/` 目录下执行，除非特别说明。
+
+### 日常三步（改完代码最常用）
+
+```bash
+# 1. 编译（改完立刻跑，约 10 秒）
+./gradlew :feature:scaffold:compileKotlin :feature:template-engine:compileKotlin :app:compileKotlin --no-daemon
+
+# 2. 测试（提交前跑，约 15 秒，151 个测试）
+./gradlew :feature:scaffold:test --no-daemon
+
+# 3. 提交同步
+git add -A && git commit -m "fix: 描述你的改动" && git push
+```
+
+成功标志：编译输出 `BUILD SUCCESSFUL`；测试输出 `151 passing`。
+
+### 按修改类型选命令
+
+#### 改了 Kotlin 业务逻辑（非模板）
+
+```bash
+# 只编译动过的模块
+./gradlew :feature:scaffold:compileKotlin --no-daemon
+
+# 跑相关测试（示例：PageScaffolder）
+./gradlew :feature:scaffold:test \
+  --tests "com.dqc.egsengine.feature.scaffold.domain.PageScaffolderTemplateEngineTest" \
+  --no-daemon
+```
+
+#### 改了 FTL 模板（`feature/template-engine/src/main/resources/templates/*.ftl`）
+
+**在 egs-engine 内（golden 快照）：**
+
+```bash
+# 跑 golden，对比生成产物与期望
+./gradlew :feature:scaffold:test \
+  --tests "com.dqc.egsengine.feature.scaffold.golden.*" \
+  --no-daemon
+
+# 改动符合预期时，刷新 golden 基线
+./gradlew :feature:scaffold:test -Degs.golden.update=true --no-daemon
+
+# 复核快照 diff
+git diff feature/scaffold/src/test/resources/golden/
+```
+
+**在 monorepo 根目录（含 demo-app，推荐边改边看）：**
+
+```bash
+cd ..   # 进入 egs 根目录（与 egs-engine 同级）
+
+./scripts/dev.sh watch              # 常驻：改 FTL 存盘即重跑 golden
+./scripts/dev.sh golden             # 跑一次 golden
+./scripts/dev.sh golden --update    # 刷新基线后 git diff 复核
+```
+
+`dev.sh` 会自动设置 `EGS_TEMPLATE_ROOT` 与 `EGS_DEBUG=true`。详见 [docs/DEV_WORKFLOW.md](docs/DEV_WORKFLOW.md)。
+
+#### 改了生成逻辑，想在 demo-app 看真实落地文件
+
+在 monorepo 根目录：
+
+```bash
+./scripts/dev.sh preview client create module home --dry-run   # 预览，不写文件
+./scripts/dev.sh regen client create module home               # 生成 + git diff
+./scripts/dev.sh regen client --verify create module home      # 生成 + 编译验证
+./scripts/dev.sh reset client                                  # 还原 demo-app/client
+```
+
+#### 改了 Swagger / API 生成
+
+```bash
+# 默认 KotlinPoet 生成器
+./gradlew :app:run --args="create api task --swagger ./swagger.json --project ../demo-app/client --dry-run"
+
+# 改用 FreeMarker 生成器
+EGS_SWAGGER_GENERATOR=ftl ./gradlew :app:run --args="create api task --swagger ./swagger.json --project ../demo-app/client --dry-run"
+```
+
+#### 改了 CLI 命令
+
+```bash
+./gradlew :app:run --args="--help"
+./gradlew :app:run --args="create module foo --project ../demo-app/client --dry-run"
+./gradlew :app:run --args="template sync-back --from ../demo-app/client --paths core-base --dry-run"
+```
+
 ### 编译
 
 ```bash
-# 编译核心模块
 ./gradlew :feature:scaffold:compileKotlin :feature:template-engine:compileKotlin :app:compileKotlin --no-daemon
 ```
 
@@ -48,22 +136,29 @@ java -jar app/build/libs/app-all.jar --help
 生成器输出与 `feature/scaffold/src/test/resources/golden/` 下的快照逐字节比对。模板/生成逻辑有意变更后，用以下命令刷新快照，再 review `git diff`：
 
 ```bash
-# 刷新 golden 快照（写入而非断言）
 ./gradlew :feature:scaffold:test -Degs.golden.update=true --no-daemon
-
-# 覆盖 golden 根目录
-./gradlew :feature:scaffold:test -Degs.golden.dir=/abs/dir --no-daemon
+./gradlew :feature:scaffold:test -Degs.golden.dir=/abs/dir --no-daemon   # 覆盖 golden 根目录
 ```
 
-### 解决合并冲突的流程
+### 解决合并冲突
 
 ```bash
-git status                       # 查看 unmerged paths
+git status
 # 逐个文件解决冲突标记后：
-git add -A                       # 标记冲突已解决
-./gradlew :feature:scaffold:test --no-daemon   # 确认编译与测试通过
-git commit                       # 完成合并提交
+git add -A
+./gradlew :feature:scaffold:test --no-daemon
+git commit
 ```
+
+### 速记
+
+| 场景 | 命令 |
+|------|------|
+| 改 Kotlin / 引擎逻辑 | `./gradlew :feature:scaffold:test --no-daemon` |
+| 改 FTL 模板 | `./gradlew :feature:scaffold:test --tests "…golden.*" --no-daemon` |
+| 模板改动符合预期 | `./gradlew :feature:scaffold:test -Degs.golden.update=true --no-daemon` |
+| 在 demo-app 验证 | `../scripts/dev.sh regen client create module xxx` |
+| 提交前 | 编译 + 全量测试 + `git push` |
 
 ---
 
