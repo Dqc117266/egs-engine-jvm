@@ -21,6 +21,52 @@ java -jar app/build/libs/app-all.jar --help
 
 ---
 
+## 开发与测试
+
+### 编译
+
+```bash
+# 编译核心模块
+./gradlew :feature:scaffold:compileKotlin :feature:template-engine:compileKotlin :app:compileKotlin --no-daemon
+```
+
+### 运行测试
+
+```bash
+# 运行 scaffold 模块全部测试
+./gradlew :feature:scaffold:test --no-daemon
+
+# 仅运行某个测试类
+./gradlew :feature:scaffold:test --tests "com.dqc.egsengine.feature.scaffold.golden.GoldenModuleTest" --no-daemon
+
+# 仅运行匹配的测试方法（支持通配）
+./gradlew :feature:scaffold:test --tests "com.dqc.egsengine.feature.scaffold.golden.GoldenModuleTest.kmp*" --no-daemon
+```
+
+### Golden 快照
+
+生成器输出与 `feature/scaffold/src/test/resources/golden/` 下的快照逐字节比对。模板/生成逻辑有意变更后，用以下命令刷新快照，再 review `git diff`：
+
+```bash
+# 刷新 golden 快照（写入而非断言）
+./gradlew :feature:scaffold:test -Degs.golden.update=true --no-daemon
+
+# 覆盖 golden 根目录
+./gradlew :feature:scaffold:test -Degs.golden.dir=/abs/dir --no-daemon
+```
+
+### 解决合并冲突的流程
+
+```bash
+git status                       # 查看 unmerged paths
+# 逐个文件解决冲突标记后：
+git add -A                       # 标记冲突已解决
+./gradlew :feature:scaffold:test --no-daemon   # 确认编译与测试通过
+git commit                       # 完成合并提交
+```
+
+---
+
 ## 全局参数
 
 | 选项 | 说明 |
@@ -36,6 +82,8 @@ java -jar app/build/libs/app-all.jar --help
 | `GITHUB_TOKEN` | `create project` 在 `--auth token` 时可替代 `--token` |
 | `EGS_ENGINE_GIT_PROTOCOL` | `new project` 中与 `--protocol` 配合，控制克隆 URL（ssh/https） |
 | `EGS_DEBUG` | 设为 `true` 时，`create screen` / `create page` 异常会打印堆栈 |
+| `EGS_TEMPLATE_ROOT` | 指向本地 `templates/` 目录，覆盖内置 FTL 模板（开发调试用，优先级高于 `<project>/.egs/templates`） |
+| `EGS_SWAGGER_GENERATOR` | `create api` 生成器选择：默认/`kotlinpoet` 用 KotlinPoet，`ftl`/`freemarker` 走 FreeMarker |
 
 ---
 
