@@ -126,6 +126,8 @@ data class PageTemplateModel(
     val primaryPagedUseCaseCamel: String = "",
     /** FQN for import / FTL: `${uiContractPackage}.PagingListState` or `template.core.base.ui.PagingListState`. */
     val pagingListStateInterfaceFqn: String = "",
+    /** FQN for Result used by KMP page templates. */
+    val resultClassFqn: String = "",
     /** FQN for `PageResult` used in generated ViewModel fetch mapping. */
     val pageResultClassFqn: String = "",
     /** Short item type for `PagingListState<…>` and `runPagedLoad<…>`. */

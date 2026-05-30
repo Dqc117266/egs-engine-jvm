@@ -5,4 +5,6 @@ plugins {
 dependencies {
     implementation(libs.freemarker)
     implementation(libs.koin.core)
+
+    testImplementation(libs.bundles.test)
 }

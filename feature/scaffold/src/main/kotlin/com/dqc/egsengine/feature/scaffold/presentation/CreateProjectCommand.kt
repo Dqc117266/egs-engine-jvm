@@ -2,8 +2,8 @@ package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
-import com.dqc.egsengine.feature.scaffold.data.TemplatePackageRewriter
-import com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipe
+import com.dqc.egsengine.feature.scaffold.data.template.TemplatePackageRewriter
+import com.dqc.egsengine.feature.scaffold.data.template.TemplateRenameRecipes
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.optional
@@ -233,14 +233,9 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         projectName: String,
         packageName: String,
     ) {
-        TemplatePackageRewriter().rewrite(
+        TemplatePackageRewriter().rewriteForward(
             projectDir = projectDir,
-            recipe = TemplateRenameRecipe(
-                oldPackage = Template.OLD_PACKAGE,
-                oldProjectName = Template.OLD_PROJECT_NAME,
-                oldProjectNameDisplay = Template.OLD_PROJECT_NAME_DISPLAY,
-                oldPackageToken = Template.OLD_PACKAGE_TOKEN,
-            ),
+            recipe = TemplateRenameRecipes.ANDROID,
             newProjectName = projectName,
             newPackage = packageName,
         )
@@ -321,9 +316,5 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
     private object Template {
         const val ANDROID_URL = "git@github.com:Dqc117266/egs-android-template.git"
-        const val OLD_PROJECT_NAME = "egs-android-template"
-        const val OLD_PROJECT_NAME_DISPLAY = "EGS-Android-Template"
-        const val OLD_PACKAGE = "com.example.egs_android_template"
-        const val OLD_PACKAGE_TOKEN = "egs_android_template"
     }
 }

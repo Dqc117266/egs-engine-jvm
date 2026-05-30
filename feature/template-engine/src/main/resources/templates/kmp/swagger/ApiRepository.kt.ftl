@@ -6,6 +6,9 @@ import ${imp}
 
 internal interface ${apiRepositoryName} {
 <#list operations as op>
+<#if !op.params?has_content && op.hasBody>
+    suspend fun ${op.operationId}(body: ${op.bodyType}): ${op.returnType}
+<#else>
     suspend fun ${op.operationId}(
 <#list op.params as param>
         ${param.name}: ${param.type}<#if param_has_next>,</#if>
@@ -15,6 +18,7 @@ internal interface ${apiRepositoryName} {
         body: ${op.bodyType}
 </#if>
     ): ${op.returnType}
+</#if>
 
 </#list>
 }

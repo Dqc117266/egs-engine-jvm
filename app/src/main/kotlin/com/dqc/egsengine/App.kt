@@ -15,6 +15,7 @@ import com.dqc.egsengine.feature.scaffold.presentation.CreateCommand
 import com.dqc.egsengine.feature.scaffold.presentation.FlowCommand
 import com.dqc.egsengine.feature.scaffold.presentation.LintCommand
 import com.dqc.egsengine.feature.scaffold.presentation.NewCommand
+import com.dqc.egsengine.feature.scaffold.presentation.TemplateCommand
 import com.dqc.egsengine.feature.scaffold.presentation.WebCommand
 import com.dqc.egsengine.feature.script.di.featureScriptModule
 import com.dqc.egsengine.feature.script.presentation.ScriptCommand
@@ -55,6 +56,7 @@ fun main(args: Array<String>) {
             ClientCommand.withSubcommands(),
             WebCommand.withSubcommands(),
             LintCommand.withSubcommands(),
+            TemplateCommand.withSubcommands(),
         )
         .main(args)
 }

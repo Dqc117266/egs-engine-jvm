@@ -14,10 +14,11 @@ import freemarker.template.Template
 import java.io.File
 
 /**
- * Resolves `.ftl` templates with override chain:
- * 1. `<projectRoot>/.egs/templates/`
- * 2. `~/.egs/templates/`
- * 3. Classpath `templates/` (bundled in JAR)
+ * Resolves `.ftl` templates with override chain (first match wins):
+ * 1. `EGS_TEMPLATE_ROOT` env (dev: point at template-engine/resources/templates)
+ * 2. `<projectRoot>/.egs/templates/`
+ * 3. `~/.egs/templates/`
+ * 4. Classpath `templates/` (bundled in JAR)
  */
 class TemplateRegistry {
 
@@ -31,8 +32,9 @@ class TemplateRegistry {
     fun getTemplate(name: String, projectRoot: File? = null): Template =
         configuration(projectRoot).getTemplate(name)
 
-    private fun buildLoader(projectRoot: File?): TemplateLoader {
+    internal fun buildLoader(projectRoot: File?): TemplateLoader {
         val loaders = mutableListOf<TemplateLoader>()
+        resolveEnvTemplateRoot()?.let { loaders.add(FileTemplateLoader(it)) }
         projectRoot?.resolve(".egs/templates")?.takeIf { it.isDirectory }?.let {
             loaders.add(FileTemplateLoader(it))
         }
@@ -42,5 +44,16 @@ class TemplateRegistry {
         }
         loaders.add(ClassTemplateLoader(TemplateRegistry::class.java.classLoader, "templates"))
         return MultiTemplateLoader(loaders.toTypedArray())
+    }
+
+    companion object {
+        const val ENV_TEMPLATE_ROOT = "EGS_TEMPLATE_ROOT"
+
+        fun resolveEnvTemplateRoot(): File? =
+            System.getenv(ENV_TEMPLATE_ROOT)
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { File(it) }
+                ?.takeIf { it.isDirectory }
     }
 }

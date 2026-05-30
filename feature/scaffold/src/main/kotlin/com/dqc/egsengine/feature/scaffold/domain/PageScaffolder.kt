@@ -59,7 +59,7 @@ class PageScaffolder(
         val baseClasses = config.resolveScaffoldBaseClasses(includeRetrofitProvider = true)
 
         val moduleDir = projectRoot.resolve("feature/$moduleName")
-        val kotlinRootRel = kotlinSourceRootRelative(moduleDir)
+        val kotlinRootRel = kotlinSourceRootRelative(moduleDir, config.projectType)
         val useKmpPageTemplates = useKmpPageTemplates(config, kotlinRootRel)
         // KMP pages use `template.core.base.network.domain.Result` (mapper default); ignore `feature.base` Result from config.
         val pageBaseClasses =
@@ -186,9 +186,10 @@ class PageScaffolder(
         )
     }
 
-    private fun kotlinSourceRootRelative(moduleDir: File): String =
+    private fun kotlinSourceRootRelative(moduleDir: File, projectType: String): String =
         when {
             moduleDir.resolve("src/commonMain/kotlin").isDirectory -> "src/commonMain/kotlin"
+            projectType.uppercase() in setOf("KMP", "KMP_ANDROID") -> "src/commonMain/kotlin"
             else -> "src/main/kotlin"
         }
 

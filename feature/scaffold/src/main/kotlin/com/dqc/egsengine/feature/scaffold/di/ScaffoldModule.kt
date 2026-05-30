@@ -5,6 +5,7 @@ import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.ClientAppNavigationWiring
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
+import com.dqc.egsengine.feature.scaffold.data.PageGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
@@ -52,6 +53,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.vue3.Vue3ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerTemplateRenderer
+import com.dqc.egsengine.feature.scaffold.data.swagger.FtlSwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
@@ -81,6 +83,8 @@ val featureScaffoldModule = module {
     single { SwaggerParser() }
     single { SwaggerTemplateRenderer(get()) }
     single { SwaggerCodeGenerator(get(), get(), get()) }
+    single { FtlSwaggerCodeGenerator(get()) }
+    single { PageGenerator(get()) }
     single { KmpSwaggerTemplateRenderer(get()) }
     single { KmpCombinedRepositoryGenerator() }
     single { KmpRepositoryImplGenerator() }
@@ -169,7 +173,7 @@ val featureScaffoldModule = module {
 
     // Domain layer
     single { ModuleScaffolder(get(), get(), get(), get(), get(named("platformModuleGenerators"))) }
-    single { SwaggerApiScaffolder(get(), get(), get()) }
+    single { SwaggerApiScaffolder(get(), get(), get(), get()) }
     single { ClientAppNavigationWiring() }
     single { CreateUseCaseScaffolder(get()) }
     single { PageScaffolder(get(), get(), get(), get(), get()) }

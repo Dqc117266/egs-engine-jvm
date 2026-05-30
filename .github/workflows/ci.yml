@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: golden + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Golden snapshot + unit tests (self-contained; no demo-app needed).
+      # EGS_TEMPLATE_ROOT is intentionally unset so golden compares against bundled templates.
+      - name: Run tests
+        run: ./gradlew :feature:scaffold:test :feature:template-engine:test --no-daemon --stacktrace
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: |
+            feature/scaffold/build/reports/tests/test
+            feature/template-engine/build/reports/tests/test
+          if-no-files-found: ignore
