@@ -97,6 +97,7 @@ class KmpRepositoryImplGenerator {
             delegates.add("${ctx.apiRepositoryName} by apiSupport")
         }
         if (includeDb) {
+            imports.add("$pkg.generate.domain.repository.${dbRepositoryName(pascal)}")
             imports.add("$pkg.generate.data.repository.Generated${pascal}DbRepositorySupport")
             imports.add("$pkg.generate.data.datasource.database.$dataSourceClass")
             ctorParams.add("dbSupport: Generated${pascal}DbRepositorySupport")
