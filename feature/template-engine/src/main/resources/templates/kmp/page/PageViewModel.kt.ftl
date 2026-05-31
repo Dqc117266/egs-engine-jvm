@@ -3,7 +3,7 @@
  */
 package ${screenPkg}
 
-import template.core.base.ui.BaseViewModel
+import ${coreBase}.ui.BaseViewModel
 <#if hasResultBasedHandler>
 import ${resultClassFqn}
 </#if>

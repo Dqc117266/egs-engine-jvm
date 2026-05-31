@@ -6,9 +6,9 @@ package ${screenPkg}
 <#list contractImports as imp>
 ${imp}
 </#list>
-import template.core.base.ui.UiEffect
-import template.core.base.ui.UiIntent
-import template.core.base.ui.UiState
+import ${coreBase}.ui.UiEffect
+import ${coreBase}.ui.UiIntent
+import ${coreBase}.ui.UiState
 
 internal interface ${pascalName}Contract {
 

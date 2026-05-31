@@ -328,6 +328,7 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         "pascalName" to pascalName,
         "camelName" to camelName,
         "modulePackage" to modulePackage,
+        "coreBase" to coreBase,
         "screenPkg" to screenPkg,
         "modelPackage" to modelPackage,
         "resultClassFqn" to resultClassFqn,
