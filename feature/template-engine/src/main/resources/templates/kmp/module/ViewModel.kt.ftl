@@ -3,7 +3,7 @@
  */
 package ${packageName}.presentation.${camel}
 
-import template.core.base.ui.BaseViewModel
+import ${coreBase}.ui.BaseViewModel
 
 internal class ${pascal}ViewModel(
     // Inject use cases when API sync adds them

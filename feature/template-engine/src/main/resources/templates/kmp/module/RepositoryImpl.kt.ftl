@@ -5,7 +5,7 @@
 package ${packageName}.data.repository
 
 import ${packageName}.domain.repository.${pascal}Repository
-import template.core.base.network.domain.Result
+import ${coreBase}.network.domain.Result
 
 internal class ${pascal}RepositoryImpl : ${pascal}Repository {
 

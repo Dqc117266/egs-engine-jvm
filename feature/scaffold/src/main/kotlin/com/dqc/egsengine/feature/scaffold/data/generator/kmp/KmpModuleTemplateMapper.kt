@@ -18,6 +18,7 @@ internal fun SubProjectConfig.toKmpModuleTemplateModel(moduleName: String): KmpM
     val packageName = "${basePackage}.feature.$normalized"
     val pkgPath = packageName.replace('.', '/')
     val presentationPkg = "$packageName.presentation.$camel"
+    val coreBase = "$basePackage.core.base"
 
     val pluginAlias = conventionPluginAliasFromConfig()
 
@@ -30,6 +31,7 @@ internal fun SubProjectConfig.toKmpModuleTemplateModel(moduleName: String): KmpM
         pkgPath = pkgPath,
         conventionPluginAlias = pluginAlias,
         presentationPkg = presentationPkg,
+        coreBase = coreBase,
     )
 }
 

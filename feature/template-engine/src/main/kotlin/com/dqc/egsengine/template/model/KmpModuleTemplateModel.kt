@@ -14,6 +14,8 @@ data class KmpModuleTemplateModel(
     val camel: String,
     val packageName: String,
     val basePackage: String,
+    /** Derived core base: e.g. "com.dqc.demo.core.base". */
+    val coreBase: String,
     /** Android library namespace (CMP feature modules). */
     val namespace: String,
     /** Path under feature module: org/example/feature/todo */

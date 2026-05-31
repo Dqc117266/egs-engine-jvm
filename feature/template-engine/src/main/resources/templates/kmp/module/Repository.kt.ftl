@@ -3,7 +3,7 @@
  */
 package ${packageName}.domain.repository
 
-import template.core.base.network.domain.Result
+import ${coreBase}.network.domain.Result
 
 /**
  * Domain repository contract. Regenerate or extend when running API sync.

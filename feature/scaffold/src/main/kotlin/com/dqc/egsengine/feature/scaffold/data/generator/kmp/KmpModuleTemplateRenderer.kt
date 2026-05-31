@@ -29,6 +29,7 @@ internal class KmpModuleTemplateRenderer(
             "pkgPath" to model.pkgPath,
             "conventionPluginAlias" to model.conventionPluginAlias,
             "presentationPkg" to model.presentationPkg,
+            "coreBase" to model.coreBase,
         )
 
     fun renderBuildGradle(projectRoot: File? = null): String =
