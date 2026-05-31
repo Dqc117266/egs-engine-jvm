@@ -97,7 +97,7 @@ class SpringBootCodegenModelBuilder(
                 sqlName = col.name,
                 kotlinName = kn,
                 kotlinType = col.kotlinType,
-                nullable = col.nullable,
+                nullable = col.nullable || (col.name.lowercase() in auditSnake),
                 maxLength = col.length,
                 isPk = isPk,
                 defaultSuffix = defaultSuffix,

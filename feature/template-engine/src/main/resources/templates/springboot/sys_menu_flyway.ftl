@@ -1,3 +1,7 @@
+<#if ddlSql?has_content>
+${ddlSql}
+
+</#if>
 -- EGS auto-generated (--with-admin / gen-from-backend): persists permissions + sidebar row for admin router API.
 -- Apply: run Spring Boot (Flyway). Regenerating codegen overwrites this file per backend module slug.
 -- Required so GET /api/admin/menus/router returns these routes (sidebar).

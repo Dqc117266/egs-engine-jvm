@@ -40,6 +40,7 @@ class AdminVueCrudScaffolder(
         projectRoot: File,
         codegen: BackendCodegenManifest,
         dryRun: Boolean,
+        ddlSql: String? = null,
     ): Result {
         val adminCfg = workspaceConfigResolver.resolveAdmin(projectRoot)
         require(adminCfg.platform == Platform.VUE3) {
@@ -49,7 +50,7 @@ class AdminVueCrudScaffolder(
         val backendCfg = workspaceConfigResolver.resolveBackend(projectRoot)
         val backendRoot = projectRoot.resolve(backendCfg.path).normalize()
         val module = codegen.backendModuleName
-        val model = buildFreemarkerModel(codegen)
+        val model = buildFreemarkerModel(codegen, ddlSql)
 
         val files = mutableListOf<GeneratedFile>()
         files += renderPair("vue3/admin/api_ts.ftl", "src/api/$module.ts", model)
@@ -68,7 +69,7 @@ class AdminVueCrudScaffolder(
             logger.info("Admin Vue scaffold: module '{}' ({} files)", module, files.size)
         }
 
-        val flywayMigration = writeSysMenuFlyway(backendRoot, codegen, model, dryRun)
+        val flywayMigration = writeSysMenuFlyway(backendRoot, codegen, model, dryRun, ddlSql)
 
         return Result(moduleName = module, files = files, dryRun = dryRun, sysMenuFlywayMigration = flywayMigration)
     }
@@ -78,6 +79,7 @@ class AdminVueCrudScaffolder(
         codegen: BackendCodegenManifest,
         model: Map<String, Any?>,
         dryRun: Boolean,
+        ddlSql: String? = null,
     ): GeneratedFile? {
         val migrationDir = backendRoot.resolve("app/src/main/resources/db/migration").normalize()
         val moduleSlug = codegen.backendModuleName
@@ -106,7 +108,7 @@ class AdminVueCrudScaffolder(
         return GeneratedFile(path = relativePath, content = content)
     }
 
-    private fun buildFreemarkerModel(c: BackendCodegenManifest): Map<String, Any?> {
+    private fun buildFreemarkerModel(c: BackendCodegenManifest, ddlSql: String? = null): Map<String, Any?> {
         val listCols = c.columns.filter { !it.isPk }
         val formCols = c.columns.filter { it.inBusinessForm }
         val tableCols =
@@ -133,6 +135,7 @@ class AdminVueCrudScaffolder(
             "hasImageField" to c.columns.any { it.formControl == FormControl.IMAGE_UPLOAD },
             "entityTitleZh" to moduleTitleZh(module, c.entityPascal),
             "pascal" to pascal,
+            "ddlSql" to (ddlSql ?: ""),
         )
     }
 

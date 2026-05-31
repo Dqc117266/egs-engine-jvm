@@ -75,6 +75,7 @@ class SpringBootDatabaseScaffolder(
             appDependencyUpdater.ensureFeatureDependency(backendRoot, moduleName)
         }
 
+        val ddlSql = sqlFile.readText().trim()
         val tables = ddlParser.parseFile(sqlFile)
         require(tables.isNotEmpty()) { "No CREATE TABLE statements in ${sqlFile.path}" }
 
@@ -138,6 +139,7 @@ class SpringBootDatabaseScaffolder(
                     projectRoot = projectRoot,
                     codegen = codegenManifest,
                     dryRun = dryRun,
+                    ddlSql = ddlSql,
                 )
             } else {
                 null
