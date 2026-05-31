@@ -45,23 +45,29 @@ object DatabaseEntityDomainMapping {
 
         for (prop in schema.properties) {
             val col = columnByKotlinProp[prop.name] ?: continue
-            val entityType = entityTypeMapper(col.kotlinType)
+            val rawEntityType = entityTypeMapper(col.kotlinType)
+            val entityNullable = col.nullable
             val domainType = swaggerTypeToKotlin(prop.type, prop.required)
+            val domainNullable = domainType.endsWith("?")
             val lhs = prop.name
 
-            if (entityType == domainType) {
-                // Types match: simple assignment
+            // Strip nullable for base type comparison
+            val entityBase = rawEntityType
+            val domainBase = domainType.trimEnd('?')
+            val nullableMatch = entityNullable == domainNullable
+
+            if (entityBase == domainBase) {
+                // Same base type - always assignable (nullable mismatch is safe in Kotlin)
                 toDomainLines.add("    $lhs = $lhs")
                 toEntityLines.add("    $lhs = $lhs")
             } else {
-                // Try to generate conversion expressions
-                val toDomainExpr = convertToDomain(lhs, entityType, domainType)
-                val toEntityExpr = convertToEntity(lhs, domainType, entityType)
+                // Try to generate conversion expressions using base types
+                val toDomainExpr = convertToDomain(lhs, entityBase, domainBase)
+                val toEntityExpr = convertToEntity(lhs, domainBase, entityBase)
                 if (toDomainExpr != null && toEntityExpr != null) {
                     toDomainLines.add("    $lhs = $toDomainExpr")
                     toEntityLines.add("    $lhs = $toEntityExpr")
                 }
-                // If conversion not possible, skip the field
             }
         }
         if (toDomainLines.isEmpty()) return null
@@ -93,39 +99,79 @@ object DatabaseEntityDomainMapping {
 
     /** Convert an Entity field value to Domain model type. */
     private fun convertToDomain(expr: String, fromType: String, toType: String): String? {
-        return when {
-            fromType == toType -> expr
-            fromType == "Long" && toType == "String?" -> "\"\"\$expr\"\""
-            fromType == "Long" && toType == "String" -> "\"\"\$expr\"\""
-            fromType == "Double" && toType == "String?" -> "\"\"\$expr\"\""
-            fromType == "Int" && toType == "Long" -> "\$expr.toLong()"
-            fromType == "Int" && toType == "Long?" -> "\$expr.toLong()"
-            fromType == "Long" && toType == "Int" -> "\$expr.toInt()"
-            fromType == "Double" && toType == "Int" -> "\$expr.toInt()"
-            fromType == "Int" && toType == "Double" -> "\$expr.toDouble()"
-            fromType == "Long" && toType == "Double" -> "\$expr.toDouble()"
-            fromType == "Double" && toType == "Long" -> "\$expr.toLong()"
-            else -> null
-        }
+        return buildString {
+            when {
+                fromType == toType -> append(expr)
+                fromType == "Long" && (toType == "String?" || toType == "String") -> {
+                    append(expr); append(".toString()")
+                }
+                fromType == "Double" && (toType == "String?" || toType == "String") -> {
+                    append(expr); append(".toString()")
+                }
+                fromType == "Int" && (toType == "Long" || toType == "Long?") -> {
+                    append(expr); append(".toLong()")
+                }
+                fromType == "Long" && toType == "Int" -> {
+                    append(expr); append(".toInt()")
+                }
+                fromType == "Double" && toType == "Int" -> {
+                    append(expr); append(".toInt()")
+                }
+                fromType == "Int" && toType == "Double" -> {
+                    append(expr); append(".toDouble()")
+                }
+                fromType == "Long" && toType == "Double" -> {
+                    append(expr); append(".toDouble()")
+                }
+                fromType == "Double" && toType == "Long" -> {
+                    append(expr); append(".toLong()")
+                }
+                else -> return null
+            }
+        }.toString()
     }
 
     /** Convert a Domain model field value to Entity type. */
     private fun convertToEntity(expr: String, fromType: String, toType: String): String? {
-        return when {
-            fromType == toType -> expr
-            fromType == "String?" && toType == "Long" -> "\$expr?.toLongOrNull() ?: 0L"
-            fromType == "String" && toType == "Long" -> "\$expr.toLongOrNull() ?: 0L"
-            fromType == "String?" && toType == "Double" -> "\$expr?.toDoubleOrNull() ?: 0.0"
-            fromType == "String" && toType == "Double" -> "\$expr.toDoubleOrNull() ?: 0.0"
-            fromType == "Long" && toType == "Int" -> "\$expr.toInt()"
-            fromType == "Long?" && toType == "Int" -> "(\$expr ?: 0L).toInt()"
-            fromType == "Double" && toType == "Int" -> "\$expr.toInt()"
-            fromType == "Int" && toType == "Long" -> "\$expr.toLong()"
-            fromType == "Int" && toType == "Double" -> "\$expr.toDouble()"
-            fromType == "Long" && toType == "Double" -> "\$expr.toDouble()"
-            fromType == "Double" && toType == "Long" -> "\$expr.toLong()"
-            else -> null
-        }
+        return buildString {
+            when {
+                fromType == toType -> append(expr)
+                fromType == "String?" && toType == "Long" -> {
+                    append(expr); append("?.toLongOrNull() ?: 0L")
+                }
+                fromType == "String" && toType == "Long" -> {
+                    append(expr); append(".toLongOrNull() ?: 0L")
+                }
+                fromType == "String?" && toType == "Double" -> {
+                    append(expr); append("?.toDoubleOrNull() ?: 0.0")
+                }
+                fromType == "String" && toType == "Double" -> {
+                    append(expr); append(".toDoubleOrNull() ?: 0.0")
+                }
+                fromType == "Long" && toType == "Int" -> {
+                    append(expr); append(".toInt()")
+                }
+                fromType == "Long?" && toType == "Int" -> {
+                    append("("); append(expr); append(" ?: 0L).toInt()")
+                }
+                fromType == "Double" && toType == "Int" -> {
+                    append(expr); append(".toInt()")
+                }
+                fromType == "Int" && toType == "Long" -> {
+                    append(expr); append(".toLong()")
+                }
+                fromType == "Int" && toType == "Double" -> {
+                    append(expr); append(".toDouble()")
+                }
+                fromType == "Long" && toType == "Double" -> {
+                    append(expr); append(".toDouble()")
+                }
+                fromType == "Double" && toType == "Long" -> {
+                    append(expr); append(".toLong()")
+                }
+                else -> return null
+            }
+        }.toString()
     }
 
     /**
