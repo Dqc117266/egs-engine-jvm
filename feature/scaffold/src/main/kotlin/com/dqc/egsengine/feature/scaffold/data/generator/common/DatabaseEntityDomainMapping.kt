@@ -61,9 +61,9 @@ object DatabaseEntityDomainMapping {
                 toDomainLines.add("    $lhs = $lhs")
                 toEntityLines.add("    $lhs = $lhs")
             } else {
-                // Try to generate conversion expressions using base types
-                val toDomainExpr = convertToDomain(lhs, entityBase, domainBase)
-                val toEntityExpr = convertToEntity(lhs, domainBase, entityBase)
+                // Try to generate conversion expressions
+                val toDomainExpr = convertToDomain(lhs, rawEntityType, domainType)
+                val toEntityExpr = convertToEntity(lhs, domainType, rawEntityType)
                 if (toDomainExpr != null && toEntityExpr != null) {
                     toDomainLines.add("    $lhs = $toDomainExpr")
                     toEntityLines.add("    $lhs = $toEntityExpr")
