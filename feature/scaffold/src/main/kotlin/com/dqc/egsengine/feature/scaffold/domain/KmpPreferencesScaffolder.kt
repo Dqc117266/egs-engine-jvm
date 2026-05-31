@@ -104,6 +104,7 @@ class KmpPreferencesScaffolder(
         }
 
         val dataSourceFile = subProjectRoot.resolve(dataSourcePath)
+        val coreBase = template.basePackage?.let { "${it}.core.base" } ?: "template.core.base"
         val dsContent = mergeOrCreateDataSource(
             existingFile = dataSourceFile,
             prefsPkg = prefsPkg,
@@ -113,6 +114,7 @@ class KmpPreferencesScaffolder(
             prefsKeysFq = prefsKeysFq,
             mode = mode,
             force = force,
+            coreBase = coreBase,
         )
         generated += GeneratedFile(dataSourcePath, dsContent)
 
@@ -325,9 +327,10 @@ class KmpPreferencesScaffolder(
         prefsKeysFq: String,
         mode: PrefsGenerationMode,
         force: Boolean,
+        coreBase: String = "template.core.base",
     ): String {
         val keysImport = "import $prefsKeysFq"
-        val storeImport = "import template.core.base.preferences.TypedPreferenceStore"
+val storeImport = "import ${coreBase}.preferences.TypedPreferenceStore"
         val flowImport = "import kotlinx.coroutines.flow.Flow"
 
         val chunk = when (mode) {
