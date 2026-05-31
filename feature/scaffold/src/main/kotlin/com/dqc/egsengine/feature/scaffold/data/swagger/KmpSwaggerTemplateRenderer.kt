@@ -203,7 +203,9 @@ class KmpSwaggerTemplateRenderer(
             callArgs.add(param.name.toSafeIdentifier())
         }
         if (op.requestBody != null) {
-            callArgs.add("body.toData()")
+            callArgs.add(
+                if (op.requestBody is SwaggerType.ModelRef) "body.toData()" else "body"
+            )
         }
         val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
         val mapperExpr = if (op.paging != null) {
@@ -256,7 +258,7 @@ class KmpSwaggerTemplateRenderer(
             )
         }
         val needsToDomainImport = spec.operations.any { ctx.requiresToDomainImportForOperation(it) }
-        val needsToDataImport = spec.operations.any { it.requestBody != null }
+        val needsToDataImport = spec.operations.any { it.requestBody is SwaggerType.ModelRef }
         val needsToResult = ctx.hasResultWrappers()
         val toResultPackage = ctx.template.toResultPackage ?: ""
         val imports = buildSet {

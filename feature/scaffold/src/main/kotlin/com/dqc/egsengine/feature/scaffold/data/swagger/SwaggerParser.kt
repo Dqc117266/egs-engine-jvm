@@ -262,12 +262,8 @@ class SwaggerParser {
     ): String {
         val normalizedBase = basePrefixSegments.map { singularizeSegment(it).toSafePascal() }
         val normalizedContext = contextSegments.map { singularizeSegment(it).toSafePascal() }
-        val prefixSegments = if (normalizedContext.isNotEmpty()) {
-            normalizedBase + normalizedContext
-        } else {
-            emptyList()
-        }
-        return if (prefixSegments.isEmpty()) targetName else prefixSegments.joinToString("")
+        val prefixSegments = normalizedBase + normalizedContext
+        return if (prefixSegments.isEmpty()) targetName else prefixSegments.joinToString("") + targetName
     }
 
     private fun deriveActionName(
