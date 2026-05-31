@@ -27,7 +27,7 @@ class SwaggerApiScaffolder(
         customPackage: String? = null,
         dryRun: Boolean = false,
     ): Result {
-        val config = configReader.read(projectRoot)
+        val config = configReader.readForScaffold(projectRoot)
         val template = buildTemplate(config, moduleName, customPackage)
         val spec = swaggerParser.parse(swaggerLocation)
         val generated = if (useKotlinPoetGenerator()) {
