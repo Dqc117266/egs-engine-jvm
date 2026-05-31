@@ -44,7 +44,7 @@ internal fun SubProjectConfig.toKmpSwaggerModuleTemplate(moduleName: String): Mo
             baseViewModel = base.baseClassPackages.baseViewModel,
             baseFragment = base.baseClassPackages.baseFragment,
             resultClass = "$coreBase.network.domain.Result",
-            pageResultClass = "$coreBase.network.pagination.PageResult",
+            pageResultClass = "$coreBase.ui.PageResult",
             retrofitProvider = base.baseClassPackages.retrofitProvider,
         ),
         apiResultClass = "$coreBase.network.NetworkResult",
