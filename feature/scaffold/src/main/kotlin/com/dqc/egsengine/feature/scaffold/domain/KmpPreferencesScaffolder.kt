@@ -124,6 +124,7 @@ class KmpPreferencesScaffolder(
             domainRepoPkg,
             prefsRepoName,
             mode,
+            modelPkg,
         )
         generated += GeneratedFile(prefsRepoPath, repoIface)
 
@@ -137,6 +138,7 @@ class KmpPreferencesScaffolder(
             dataSourceClass,
             prefsPkg,
             mode,
+            modelPkg,
         )
         generated += GeneratedFile(prefsSupportPath, supportBody)
 
@@ -440,6 +442,7 @@ val storeImport = "import ${coreBase}.preferences.TypedPreferenceStore"
         domainRepoPkg: String,
         prefsRepoName: String,
         mode: PrefsGenerationMode,
+        modelPkg: String = "",
     ): String {
         val chunk = when (mode) {
             is PrefsGenerationMode.Scalar -> KmpPreferencesKotlinEmitter.scalarRepositoryMethods(mode.field)
@@ -456,6 +459,9 @@ val storeImport = "import ${coreBase}.preferences.TypedPreferenceStore"
                 appendLine("package $domainRepoPkg")
                 appendLine()
                 appendLine("import kotlinx.coroutines.flow.Flow")
+                if (mode is PrefsGenerationMode.Snapshot) {
+                    appendLine("import $modelPkg.${mode.snapshotClassName}")
+                }
                 appendLine()
                 appendLine("internal interface $prefsRepoName {")
                 appendLine("    ${KmpPreferencesBlockMerger.REPOSITORY_BEGIN}")
@@ -493,6 +499,7 @@ val storeImport = "import ${coreBase}.preferences.TypedPreferenceStore"
         dataSourceClass: String,
         prefsPkg: String,
         mode: PrefsGenerationMode,
+        modelPkg: String = "",
     ): String {
         val chunk = when (mode) {
             is PrefsGenerationMode.Scalar ->
@@ -511,6 +518,9 @@ val storeImport = "import ${coreBase}.preferences.TypedPreferenceStore"
                 appendLine()
                 appendLine("import $prefsPkg.$dataSourceClass")
                 appendLine("import $domainRepoPkg.$prefsRepoName")
+                if (mode is PrefsGenerationMode.Snapshot) {
+                    appendLine("import $modelPkg.${mode.snapshotClassName}")
+                }
                 appendLine()
                 appendLine("internal class $prefsSupportName(")
                 appendLine("    private val prefs: $dataSourceClass,")
