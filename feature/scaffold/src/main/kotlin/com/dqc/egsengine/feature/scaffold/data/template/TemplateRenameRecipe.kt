@@ -24,6 +24,7 @@ object TemplateRenameRecipes {
 
     val KMP: TemplateRenameRecipe = TemplateRenameRecipe(
         id = "kmp",
+        oldPackage = "org.mifos",
         oldProjectName = "egs-kmp-template",
         oldProjectNameDisplay = "egs-kmp-template",
     )

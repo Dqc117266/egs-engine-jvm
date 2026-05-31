@@ -269,8 +269,19 @@ class DdlParser {
                 }
                 else -> {
                     val start = i
-                    while (i < line.length && !line[i].isWhitespace() && line[i] != ',') i++
-                    out.add(line.substring(start, i))
+                    while (i < line.length && !line[i].isWhitespace() && line[i] != ',' && line[i] != '(') i++
+                    if (i < line.length && line[i] == '(') {
+                        var depth = 1
+                        i++
+                        while (i < line.length && depth > 0) {
+                            when (line[i]) {
+                                '(' -> depth++
+                                ')' -> depth--
+                            }
+                            i++
+                        }
+                    }
+                    if (i > start) out.add(line.substring(start, i))
                 }
             }
         }

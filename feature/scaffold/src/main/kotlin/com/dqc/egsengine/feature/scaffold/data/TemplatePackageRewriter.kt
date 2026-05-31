@@ -16,6 +16,14 @@ data class TemplateRenameRecipe(
     val oldProjectNameDisplay: String? = null,
     /** Old package leaf token (last segment of [oldPackage]), e.g. `egs_android_template`. */
     val oldPackageToken: String? = null,
+    /**
+     * Additional old packages that should also be rewritten (directory relocation + text replacement).
+     * Each pair is (oldPackage, newPackageSuffix) — the newPackageSuffix is appended to the base
+     * [newPackage] passed to [TemplatePackageRewriter.rewrite].
+     * For example, `"template.core.base"` → `"core.base"` maps `template.core.base.preferences`
+     * to `com.dqc.demo.core.base.preferences`.
+     */
+    val extraOldPackages: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -38,11 +46,22 @@ class TemplatePackageRewriter {
         newProjectName: String,
         newPackage: String,
     ) {
+        // Relocate primary package directories
         relocatePackageDirectories(
             projectDir = projectDir,
             oldPackage = recipe.oldPackage,
             newPackage = newPackage,
         )
+
+        // Relocate extra package directories
+        recipe.extraOldPackages.forEach { (oldPkg, newSuffix) ->
+            val fullNewPkg = "$newPackage.$newSuffix"
+            relocatePackageDirectories(
+                projectDir = projectDir,
+                oldPackage = oldPkg,
+                newPackage = fullNewPkg,
+            )
+        }
 
         val newPackageToken = newPackage.substringAfterLast('.')
         val replacements = linkedMapOf<String, String>()
@@ -51,6 +70,13 @@ class TemplatePackageRewriter {
         recipe.oldProjectName?.let { replacements[it] = newProjectName }
         recipe.oldProjectNameDisplay?.let { replacements[it] = newProjectName }
         recipe.oldPackageToken?.let { replacements[it] = newPackageToken }
+
+        // Extra package text replacements
+        recipe.extraOldPackages.forEach { (oldPkg, newSuffix) ->
+            val fullNewPkg = "$newPackage.$newSuffix"
+            replacements[oldPkg] = fullNewPkg
+            replacements[oldPkg.replace('.', '/')] = fullNewPkg.replace('.', '/')
+        }
 
         rewriteTextFiles(projectDir, replacements)
     }
@@ -204,6 +230,16 @@ internal object TemplateRenameRecipes {
         oldPackageToken = "egs_android_template",
     )
 
+    /** Recipe for the KMP (Compose Multiplatform) client template. */
+    val KMP_CLIENT: TemplateRenameRecipe = TemplateRenameRecipe(
+        oldPackage = "org.mifos",
+        oldProjectName = "egs-kmp-template",
+        oldProjectNameDisplay = "egs-kmp-template",
+        extraOldPackages = mapOf(
+            "template.core.base" to "core.base",
+        ),
+    )
+
     /**
      * Returns a recipe for the given canonical template URL, or null when no rewriting recipe is
      * registered for that template.
@@ -212,6 +248,7 @@ internal object TemplateRenameRecipes {
         val url = canonicalUrl?.lowercase() ?: return null
         return when {
             url.contains("egs-android-template") -> ANDROID_CLIENT
+            url.contains("egs-kmp-template") -> KMP_CLIENT
             else -> null
         }
     }
