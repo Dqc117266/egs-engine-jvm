@@ -33,7 +33,9 @@ class KmpDatabaseEntityMapperGenerator(
         val rows = KmpDatabaseTemplateModels.buildRows(tables)
         val pairs = rows.mapNotNull { row ->
             val schema = DatabaseEntityDomainMapping.matchSchema(row.table, spec) ?: return@mapNotNull null
-            DatabaseEntityDomainMapping.buildMapperBlock(row.table, row.entityClassName, schema)?.let { row to it }
+            DatabaseEntityDomainMapping.buildMapperBlock(row.table, row.entityClassName, schema) { t ->
+            when (t) { "BigDecimal" -> "Double"; "Instant" -> "Long"; else -> t }
+        }?.let { row to it }
         }
         if (pairs.isEmpty()) {
             logger.warn("No Swagger schemas matched DDL tables with overlapping fields; skipping entity mappers.")
