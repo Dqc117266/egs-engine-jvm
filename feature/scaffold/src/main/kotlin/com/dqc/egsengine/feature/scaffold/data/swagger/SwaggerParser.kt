@@ -11,15 +11,74 @@ import java.net.URI
 class SwaggerParser {
     private val logger = LoggerFactory.getLogger(SwaggerParser::class.java)
 
-    fun parse(swaggerLocation: String): SwaggerSpec {
+    fun parse(swaggerLocation: String, excludePathPrefixes: List<String> = emptyList()): SwaggerSpec {
         val content = readContent(swaggerLocation)
         val root = JsonParser.parseString(content).asJsonObject
 
         val schemas = parseSchemas(root)
-        val operations = parseOperations(root)
+        val allOperations = parseOperations(root)
 
-        logger.info("Parsed swagger: ${schemas.size} schemas, ${operations.size} operations")
-        return SwaggerSpec(schemas = schemas, operations = operations)
+        val operations = if (excludePathPrefixes.isEmpty()) {
+            allOperations
+        } else {
+            allOperations.filter { op ->
+                val path = op.path
+                excludePathPrefixes.none { prefix -> path.startsWith(prefix) }
+            }.also {
+                val excluded = allOperations.size - it.size
+                if (excluded > 0) {
+                    logger.info("Filtered out $excluded operations matching exclude prefixes: $excludePathPrefixes")
+                }
+            }
+        }
+
+        // Only keep schemas referenced by the filtered operations
+        val usedSchemas = filterUsedSchemas(schemas, operations)
+
+        logger.info("Parsed swagger: ${usedSchemas.size} schemas, ${operations.size} operations (filtered from ${schemas.size} schemas, ${allOperations.size} operations)")
+        return SwaggerSpec(schemas = usedSchemas, operations = operations)
+    }
+
+    /**
+     * Collect schema names transitively referenced by the given operations
+     * (via request/response bodies) and return only those schemas.
+     */
+    private fun filterUsedSchemas(
+        allSchemas: List<SwaggerSchema>,
+        operations: List<SwaggerOperation>,
+    ): List<SwaggerSchema> {
+        val schemaMap = allSchemas.associateBy { it.name }
+        val used = mutableSetOf<String>()
+        val queue = ArrayDeque<String>()
+
+        fun enqueue(type: SwaggerType?) {
+            when (type) {
+                is SwaggerType.ModelRef -> {
+                    if (type.name !in used) {
+                        used.add(type.name)
+                        queue.add(type.name)
+                    }
+                }
+                is SwaggerType.ListType -> enqueue(type.elementType)
+                is SwaggerType.MapType -> enqueue(type.valueType)
+                else -> {}
+            }
+        }
+
+        for (op in operations) {
+            enqueue(op.requestBody)
+            enqueue(op.responseBody)
+        }
+
+        while (queue.isNotEmpty()) {
+            val name = queue.removeFirst()
+            val schema = schemaMap[name] ?: continue
+            for (prop in schema.properties) {
+                enqueue(prop.type)
+            }
+        }
+
+        return allSchemas.filter { it.name in used }
     }
 
     private fun readContent(swaggerLocation: String): String {

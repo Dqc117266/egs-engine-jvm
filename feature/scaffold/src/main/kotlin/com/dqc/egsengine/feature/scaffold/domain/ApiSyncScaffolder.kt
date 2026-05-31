@@ -38,7 +38,8 @@ class ApiSyncScaffolder(
         val url = swaggerUrl ?: workspaceResolver.resolveSwaggerUrl(projectRoot, clientModuleName)
         val clientConfig = workspaceResolver.resolveClient(projectRoot)
 
-        val spec = swaggerParser.parse(url)
+        // Exclude admin-only API paths - client should only sync app-facing endpoints
+        val spec = swaggerParser.parse(url, excludePathPrefixes = listOf("api/admin/"))
 
         val gen = platformApiGenerators[clientConfig.platform]
             ?: throw IllegalArgumentException("No API generator for platform: ${clientConfig.platform}")
