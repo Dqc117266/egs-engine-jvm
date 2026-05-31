@@ -8,6 +8,9 @@ package ${entityPackageName}
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+<#list entityImports as imp>
+import ${imp}
+</#list>
 
 @Entity(tableName = "${table.tableName}")
 data class ${entityClassName}(

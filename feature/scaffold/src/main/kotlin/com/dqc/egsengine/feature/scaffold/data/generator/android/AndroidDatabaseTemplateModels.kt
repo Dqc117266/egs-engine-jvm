@@ -23,6 +23,7 @@ data class AndroidDatabaseTableRow(
     val pkKotlinType: String,
     val prefixPascal: String,
     val entityColumns: List<Map<String, Any?>>,
+    val entityImports: List<String>,
 )
 
 object AndroidDatabaseTemplateModels {
@@ -49,6 +50,11 @@ object AndroidDatabaseTemplateModels {
                 "autoGenerate" to autoGen,
             )
         }
+        val entityImports = buildList {
+            if (sorted.any { it.kotlinType == "Instant" }) add("kotlinx.datetime.Instant")
+            if (sorted.any { it.kotlinType == "BigDecimal" }) add("java.math.BigDecimal")
+        }
+
         return AndroidDatabaseTableRow(
             table = table,
             entityClassName = entityClassName,
@@ -60,6 +66,7 @@ object AndroidDatabaseTemplateModels {
             pkKotlinType = pkCol.kotlinType,
             prefixPascal = SqlNaming.snakeToPascal(table.tableName),
             entityColumns = entityColumns,
+            entityImports = entityImports,
         )
     }
 

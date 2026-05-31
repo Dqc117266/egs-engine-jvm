@@ -49,6 +49,7 @@ class KmpDatabaseCodeGenerator(
                     "entityClassName" to t.entityClassName,
                     "table" to mapOf("tableName" to t.table.tableName),
                     "columns" to t.entityColumns,
+                    "entityImports" to t.entityImports,
                 ),
                 projectRoot,
             )

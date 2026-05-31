@@ -23,6 +23,7 @@ data class KmpDatabaseTableRow(
     val pkKotlinType: String,
     val prefixPascal: String,
     val entityColumns: List<Map<String, Any?>>,
+    val entityImports: List<String>,
 )
 
 object KmpDatabaseTemplateModels {
@@ -49,6 +50,12 @@ object KmpDatabaseTemplateModels {
                 "autoGenerate" to autoGen,
             )
         }
+        // Collect extra imports needed by Entity columns
+        val entityImports = buildList {
+            if (sorted.any { it.kotlinType == "Instant" }) add("kotlinx.datetime.Instant")
+            if (sorted.any { it.kotlinType == "BigDecimal" }) add("java.math.BigDecimal")
+        }
+
         return KmpDatabaseTableRow(
             table = table,
             entityClassName = entityClassName,
@@ -60,6 +67,7 @@ object KmpDatabaseTemplateModels {
             pkKotlinType = pkCol.kotlinType,
             prefixPascal = SqlNaming.snakeToPascal(table.tableName),
             entityColumns = entityColumns,
+            entityImports = entityImports,
         )
     }
 
