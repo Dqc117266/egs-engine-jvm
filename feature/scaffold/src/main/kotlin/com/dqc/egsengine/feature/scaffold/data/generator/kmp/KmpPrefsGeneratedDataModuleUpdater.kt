@@ -63,6 +63,33 @@ class KmpPrefsGeneratedDataModuleUpdater {
         logger.info("Updated prefs bindings in {}", file.path)
     }
 
+    /**
+     * Fix original DataModule.kt to import from generate.domain.repository instead of domain.repository.
+     */
+    fun updateOriginalDataModule(
+        subProjectRoot: File,
+        moduleName: String,
+        template: ModuleTemplate,
+    ) {
+        val pkg = template.packageName
+        val pkgPath = pkg.replace('.', '/')
+        val modulePascal = SqlNaming.moduleNameToPascal(moduleName)
+        val repoName = "${modulePascal}Repository"
+        val dataModuleFile = subProjectRoot.resolve(
+            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/di/DataModule.kt",
+        )
+        if (!dataModuleFile.exists()) return
+
+        var text = dataModuleFile.readText()
+        val oldImport = "import $pkg.domain.repository.$repoName"
+        val newImport = "import $pkg.generate.domain.repository.$repoName"
+        if (text.contains(oldImport) && !text.contains(newImport)) {
+            text = text.replace(oldImport, newImport)
+            dataModuleFile.writeText(text)
+            logger.info("Updated DataModule.kt to use generate.domain.repository.{}", repoName)
+        }
+    }
+
     private fun renderStandaloneModule(
         generateDiPackage: String,
         imports: List<String>,

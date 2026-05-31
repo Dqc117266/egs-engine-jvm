@@ -175,6 +175,7 @@ class KmpPreferencesScaffolder(
             }
             kmpFeatureBuildGradleUpdater.applyAfterPrefsGen(subProjectRoot, moduleName)
             kmpPrefsGeneratedDataModuleUpdater.apply(subProjectRoot, moduleName, template)
+            kmpPrefsGeneratedDataModuleUpdater.updateOriginalDataModule(subProjectRoot, moduleName, template)
             logger.info("KMP prefs scaffold: module '{}' ({} files)", moduleName, generated.size)
         }
 
