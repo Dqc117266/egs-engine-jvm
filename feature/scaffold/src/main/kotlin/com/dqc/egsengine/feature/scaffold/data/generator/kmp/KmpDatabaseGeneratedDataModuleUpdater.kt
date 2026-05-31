@@ -60,9 +60,10 @@ class KmpDatabaseGeneratedDataModuleUpdater {
         val repositoryPkg = "$pkg.generate.data.repository"
         val importsToEnsure = buildList {
             add("import org.koin.core.module.dsl.singleOf")
-            add("import $CORE_BASE_DB_PKG.AppRoomDatabase")
-            add("import $CORE_BASE_DB_PKG.DatabaseBuilderFactory")
-            add("import $CORE_BASE_DB_PKG.create")
+            val coreBaseDbPkg = template.basePackage?.let { "$it.core.base.database" } ?: "template.core.base.database"
+            add("import $coreBaseDbPkg.AppRoomDatabase")
+            add("import $coreBaseDbPkg.DatabaseBuilderFactory")
+            add("import $coreBaseDbPkg.create")
             add("import $databasePkg.$moduleDatabaseName")
             add("import $databasePkg.$dataSourceClassName")
             if (includeDbRepositorySupport) {

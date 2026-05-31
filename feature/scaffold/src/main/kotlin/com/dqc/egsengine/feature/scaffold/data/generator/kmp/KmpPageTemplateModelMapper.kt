@@ -19,8 +19,9 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
     val camelName = pascalName.replaceFirstChar { it.lowercase() }
     val modelPackage = "$modulePackage.generate.domain.model"
     val screenPkg = "$modulePackage.presentation.screen.$camelName"
+    val coreBase = basePackage?.let { "$it.core.base" } ?: "template.core.base"
     val resultClassFqn =
-        baseClassPackages.resultClass ?: "template.core.base.network.domain.Result"
+        baseClassPackages.resultClass ?: "$coreBase.network.domain.Result"
     val pagingOpt = PagePagingDetector.normalizePagingOption(pagingOption)
 
     val useCaseRows = useCases.map { uc ->
@@ -204,7 +205,7 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         }
     }
 
-    val contractImports = buildContractImports(stateFields, hasPagedOffset)
+    val contractImports = buildContractImports(stateFields, hasPagedOffset, coreBase)
 
     val intentInners = buildList {
         if (hasPagedOffset) {
@@ -347,8 +348,8 @@ internal fun PageTemplate.toKmpPageTemplateMap(): Map<String, Any?> {
         "primaryPagedArgList" to primaryPagedArgList,
         "primaryPagedUseCaseCamel" to (primaryOffsetUc?.camelName ?: ""),
         "primaryPagedNonPageArgList" to primaryPagedNonPageArgList,
-        "pagingListStateInterfaceFqn" to "template.core.base.ui.PagingListState",
-        "pageResultClassFqn" to "template.core.base.ui.PageResult",
+        "pagingListStateInterfaceFqn" to "$coreBase.ui.PagingListState",
+        "pageResultClassFqn" to "$coreBase.ui.PageResult",
         "pagedStateItemContractRef" to pagedItemContractRef,
         "pagedConcreteInnerContractRef" to pagedConcreteInnerShort,
     )
@@ -559,16 +560,16 @@ private fun splitTopLevelCommaGenericArgs(args: String): List<String> {
     return out
 }
 
-private fun buildContractImports(stateFields: List<Map<String, Any?>>, hasPagedOffset: Boolean): List<String> {
+private fun buildContractImports(stateFields: List<Map<String, Any?>>, hasPagedOffset: Boolean, coreBase: String): List<String> {
     val out = mutableSetOf<String>()
     stateFields.forEach { f ->
         val typeFqn = f["typeFqn"] as? String ?: return@forEach
         collectContractImportsForType(typeFqn, out)
     }
     if (hasPagedOffset) {
-        out.add("import template.core.base.ui.DEFAULT_FIRST_PAGE")
-        out.add("import template.core.base.ui.DEFAULT_PAGE_SIZE")
-        out.add("import template.core.base.ui.PagingListState")
+        out.add("import $coreBase.ui.DEFAULT_FIRST_PAGE")
+        out.add("import $coreBase.ui.DEFAULT_PAGE_SIZE")
+        out.add("import $coreBase.ui.PagingListState")
     }
     return out.sorted()
 }

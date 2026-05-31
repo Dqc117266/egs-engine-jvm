@@ -38,22 +38,17 @@ class KmpApiGenerator(
 
 internal fun SubProjectConfig.toKmpSwaggerModuleTemplate(moduleName: String): ModuleTemplate {
     val base = toModuleTemplate(moduleName)
+    val coreBase = "$basePackage.core.base"
     return base.copy(
         baseClassPackages = BaseClassPackages(
             baseViewModel = base.baseClassPackages.baseViewModel,
             baseFragment = base.baseClassPackages.baseFragment,
-            resultClass = KMP_DOMAIN_RESULT_CLASS,
-            pageResultClass = KMP_PAGE_RESULT_CLASS,
+            resultClass = "$coreBase.network.domain.Result",
+            pageResultClass = "$coreBase.network.pagination.PageResult",
             retrofitProvider = base.baseClassPackages.retrofitProvider,
         ),
-        apiResultClass = NETWORK_RESULT_CLASS,
-        commonResultClass = COMMON_RESULT_CLASS,
-        toResultPackage = TO_RESULT_PACKAGE,
+        apiResultClass = "$coreBase.network.NetworkResult",
+        commonResultClass = "$coreBase.network.data.CommonResult",
+        toResultPackage = "$coreBase.network.data",
     )
 }
-
-private const val NETWORK_RESULT_CLASS = "template.core.base.network.NetworkResult"
-private const val COMMON_RESULT_CLASS = "template.core.base.network.data.CommonResult"
-private const val TO_RESULT_PACKAGE = "template.core.base.network.data"
-private const val KMP_DOMAIN_RESULT_CLASS = "template.core.base.network.domain.Result"
-private const val KMP_PAGE_RESULT_CLASS = "template.core.base.network.pagination.PageResult"
