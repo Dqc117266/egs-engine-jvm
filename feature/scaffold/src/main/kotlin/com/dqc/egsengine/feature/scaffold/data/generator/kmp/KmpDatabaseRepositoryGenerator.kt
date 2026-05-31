@@ -95,6 +95,7 @@ class KmpDatabaseRepositoryGenerator(
                 "moduleDatabaseName" to moduleDatabaseName,
                 "mapperPackageName" to mapperPackageName,
                 "hasAnyDomainMapping" to hasAnyDomainMapping,
+                "rowImports" to rowImports,
                 "tables" to tableMaps,
             ),
             projectRoot,

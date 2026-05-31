@@ -10,6 +10,11 @@ import ${repositoryPackageName}.${dbRepositoryName}
 <#if hasAnyDomainMapping>
 import ${mapperPackageName}.*
 </#if>
+<#if rowImports?? && (rowImports?size > 0)>
+<#list rowImports as imp>
+import ${imp}
+</#list>
+</#if>
 
 /**
  * Generated support for [${dbRepositoryName}]: delegates to [${moduleDatabaseName}DataSource].
