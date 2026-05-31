@@ -12,15 +12,20 @@ import ${sharedRoot}.infrastructure.persistence.BaseEntity
 </#if>
 <#assign needsInstant = false>
 <#assign needsLocalDateTime = false>
+<#assign needsBigDecimal = false>
 <#list entityBodyColumns as col>
 <#if col.kotlinType == "Instant"><#assign needsInstant = true></#if>
 <#if col.kotlinType == "LocalDateTime"><#assign needsLocalDateTime = true></#if>
+<#if col.kotlinType == "BigDecimal"><#assign needsBigDecimal = true></#if>
 </#list>
 <#if needsInstant>
 import java.time.Instant
 </#if>
 <#if needsLocalDateTime>
 import java.time.LocalDateTime
+</#if>
+<#if needsBigDecimal>
+import java.math.BigDecimal
 </#if>
 
 @Entity
@@ -46,7 +51,7 @@ class ${entityPascal}Entity<#if useJpaAuditingBase> : BaseEntity()</#if> {
     <#elseif col.nullable>
     var ${col.kotlinName}: ${col.kotlinType}? = null
     <#else>
-    var ${col.kotlinName}: ${col.kotlinType} = <#if col.kotlinType == "Long">0L<#elseif col.kotlinType == "Boolean">false<#else>0</#if>
+    var ${col.kotlinName}: ${col.kotlinType} = <#if col.kotlinType == "Long">0L<#elseif col.kotlinType == "Boolean">false<#elseif col.kotlinType == "BigDecimal">BigDecimal.ZERO<#elseif col.kotlinType == "Double">0.0<#else>0</#if>
     </#if>
 
 </#list>

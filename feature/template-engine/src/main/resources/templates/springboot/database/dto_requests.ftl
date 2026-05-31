@@ -8,6 +8,9 @@ import jakarta.validation.constraints.Size
 <#if dtoNeedsInstantImport>
 import java.time.Instant
 </#if>
+<#if dtoNeedsBigDecimalImport>
+import java.math.BigDecimal
+</#if>
 
 data class Create${entityPascal}Request(
 <#list businessNonPkColumns as col>

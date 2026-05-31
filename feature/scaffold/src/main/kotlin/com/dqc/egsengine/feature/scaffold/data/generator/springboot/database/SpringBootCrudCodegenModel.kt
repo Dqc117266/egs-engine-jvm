@@ -192,6 +192,7 @@ class SpringBootCodegenModelBuilder(
         val importsDomain = linkedSetOf<String>()
         for (c in ctx.codegenCols) {
             if (!c.isPk && c.kotlinType == "Instant") importsDomain.add("java.time.Instant")
+            if (c.kotlinType == "BigDecimal") importsDomain.add("java.math.BigDecimal")
         }
         val kotlinImportsDomain = importsDomain.sorted()
 
@@ -218,12 +219,15 @@ class SpringBootCodegenModelBuilder(
             "columns" to ctx.codegenCols,
             "nonPkColumns" to ctx.codegenCols.filter { !it.isPk },
             "dtoNeedsInstantImport" to ctx.businessNonPk.any { it.kotlinType == "Instant" },
+            "dtoNeedsBigDecimalImport" to ctx.businessNonPk.any { it.kotlinType == "BigDecimal" },
             "responseNeedsInstantImport" to ctx.codegenCols.any { !it.isPk && it.kotlinType == "Instant" },
+            "responseNeedsBigDecimalImport" to ctx.codegenCols.any { it.kotlinType == "BigDecimal" },
             "entityBodyColumns" to ctx.entityBodyCols,
             "domainImports" to kotlinImportsDomain,
             "jpaFinderNameColumn" to ctx.finderNameCol,
             "options" to options,
             "cacheModelColumns" to ctx.cacheModelColumns,
+            "cacheNeedsBigDecimalImport" to ctx.cacheModelColumns.any { it.kotlinType == "BigDecimal" },
             "hasNameStringColumn" to ctx.businessNonPk.any { it.kotlinName == "name" && it.kotlinType == "String" },
             "businessNonPkColumns" to ctx.businessNonPk,
             "featurePackagePath" to ctx.featurePkg.replace('.', '/'),

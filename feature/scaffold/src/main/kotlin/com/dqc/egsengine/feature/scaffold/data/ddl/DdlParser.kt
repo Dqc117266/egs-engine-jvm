@@ -324,6 +324,7 @@ class DdlParser {
             base == "TINYINT" && length == 1 -> "Boolean"
             base == "TINYINT" -> "Int"
             base == "DOUBLE" || base == "FLOAT" || base == "REAL" -> "Double"
+            base == "DECIMAL" || base == "NUMERIC" -> "BigDecimal"
             base == "TIMESTAMP" || base == "TIMESTAMPTZ" || base == "DATETIME" -> "Instant"
             base == "BOOLEAN" || base == "BOOL" -> "Boolean"
             base == "TEXT" || base.startsWith("VARCHAR") || base.startsWith("CHAR") ||

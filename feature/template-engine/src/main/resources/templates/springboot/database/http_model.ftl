@@ -1,6 +1,9 @@
 ${warningGenerated}
 package ${generatePackage}.data.datasource.httpclient.model
 
+<#if cacheNeedsBigDecimalImport>
+import java.math.BigDecimal
+</#if>
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 @JsonIgnoreProperties(ignoreUnknown = true)

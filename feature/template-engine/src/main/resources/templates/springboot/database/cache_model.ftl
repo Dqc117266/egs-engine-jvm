@@ -1,6 +1,10 @@
 ${warningGenerated}
 package ${generatePackage}.data.datasource.cache.model
 
+<#if cacheNeedsBigDecimalImport>
+import java.math.BigDecimal
+</#if>
+
 /**
  * Serializable Redis payload (GenericJackson2JsonRedisSerializer compatible).
  */

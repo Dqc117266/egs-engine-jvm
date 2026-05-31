@@ -4,6 +4,9 @@ package ${generatePackage}.api.dto
 <#if responseNeedsInstantImport>
 import java.time.Instant
 </#if>
+<#if responseNeedsBigDecimalImport>
+import java.math.BigDecimal
+</#if>
 
 data class ${entityPascal}Response(
 <#-- Include PK so REST list/detail JSON exposes ids (admin tables, linking, deletes). -->
