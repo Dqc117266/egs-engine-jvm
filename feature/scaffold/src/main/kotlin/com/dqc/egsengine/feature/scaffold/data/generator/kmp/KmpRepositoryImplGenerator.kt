@@ -43,7 +43,7 @@ class KmpRepositoryImplGenerator {
             val file = subProjectRoot.resolve(path)
             if (file.exists()) {
                 val existing = file.readText()
-                if (existing.contains(FREEZE_MARKER)) {
+                if (existing.lines().any { it.trim() == FREEZE_MARKER }) {
                     logger.debug("Skip RepositoryImpl (frozen): {}", file.path)
                     return null
                 }
