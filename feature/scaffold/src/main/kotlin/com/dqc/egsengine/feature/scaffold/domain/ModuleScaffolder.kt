@@ -29,7 +29,7 @@ class ModuleScaffolder(
         customPackage: String? = null,
         dryRun: Boolean = false,
     ): ScaffoldResult {
-        val config = configReader.read(projectRoot)
+        val config = configReader.readForScaffold(projectRoot)
         val template = buildTemplate(config, moduleName, customPackage)
         val preview = generator.preview(projectRoot, template)
 
