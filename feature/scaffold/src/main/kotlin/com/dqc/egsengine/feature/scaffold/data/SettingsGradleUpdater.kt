@@ -25,28 +25,43 @@ class SettingsGradleUpdater {
     }
 
     private fun insertModule(content: String, modulePath: String): String {
+        // Try to find an existing include(":feature:...") line and append after the last one
+        val featurePattern = Regex("""include\(":feature:[^"]+"\)""")
+        val lastFeatureMatch = featurePattern.findAll(content).lastOrNull()
+
+        if (lastFeatureMatch != null) {
+            val insertPos = lastFeatureMatch.range.last + 1
+            return buildString {
+                append(content.substring(0, insertPos))
+                append("\ninclude(\"$modulePath\")")
+                append(content.substring(insertPos))
+            }
+        }
+
+        // Fallback: look for any include("...") block pattern (multi-line include(...))
         val includeBlockPattern = Regex(
             """(include\s*\()([^)]*?)(\))""",
             RegexOption.DOT_MATCHES_ALL,
         )
 
-        val match = includeBlockPattern.find(content) ?: return appendInclude(content, modulePath)
+        val blockMatch = includeBlockPattern.find(content)
+        if (blockMatch != null) {
+            val existingEntries = blockMatch.groupValues[2]
+            val lastEntry = existingEntries.trimEnd()
 
-        val existingEntries = match.groupValues[2]
-        val lastEntry = existingEntries.trimEnd()
+            val newEntry = if (lastEntry.endsWith(",")) {
+                "$lastEntry\n    \"$modulePath\","
+            } else {
+                "$lastEntry,\n    \"$modulePath\","
+            }
 
-        val newEntry = if (lastEntry.endsWith(",")) {
-            "$lastEntry\n    \"$modulePath\","
-        } else {
-            "$lastEntry,\n    \"$modulePath\","
+            return content.replaceRange(
+                blockMatch.groups[2]!!.range,
+                newEntry,
+            )
         }
 
-        return content.replaceRange(
-            match.groups[2]!!.range,
-            newEntry,
-        )
+        // Final fallback: append at end
+        return "$content\ninclude(\"$modulePath\")\n"
     }
-
-    private fun appendInclude(content: String, modulePath: String): String =
-        "$content\ninclude(\"$modulePath\")\n"
 }
