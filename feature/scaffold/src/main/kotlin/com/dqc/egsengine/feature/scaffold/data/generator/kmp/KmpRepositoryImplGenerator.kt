@@ -91,6 +91,7 @@ class KmpRepositoryImplGenerator {
         val ctorParams = mutableListOf<String>()
         val delegates = mutableListOf<String>()
         if (includeApi) {
+            imports.add("$pkg.generate.domain.repository.${ctx.apiRepositoryName}")
             imports.add("$pkg.generate.data.repository.${ctx.apiRepositorySupportName}")
             ctorParams.add("apiSupport: ${ctx.apiRepositorySupportName}")
             delegates.add("${ctx.apiRepositoryName} by apiSupport")
