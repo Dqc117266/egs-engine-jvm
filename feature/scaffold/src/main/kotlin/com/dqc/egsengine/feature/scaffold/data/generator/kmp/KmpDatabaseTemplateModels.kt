@@ -41,20 +41,23 @@ object KmpDatabaseTemplateModels {
         val pkPropertyName = SqlNaming.snakeToLowerCamel(pkCol.name)
         val entityColumns = sorted.map { col ->
             val autoGen = col.isAutoIncrement && col.kotlinType in setOf("Long", "Int")
+            // Map JVM-only types to KMP Room compatible types
+            val kmpType = when (col.kotlinType) {
+                "BigDecimal" -> "Double"
+                "Instant" -> "Long"
+                else -> col.kotlinType
+            }
             mapOf(
                 "name" to col.name,
                 "kotlinPropertyName" to SqlNaming.snakeToLowerCamel(col.name),
-                "kotlinType" to col.kotlinType,
+                "kotlinType" to kmpType,
                 "nullableMark" to if (col.nullable) "?" else "",
                 "isPrimaryKey" to col.isPrimaryKey,
                 "autoGenerate" to autoGen,
             )
         }
-        // Collect extra imports needed by Entity columns
-        val entityImports = buildList {
-            if (sorted.any { it.kotlinType == "Instant" }) add("kotlinx.datetime.Instant")
-            if (sorted.any { it.kotlinType == "BigDecimal" }) add("java.math.BigDecimal")
-        }
+        // KMP Room uses only basic types - no extra imports needed
+        val entityImports = emptyList<String>()
 
         return KmpDatabaseTableRow(
             table = table,
