@@ -104,6 +104,7 @@ class KmpRepositoryImplGenerator {
             delegates.add("${dbRepositoryName(pascal)} by dbSupport")
         }
         if (includePrefs) {
+            imports.add("$pkg.generate.domain.repository.${prefsRepositoryName(pascal)}")
             imports.add("$pkg.generate.data.repository.Generated${pascal}PrefsRepositorySupport")
             ctorParams.add("prefsSupport: Generated${pascal}PrefsRepositorySupport")
             delegates.add("${prefsRepositoryName(pascal)} by prefsSupport")
