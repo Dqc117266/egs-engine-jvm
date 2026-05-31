@@ -46,12 +46,23 @@ class CreateModuleCommand : CliktCommand(name = "module"), KoinComponent {
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
 
-            val result = scaffolder.scaffold(
-                projectRoot = dir,
-                moduleName = name,
-                customPackage = packageName,
-                dryRun = dryRun,
-            )
+            // Try workspace-aware scaffold first (client sub-project)
+            val workspaceFile = dir.resolve(".egs/workspace.json")
+            val result = if (workspaceFile.exists()) {
+                scaffolder.scaffoldForProject(
+                    projectRoot = dir,
+                    moduleName = name,
+                    projectKey = "client",
+                    dryRun = dryRun,
+                )
+            } else {
+                scaffolder.scaffold(
+                    projectRoot = dir,
+                    moduleName = name,
+                    customPackage = packageName,
+                    dryRun = dryRun,
+                )
+            }
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
