@@ -10,6 +10,18 @@ import jakarta.persistence.Table
 <#if useJpaAuditingBase>
 import ${sharedRoot}.infrastructure.persistence.BaseEntity
 </#if>
+<#assign needsInstant = false>
+<#assign needsLocalDateTime = false>
+<#list entityBodyColumns as col>
+<#if col.kotlinType == "Instant"><#assign needsInstant = true></#if>
+<#if col.kotlinType == "LocalDateTime"><#assign needsLocalDateTime = true></#if>
+</#list>
+<#if needsInstant>
+import java.time.Instant
+</#if>
+<#if needsLocalDateTime>
+import java.time.LocalDateTime
+</#if>
 
 @Entity
 @Table(name = "${tableSqlName}")
