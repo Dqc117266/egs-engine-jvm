@@ -145,7 +145,7 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
                 if (dryRun) {
                     echo(CliFormatter.formatInfo("[dry-run] Would clone backend from $resolvedUrl -> $backendPath/"))
                 } else {
-                    cloner.cloneAndCustomize(resolvedUrl, targetDir.resolve(backendPath), projectName)
+                    cloner.cloneAndCustomize(resolvedUrl, targetDir.resolve(backendPath), projectName, packageName)
                 }
                 val backendConfig = if (dryRun) {
                     SubProjectConfig(

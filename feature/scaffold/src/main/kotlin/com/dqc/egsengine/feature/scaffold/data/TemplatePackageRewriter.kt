@@ -135,26 +135,63 @@ class TemplatePackageRewriter {
         val newPackagePath = newPackage.replace('.', '/')
         if (oldPackagePath == newPackagePath) return
 
-        val packageDirectories = projectDir.walkTopDown()
+        // Match standard nested directories (e.g. template/core/base/analytics)
+        val nestedMatches = projectDir.walkTopDown()
             .filter { it.isDirectory }
             .filter { directory ->
                 val relativePath = directory.relativeTo(projectDir).path.replace(File.separatorChar, '/')
                 relativePath.endsWith(oldPackagePath)
             }
             .toList()
+
+        // Match dot-separated directory names (e.g. template.core.base.analytics as a single dir)
+        // Some source sets use flat directory names that don't match the package nesting convention.
+        // Match both exact name and names that start with the old package followed by a dot (sub-packages).
+        val dottedMatches = if (oldPackage.contains('.')) {
+            projectDir.walkTopDown()
+                .filter { it.isDirectory }
+                .filter { directory ->
+                    directory.name == oldPackage || directory.name.startsWith(oldPackage + ".")
+                }
+                .toList()
+        } else {
+            emptyList()
+        }
+
+        val packageDirectories = (nestedMatches + dottedMatches)
+            .distinctBy { it.absolutePath }
             .sortedByDescending { it.absolutePath.length }
 
         packageDirectories.forEach { sourceDir ->
             if (!sourceDir.exists()) return@forEach
 
             val relativePath = sourceDir.relativeTo(projectDir).path.replace(File.separatorChar, '/')
-            val prefixPath = relativePath.removeSuffix(oldPackagePath).trimEnd('/')
+            val isDottedMatch = sourceDir.name == oldPackage || sourceDir.name.startsWith(oldPackage + ".")
+            val suffix = when {
+                isDottedMatch -> sourceDir.name
+                relativePath.endsWith(oldPackagePath) -> oldPackagePath
+                relativePath.endsWith(oldPackage) -> oldPackage
+                else -> oldPackagePath
+            }
+            val dottedSuffixExtra = if (isDottedMatch && sourceDir.name != oldPackage) {
+                // e.g. for "template.core.base.analytics", the extra part beyond oldPackage is ".analytics"
+                sourceDir.name.removePrefix(oldPackage)
+            } else {
+                ""
+            }
+            val targetPkgPath = if (dottedSuffixExtra.isNotEmpty()) {
+                // Map the dotted suffix to nested dirs: ".analytics" -> "/analytics"
+                newPackagePath + dottedSuffixExtra.replace('.', '/')
+            } else {
+                newPackagePath
+            }
+            val prefixPath = relativePath.removeSuffix(suffix).trimEnd('/')
             val targetRelativePath = buildString {
                 if (prefixPath.isNotEmpty()) {
                     append(prefixPath)
                     append('/')
                 }
-                append(newPackagePath)
+                append(targetPkgPath)
             }
 
             val targetDir = projectDir.resolve(targetRelativePath)
@@ -237,7 +274,16 @@ internal object TemplateRenameRecipes {
         oldProjectNameDisplay = "egs-kmp-template",
         extraOldPackages = mapOf(
             "template.core.base" to "core.base",
+            "cmp.android.app" to "cmp.android.app",
+            "cmp.navigation" to "cmp.navigation",
+            "cmp.shared" to "cmp.shared",
         ),
+    )
+
+    /** Recipe for the Spring Boot backend template. */
+    val BACKEND: TemplateRenameRecipe = TemplateRenameRecipe(
+        oldPackage = "com.egs.server",
+        oldProjectName = "egs-server-template",
     )
 
     /**
@@ -249,6 +295,7 @@ internal object TemplateRenameRecipes {
         return when {
             url.contains("egs-android-template") -> ANDROID_CLIENT
             url.contains("egs-kmp-template") -> KMP_CLIENT
+            url.contains("egs-server-template") -> BACKEND
             else -> null
         }
     }
