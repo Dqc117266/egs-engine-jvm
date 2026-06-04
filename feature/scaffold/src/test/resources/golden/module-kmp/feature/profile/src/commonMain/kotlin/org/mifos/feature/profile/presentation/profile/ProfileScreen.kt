@@ -3,10 +3,37 @@
  */
 package org.mifos.feature.profile.presentation.profile
 
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.material3.Text
+import org.mifos.core.base.designsystem.theme.KptTheme
+import org.mifos.core.base.ui.KptScaffold
 
 @Composable
-internal fun ProfileScreen() {
-    Text("Profile")
+internal fun ProfileScreen(
+    modifier: Modifier = Modifier,
+) {
+    KptScaffold(
+        modifier = modifier.fillMaxSize(),
+        title = "Profile",
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(
+                space = KptTheme.spacing.md,
+                alignment = Alignment.CenterVertically,
+            ),
+        ) {
+            Text(
+                text = "Profile",
+                style = KptTheme.typography.titleMedium,
+                color = KptTheme.colorScheme.onBackground,
+            )
+        }
+    }
 }

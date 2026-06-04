@@ -5,7 +5,7 @@
 package org.mifos.feature.profile.data.repository
 
 import org.mifos.feature.profile.domain.repository.ProfileRepository
-import template.core.base.network.domain.Result
+import org.mifos.core.base.network.domain.Result
 
 internal class ProfileRepositoryImpl : ProfileRepository {
 

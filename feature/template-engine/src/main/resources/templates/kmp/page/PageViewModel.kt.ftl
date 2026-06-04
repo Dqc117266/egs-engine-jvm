@@ -3,7 +3,8 @@
  */
 package ${screenPkg}
 
-import ${coreBase}.ui.BaseViewModel
+<#assign coreBasePkg = coreBase!"template.core.base">
+import ${coreBasePkg}.ui.BaseViewModel
 <#if hasResultBasedHandler>
 import ${resultClassFqn}
 </#if>

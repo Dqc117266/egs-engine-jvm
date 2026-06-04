@@ -3,19 +3,35 @@
  */
 package ${screenPkg}
 
+<#assign coreBasePkg = coreBase!"template.core.base">
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+<#if hasPagedOffset>
+import androidx.compose.foundation.layout.fillMaxWidth
+</#if>
 import androidx.compose.foundation.layout.padding
+<#if hasPagedOffset>
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+</#if>
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
+import ${coreBasePkg}.designsystem.theme.KptTheme
+import ${coreBasePkg}.ui.KptScaffold
+import ${coreBasePkg}.ui.KptScreenStateContent
+<#if hasPagedOffset>
+import ${coreBasePkg}.ui.rememberKptPullToRefreshState
+</#if>
 
 @Composable
 internal fun ${pascalName}Screen(
@@ -27,7 +43,7 @@ internal fun ${pascalName}Screen(
     val listState = rememberLazyListState()
     LaunchedEffect(listState.firstVisibleItemIndex, listState.layoutInfo.totalItemsCount, uiState.endReached) {
         val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@LaunchedEffect
-        if (uiState.endReached || uiState.items.isEmpty()) return@LaunchedEffect
+        if (uiState.endReached || uiState.items.isEmpty() || uiState.isLoadingMore) return@LaunchedEffect
         if (lastVisible >= uiState.items.size - 1) {
             viewModel.dispatch(${pascalName}Contract.Intent.LoadMore)
         }
@@ -38,7 +54,7 @@ internal fun ${pascalName}Screen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is ${pascalName}Contract.Effect.ShowToast -> {
-                    // Show toast (Snackbar, platform dialog, etc.)
+                    // Show toast or snackbar from the platform shell.
                 }
             }
         }
@@ -50,33 +66,100 @@ internal fun ${pascalName}Screen(
     }
 </#if>
 
-    Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-    ) {
-        when {
-            uiState.isLoading -> {
-                // LoadingIndicator
-            }
-            uiState.error != null -> {
-                // Error UI; retry:
-                // viewModel.sendIntent(${pascalName}Contract.Intent.Retry)
-            }
+    KptScaffold(
+        modifier = modifier.fillMaxSize(),
+        title = "${pascalName}",
 <#if hasPagedOffset>
-            else -> {
-                LazyColumn(
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(uiState.items.size) { index ->
-                        val item = uiState.items[index]
-                        // TODO: row UI for ${pagedItemTypeContractRef}
+        pullToRefreshState = rememberKptPullToRefreshState(
+            isEnabled = true,
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { viewModel.dispatch(${pascalName}Contract.Intent.Refresh) },
+        ),
+</#if>
+    ) {
+        KptScreenStateContent(
+<#if hasPagedOffset>
+            isLoading = uiState.isRefreshing && uiState.items.isEmpty(),
+            errorMessage = uiState.error ?: uiState.pagingError?.message?.takeIf { uiState.items.isEmpty() },
+            isEmpty = uiState.items.isEmpty() && !uiState.isRefreshing,
+            onRetry = { viewModel.dispatch(${pascalName}Contract.Intent.Retry) },
+<#else>
+            isLoading = uiState.isLoading,
+            errorMessage = uiState.error,
+            isEmpty = false,
+            onRetry = { },
+</#if>
+            modifier = Modifier.fillMaxSize(),
+        ) {
+<#if hasPagedOffset>
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(KptTheme.spacing.md),
+            ) {
+                items(uiState.items.size) { index ->
+                    val item = uiState.items[index]
+                    Text(
+                        text = item.toString(),
+                        color = KptTheme.colorScheme.onBackground,
+                        style = KptTheme.typography.bodyLarge,
+                    )
+                }
+
+                if (uiState.isLoadingMore) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(KptTheme.spacing.md),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(color = KptTheme.colorScheme.primary)
+                        }
                     }
                 }
+
+                uiState.pagingError?.message
+                    ?.takeIf { uiState.items.isNotEmpty() }
+                    ?.let { message ->
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(KptTheme.spacing.md),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
+                            ) {
+                                Text(
+                                    text = message,
+                                    color = KptTheme.colorScheme.error,
+                                    style = KptTheme.typography.bodyMedium,
+                                )
+                                Button(onClick = { viewModel.dispatch(${pascalName}Contract.Intent.Retry) }) {
+                                    Text("Retry")
+                                }
+                            }
+                        }
+                    }
             }
 <#else>
-            else -> {
-                // Content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(KptTheme.spacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(
+                    space = KptTheme.spacing.md,
+                    alignment = Alignment.CenterVertically,
+                ),
+            ) {
+                Text(
+                    text = "${pascalName}",
+                    color = KptTheme.colorScheme.onBackground,
+                    style = KptTheme.typography.titleMedium,
+                )
             }
 </#if>
         }

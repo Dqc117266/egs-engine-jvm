@@ -3,10 +3,37 @@
  */
 package ${packageName}.presentation.${camel}
 
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.material3.Text
+import ${coreBase}.designsystem.theme.KptTheme
+import ${coreBase}.ui.KptScaffold
 
 @Composable
-internal fun ${pascal}Screen() {
-    Text("${pascal}")
+internal fun ${pascal}Screen(
+    modifier: Modifier = Modifier,
+) {
+    KptScaffold(
+        modifier = modifier.fillMaxSize(),
+        title = "${pascal}",
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(
+                space = KptTheme.spacing.md,
+                alignment = Alignment.CenterVertically,
+            ),
+        ) {
+            Text(
+                text = "${pascal}",
+                style = KptTheme.typography.titleMedium,
+                color = KptTheme.colorScheme.onBackground,
+            )
+        }
+    }
 }

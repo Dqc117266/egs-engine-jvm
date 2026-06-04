@@ -4,18 +4,21 @@
 package org.mifos.feature.task.presentation.taskList
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
+import template.core.base.designsystem.theme.KptTheme
+import template.core.base.ui.KptScaffold
+import template.core.base.ui.KptScreenStateContent
 
 @Composable
 internal fun TaskListScreen(
@@ -28,26 +31,39 @@ internal fun TaskListScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is TaskListContract.Effect.ShowToast -> {
-                    // Show toast (Snackbar, platform dialog, etc.)
+                    // Show toast or snackbar from the platform shell.
                 }
             }
         }
     }
 
 
-    Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
+    KptScaffold(
+        modifier = modifier.fillMaxSize(),
+        title = "TaskList",
     ) {
-        when {
-            uiState.isLoading -> {
-                // LoadingIndicator
-            }
-            uiState.error != null -> {
-                // Error UI; retry:
-                // viewModel.sendIntent(TaskListContract.Intent.Retry)
-            }
-            else -> {
-                // Content
+        KptScreenStateContent(
+            isLoading = uiState.isLoading,
+            errorMessage = uiState.error,
+            isEmpty = false,
+            onRetry = { },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(KptTheme.spacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(
+                    space = KptTheme.spacing.md,
+                    alignment = Alignment.CenterVertically,
+                ),
+            ) {
+                Text(
+                    text = "TaskList",
+                    color = KptTheme.colorScheme.onBackground,
+                    style = KptTheme.typography.titleMedium,
+                )
             }
         }
     }

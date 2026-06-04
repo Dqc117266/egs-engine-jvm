@@ -130,11 +130,15 @@ $indentedDep
 
     internal fun replaceCmpConventionWithNoJsAndRoom(text: String): String {
         var t = text
-        val oldLine = "    alias(libs.plugins.cmp.feature.convention)"
+        val featureConventionLines = listOf(
+            "    alias(libs.plugins.cmp.feature.ui.convention)",
+            "    alias(libs.plugins.cmp.feature.convention)",
+        )
         val replacement = """    alias(libs.plugins.cmp.feature.no.js.convention)
     alias(libs.plugins.mifos.kmp.room)"""
-        if (t.contains(oldLine)) {
-            t = t.replace(oldLine, replacement)
+        val matchedLine = featureConventionLines.firstOrNull { t.contains(it) }
+        if (matchedLine != null) {
+            t = t.replace(matchedLine, replacement)
         } else if (!t.contains("libs.plugins.mifos.kmp.room") && t.contains("cmp.feature.no.js.convention")) {
             val search = "alias(libs.plugins.cmp.feature.no.js.convention)"
             val i = t.indexOf(search)

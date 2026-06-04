@@ -3,9 +3,9 @@
  */
 package org.mifos.feature.profile.presentation.profile
 
-import template.core.base.ui.UiEffect
-import template.core.base.ui.UiIntent
-import template.core.base.ui.UiState
+import org.mifos.core.base.ui.UiEffect
+import org.mifos.core.base.ui.UiIntent
+import org.mifos.core.base.ui.UiState
 
 internal interface ProfileContract {
 

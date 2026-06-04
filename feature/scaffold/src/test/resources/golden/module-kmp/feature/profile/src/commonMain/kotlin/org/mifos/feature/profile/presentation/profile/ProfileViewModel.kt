@@ -3,7 +3,7 @@
  */
 package org.mifos.feature.profile.presentation.profile
 
-import template.core.base.ui.BaseViewModel
+import org.mifos.core.base.ui.BaseViewModel
 
 internal class ProfileViewModel(
     // Inject use cases when API sync adds them

@@ -212,13 +212,20 @@ class KmpPageTemplateModelMapperTest {
         assertTrue(vm.contains("is Result.Failure"), vm)
         assertFalse(vm.contains("// TODO: map result to State"), "Should NOT contain TODO placeholder")
         assertTrue(
-            vm.contains("template.core.base.network.domain.Result"),
-            "Should import template core network Result",
+            vm.contains("com.dqc.example.core.base.network.domain.Result"),
+            "Should import basePackage-derived core network Result",
         )
         assertTrue(
             contract.contains("com.dqc.example.feature.todolist.generate.domain.model.AppAiChatSessionRespVO"),
             "Contract should import item VO from generate.domain.model",
         )
+
+        val screen = renderer.renderScreen()
+        assertTrue(screen.contains("KptScreenStateContent"), screen)
+        assertTrue(screen.contains("rememberKptPullToRefreshState"), screen)
+        assertTrue(screen.contains("TaskListContract.Intent.LoadMore").not(), screen)
+        assertTrue(screen.contains("TodolistsContract.Intent.LoadMore"), screen)
+        assertTrue(screen.contains("TodolistsContract.Intent.Retry"), screen)
     }
 
     @Test

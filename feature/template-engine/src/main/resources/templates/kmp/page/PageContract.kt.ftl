@@ -3,12 +3,13 @@
  */
 package ${screenPkg}
 
+<#assign coreBasePkg = coreBase!"template.core.base">
 <#list contractImports as imp>
 ${imp}
 </#list>
-import ${coreBase}.ui.UiEffect
-import ${coreBase}.ui.UiIntent
-import ${coreBase}.ui.UiState
+import ${coreBasePkg}.ui.UiEffect
+import ${coreBasePkg}.ui.UiIntent
+import ${coreBasePkg}.ui.UiState
 
 internal interface ${pascalName}Contract {
 

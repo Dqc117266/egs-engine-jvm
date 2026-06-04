@@ -3,7 +3,7 @@
  */
 package org.mifos.feature.profile.domain.repository
 
-import template.core.base.network.domain.Result
+import org.mifos.core.base.network.domain.Result
 
 /**
  * Domain repository contract. Regenerate or extend when running API sync.
