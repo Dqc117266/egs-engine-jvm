@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 import org.mifos.core.base.designsystem.theme.KptTheme
 import org.mifos.core.base.ui.KptScaffold
 import org.mifos.core.base.ui.KptScreenStateContent
@@ -18,12 +21,15 @@ import org.mifos.core.base.ui.KptScreenStateContent
 internal fun ProfileScreen(
     modifier: Modifier = Modifier,
 ) {
+    val viewModel: ProfileViewModel = koinViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     KptScaffold(
         modifier = modifier.fillMaxSize(),
         title = "Profile",
     ) {
         KptScreenStateContent(
-            state = ProfileContract.State(),
+            state = uiState,
             isEmpty = false,
             onRetry = {},
             modifier = Modifier.fillMaxSize(),

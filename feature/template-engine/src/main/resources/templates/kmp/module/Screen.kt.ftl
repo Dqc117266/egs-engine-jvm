@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 import ${coreBase}.designsystem.theme.KptTheme
 import ${coreBase}.ui.KptScaffold
 import ${coreBase}.ui.KptScreenStateContent
@@ -18,12 +21,15 @@ import ${coreBase}.ui.KptScreenStateContent
 internal fun ${pascal}Screen(
     modifier: Modifier = Modifier,
 ) {
+    val viewModel: ${pascal}ViewModel = koinViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     KptScaffold(
         modifier = modifier.fillMaxSize(),
         title = "${pascal}",
     ) {
         KptScreenStateContent(
-            state = ${pascal}Contract.State(),
+            state = uiState,
             isEmpty = false,
             onRetry = {},
             modifier = Modifier.fillMaxSize(),
