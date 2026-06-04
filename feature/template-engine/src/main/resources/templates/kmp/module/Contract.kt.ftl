@@ -4,15 +4,16 @@
 package ${packageName}.presentation.${camel}
 
 import ${coreBase}.ui.UiEffect
+import ${coreBase}.ui.LoadableState
+import ${coreBase}.ui.UiFailure
 import ${coreBase}.ui.UiIntent
-import ${coreBase}.ui.UiState
 
 internal interface ${pascal}Contract {
 
     data class State(
-        val isLoading: Boolean = false,
-        val error: String? = null,
-    ) : UiState
+        override val isLoading: Boolean = false,
+        override val failure: UiFailure? = null,
+    ) : LoadableState
 
     sealed class Intent : UiIntent {
         data object Load : Intent()

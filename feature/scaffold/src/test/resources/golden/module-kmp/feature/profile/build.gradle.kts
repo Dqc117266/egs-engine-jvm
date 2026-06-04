@@ -8,11 +8,3 @@ plugins {
 androidModule {
     namespace = "org.mifos.feature.profile"
 }
-
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            implementation(projects.coreBase.network)
-        }
-    }
-}

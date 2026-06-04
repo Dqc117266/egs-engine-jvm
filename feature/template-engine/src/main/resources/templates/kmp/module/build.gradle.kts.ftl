@@ -8,11 +8,3 @@ plugins {
 androidModule {
     namespace = "${namespace}"
 }
-
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            implementation(projects.coreBase.network)
-        }
-    }
-}

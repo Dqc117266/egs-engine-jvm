@@ -8,15 +8,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-<#if hasPagedOffset>
-import androidx.compose.foundation.layout.fillMaxWidth
-</#if>
 import androidx.compose.foundation.layout.padding
 <#if hasPagedOffset>
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 </#if>
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,8 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import ${coreBasePkg}.designsystem.theme.KptTheme
-import ${coreBasePkg}.ui.KptScaffold
+<#if hasPagedOffset>
+import ${coreBasePkg}.ui.KptPagingErrorContent
+import ${coreBasePkg}.ui.KptPagingLoadingMoreContent
+import ${coreBasePkg}.ui.KptPagingStateContent
+<#else>
 import ${coreBasePkg}.ui.KptScreenStateContent
+</#if>
+import ${coreBasePkg}.ui.KptScaffold
 <#if hasPagedOffset>
 import ${coreBasePkg}.ui.rememberKptPullToRefreshState
 </#if>
@@ -77,20 +78,20 @@ internal fun ${pascalName}Screen(
         ),
 </#if>
     ) {
-        KptScreenStateContent(
 <#if hasPagedOffset>
-            isLoading = uiState.isRefreshing && uiState.items.isEmpty(),
-            errorMessage = uiState.error ?: uiState.pagingError?.message?.takeIf { uiState.items.isEmpty() },
-            isEmpty = uiState.items.isEmpty() && !uiState.isRefreshing,
+        KptPagingStateContent(
+            state = uiState,
             onRetry = { viewModel.dispatch(${pascalName}Contract.Intent.Retry) },
-<#else>
-            isLoading = uiState.isLoading,
-            errorMessage = uiState.error,
-            isEmpty = false,
-            onRetry = { },
-</#if>
             modifier = Modifier.fillMaxSize(),
         ) {
+<#else>
+        KptScreenStateContent(
+            state = uiState,
+            isEmpty = false,
+            onRetry = { },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+</#if>
 <#if hasPagedOffset>
             LazyColumn(
                 state = listState,
@@ -110,14 +111,7 @@ internal fun ${pascalName}Screen(
 
                 if (uiState.isLoadingMore) {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(KptTheme.spacing.md),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(color = KptTheme.colorScheme.primary)
-                        }
+                        KptPagingLoadingMoreContent()
                     }
                 }
 
@@ -125,22 +119,10 @@ internal fun ${pascalName}Screen(
                     ?.takeIf { uiState.items.isNotEmpty() }
                     ?.let { message ->
                         item {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(KptTheme.spacing.md),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
-                            ) {
-                                Text(
-                                    text = message,
-                                    color = KptTheme.colorScheme.error,
-                                    style = KptTheme.typography.bodyMedium,
-                                )
-                                Button(onClick = { viewModel.dispatch(${pascalName}Contract.Intent.Retry) }) {
-                                    Text("Retry")
-                                }
-                            }
+                            KptPagingErrorContent(
+                                message = message,
+                                onRetry = { viewModel.dispatch(${pascalName}Contract.Intent.Retry) },
+                            )
                         }
                     }
             }

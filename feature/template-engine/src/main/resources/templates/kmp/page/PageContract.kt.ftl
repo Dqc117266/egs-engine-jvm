@@ -8,14 +8,15 @@ package ${screenPkg}
 ${imp}
 </#list>
 import ${coreBasePkg}.ui.UiEffect
+import ${coreBasePkg}.ui.LoadableState
+import ${coreBasePkg}.ui.UiFailure
 import ${coreBasePkg}.ui.UiIntent
-import ${coreBasePkg}.ui.UiState
 
 internal interface ${pascalName}Contract {
 
     data class State(
-        val isLoading: Boolean = false,
-        val error: String? = null,
+        override val isLoading: Boolean = false,
+        override val failure: UiFailure? = null,
 <#list stateFields as f>
 <#if hasPagedOffset && (f.name == "items" || f.name == "total" || f.name == "page" || f.name == "pageSize" || f.name == "isRefreshing" || f.name == "isLoadingMore" || f.name == "endReached" || f.name == "pagingError")>
 <#if f.nullable>
@@ -31,7 +32,7 @@ internal interface ${pascalName}Contract {
 </#if>
 </#if>
 </#list>
-    ) : UiState<#if hasPagedOffset>, PagingListState<${pagedStateItemContractRef}></#if> {
+    ) : LoadableState<#if hasPagedOffset>, PagingListState<${pagedStateItemContractRef}></#if> {
 <#if hasPagedOffset>
 
         override fun copyPaging(

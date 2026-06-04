@@ -17,8 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import template.core.base.designsystem.theme.KptTheme
-import template.core.base.ui.KptScaffold
 import template.core.base.ui.KptScreenStateContent
+import template.core.base.ui.KptScaffold
 
 @Composable
 internal fun TaskListScreen(
@@ -43,8 +43,7 @@ internal fun TaskListScreen(
         title = "TaskList",
     ) {
         KptScreenStateContent(
-            isLoading = uiState.isLoading,
-            errorMessage = uiState.error,
+            state = uiState,
             isEmpty = false,
             onRetry = { },
             modifier = Modifier.fillMaxSize(),

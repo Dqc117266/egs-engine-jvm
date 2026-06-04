@@ -4,15 +4,16 @@
 package org.mifos.feature.profile.presentation.profile
 
 import org.mifos.core.base.ui.UiEffect
+import org.mifos.core.base.ui.LoadableState
+import org.mifos.core.base.ui.UiFailure
 import org.mifos.core.base.ui.UiIntent
-import org.mifos.core.base.ui.UiState
 
 internal interface ProfileContract {
 
     data class State(
-        val isLoading: Boolean = false,
-        val error: String? = null,
-    ) : UiState
+        override val isLoading: Boolean = false,
+        override val failure: UiFailure? = null,
+    ) : LoadableState
 
     sealed class Intent : UiIntent {
         data object Load : Intent()

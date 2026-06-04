@@ -4,6 +4,7 @@
 package org.mifos.feature.task.presentation.taskList
 
 import template.core.base.ui.BaseViewModel
+import template.core.base.ui.UiFailure
 import org.mifos.feature.base.domain.result.Result
 import org.mifos.feature.task.domain.usecase.TopicUpdateTopicUseCase
 
@@ -22,12 +23,18 @@ internal class TaskListViewModel(
 
     private fun handleTopicUpdateTopic(topicId: Long) {
         launchRequest(showLoading = true) {
+            updateState { copy(isLoading = true, failure = null) }
             when (val result = topicUpdateTopic(topicId = topicId)) {
                 is Result.Success -> {
-                    updateState { copy(topicUpdateTopic = result.value) }
+                    updateState { copy(topicUpdateTopic = result.value, isLoading = false, failure = null) }
                 }
                 is Result.Failure -> {
-                    updateState { copy(error = result.throwable?.message) }
+                    updateState {
+                        copy(
+                            failure = result.throwable?.let(UiFailure::fromThrowable),
+                            isLoading = false,
+                        )
+                    }
                 }
             }
         }

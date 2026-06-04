@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material3.Text
 import ${coreBase}.designsystem.theme.KptTheme
 import ${coreBase}.ui.KptScaffold
+import ${coreBase}.ui.KptScreenStateContent
 
 @Composable
 internal fun ${pascal}Screen(
@@ -21,19 +22,26 @@ internal fun ${pascal}Screen(
         modifier = modifier.fillMaxSize(),
         title = "${pascal}",
     ) {
-        Column(
+        KptScreenStateContent(
+            state = ${pascal}Contract.State(),
+            isEmpty = false,
+            onRetry = {},
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(
-                space = KptTheme.spacing.md,
-                alignment = Alignment.CenterVertically,
-            ),
         ) {
-            Text(
-                text = "${pascal}",
-                style = KptTheme.typography.titleMedium,
-                color = KptTheme.colorScheme.onBackground,
-            )
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(
+                    space = KptTheme.spacing.md,
+                    alignment = Alignment.CenterVertically,
+                ),
+            ) {
+                Text(
+                    text = "${pascal}",
+                    style = KptTheme.typography.titleMedium,
+                    color = KptTheme.colorScheme.onBackground,
+                )
+            }
         }
     }
 }

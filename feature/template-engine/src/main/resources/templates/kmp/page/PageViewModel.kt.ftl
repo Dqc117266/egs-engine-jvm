@@ -5,6 +5,7 @@ package ${screenPkg}
 
 <#assign coreBasePkg = coreBase!"template.core.base">
 import ${coreBasePkg}.ui.BaseViewModel
+import ${coreBasePkg}.ui.UiFailure
 <#if hasResultBasedHandler>
 import ${resultClassFqn}
 </#if>
@@ -82,7 +83,7 @@ internal class ${pascalName}ViewModel(
         launch {
             ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>).collect { pagingData ->
                 // Use androidx.paging.compose.collectAsLazyPagingItems(pagingData) on Android, or map PagingData in platform code.
-                updateState { copy(error = null) }
+                updateState { copy(failure = null) }
             }
         }
     }
@@ -90,16 +91,22 @@ internal class ${pascalName}ViewModel(
 <#elseif h.resultBased>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launchRequest(showLoading = ${h.showLoading?c}) {
+            updateState { copy(isLoading = true, failure = null) }
 <#if uc.parameters?has_content>
             when (val result = ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)) {
 <#else>
             when (val result = ${h.useCaseCamel}()) {
 </#if>
                 is Result.Success -> {
-                    updateState { copy(${h.useCaseCamel} = result.value) }
+                    updateState { copy(${h.useCaseCamel} = result.value, isLoading = false, failure = null) }
                 }
                 is Result.Failure -> {
-                    updateState { copy(error = result.throwable?.message) }
+                    updateState {
+                        copy(
+                            failure = result.throwable?.let(UiFailure::fromThrowable),
+                            isLoading = false,
+                        )
+                    }
                 }
             }
         }
@@ -113,7 +120,7 @@ internal class ${pascalName}ViewModel(
 <#else>
             ${h.useCaseCamel}().collect { value ->
 </#if>
-                updateState { copy(${h.useCaseCamel} = value, error = null) }
+                updateState { copy(${h.useCaseCamel} = value, failure = null) }
             }
         }
     }
@@ -121,11 +128,13 @@ internal class ${pascalName}ViewModel(
 <#elseif h.unitEntityEchoToState>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launchRequest {
+            updateState { copy(isLoading = true, failure = null) }
 <#if uc.parameters?has_content>
             ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
-            updateState { copy(${h.unitEchoStatePropertyName} = ${h.unitEchoParamName}, error = null) }
+            updateState { copy(${h.unitEchoStatePropertyName} = ${h.unitEchoParamName}, isLoading = false, failure = null) }
 <#else>
             ${h.useCaseCamel}()
+            updateState { copy(isLoading = false, failure = null) }
 </#if>
         }
     }
@@ -133,12 +142,13 @@ internal class ${pascalName}ViewModel(
 <#elseif h.directReturnToState>
     private fun ${h.handlerName}(<#list uc.parameters as p>${p.name}: ${p.kotlinType}<#if p_has_next>, </#if></#list>) {
         launchRequest {
+            updateState { copy(isLoading = true, failure = null) }
 <#if uc.parameters?has_content>
             val ret = ${h.useCaseCamel}(<#list uc.parameters as p>${p.name} = ${p.name}<#if p_has_next>, </#if></#list>)
 <#else>
             val ret = ${h.useCaseCamel}()
 </#if>
-            updateState { copy(${h.directStatePropertyName} = ret, error = null) }
+            updateState { copy(${h.directStatePropertyName} = ret, isLoading = false, failure = null) }
         }
     }
 

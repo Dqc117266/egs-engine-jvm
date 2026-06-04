@@ -4,16 +4,17 @@
 package org.mifos.feature.task.presentation.taskList
 
 import template.core.base.ui.UiEffect
+import template.core.base.ui.LoadableState
+import template.core.base.ui.UiFailure
 import template.core.base.ui.UiIntent
-import template.core.base.ui.UiState
 
 internal interface TaskListContract {
 
     data class State(
-        val isLoading: Boolean = false,
-        val error: String? = null,
+        override val isLoading: Boolean = false,
+        override val failure: UiFailure? = null,
         val topicUpdateTopic: Boolean? = null,
-    ) : UiState {
+    ) : LoadableState {
     }
 
     sealed class Intent : UiIntent {

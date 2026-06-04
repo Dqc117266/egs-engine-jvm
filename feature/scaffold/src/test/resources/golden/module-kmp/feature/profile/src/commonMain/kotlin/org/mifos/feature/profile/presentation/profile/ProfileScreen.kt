@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material3.Text
 import org.mifos.core.base.designsystem.theme.KptTheme
 import org.mifos.core.base.ui.KptScaffold
+import org.mifos.core.base.ui.KptScreenStateContent
 
 @Composable
 internal fun ProfileScreen(
@@ -21,19 +22,26 @@ internal fun ProfileScreen(
         modifier = modifier.fillMaxSize(),
         title = "Profile",
     ) {
-        Column(
+        KptScreenStateContent(
+            state = ProfileContract.State(),
+            isEmpty = false,
+            onRetry = {},
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(
-                space = KptTheme.spacing.md,
-                alignment = Alignment.CenterVertically,
-            ),
         ) {
-            Text(
-                text = "Profile",
-                style = KptTheme.typography.titleMedium,
-                color = KptTheme.colorScheme.onBackground,
-            )
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(
+                    space = KptTheme.spacing.md,
+                    alignment = Alignment.CenterVertically,
+                ),
+            ) {
+                Text(
+                    text = "Profile",
+                    style = KptTheme.typography.titleMedium,
+                    color = KptTheme.colorScheme.onBackground,
+                )
+            }
         }
     }
 }
