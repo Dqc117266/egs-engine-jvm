@@ -55,7 +55,7 @@ class TemplatePackageRewriter {
 
         // Relocate extra package directories
         recipe.extraOldPackages.forEach { (oldPkg, newSuffix) ->
-            val fullNewPkg = "$newPackage.$newSuffix"
+            val fullNewPkg = if (newSuffix.isBlank()) newPackage else "$newPackage.$newSuffix"
             relocatePackageDirectories(
                 projectDir = projectDir,
                 oldPackage = oldPkg,
@@ -73,7 +73,7 @@ class TemplatePackageRewriter {
 
         // Extra package text replacements
         recipe.extraOldPackages.forEach { (oldPkg, newSuffix) ->
-            val fullNewPkg = "$newPackage.$newSuffix"
+            val fullNewPkg = if (newSuffix.isBlank()) newPackage else "$newPackage.$newSuffix"
             replacements[oldPkg] = fullNewPkg
             replacements[oldPkg.replace('.', '/')] = fullNewPkg.replace('.', '/')
         }
@@ -265,6 +265,10 @@ internal object TemplateRenameRecipes {
         oldProjectName = "egs-android-template",
         oldProjectNameDisplay = "EGS-Android-Template",
         oldPackageToken = "egs_android_template",
+        extraOldPackages = mapOf(
+            "org.mifos" to "",
+            "template.core.base" to "core.base",
+        ),
     )
 
     /** Recipe for the KMP (Compose Multiplatform) client template. */
