@@ -118,12 +118,12 @@ class ScaffoldPreviewUnitTest {
         assertTrue(paths.any { it.contains("presentation/screen/taskDetail/TaskDetailScreen.kt") }, "expected KMP screen path")
         assertTrue(paths.any { it.contains("TaskDetailContract.kt") }, "expected Contract")
         val contractContent = result.files.first { it.path.endsWith("TaskDetailContract.kt") }.content
-        assertTrue(contractContent.contains("template.core.base.ui.UiState"), "expected KMP contract imports")
+        assertTrue(contractContent.contains("com.dqc.example.core.base.ui.LoadableState"), "expected KMP contract imports")
         val vmContent = result.files.first { it.path.endsWith("TaskDetailViewModel.kt") }.content
-        assertTrue(vmContent.contains("template.core.base.ui.BaseViewModel"), "expected KMP BaseViewModel")
+        assertTrue(vmContent.contains("com.dqc.example.core.base.ui.BaseViewModel"), "expected KMP BaseViewModel")
         assertTrue(
-            vmContent.contains("template.core.base.network.domain.Result"),
-            "expected template core network Result import for KMP page",
+            vmContent.contains("com.dqc.example.core.base.network.domain.Result"),
+            "expected basePackage-derived core network Result import for KMP page",
         )
     }
 
