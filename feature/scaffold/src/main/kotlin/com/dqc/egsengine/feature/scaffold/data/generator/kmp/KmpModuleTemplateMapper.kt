@@ -37,8 +37,8 @@ internal fun SubProjectConfig.toKmpModuleTemplateModel(moduleName: String): KmpM
 
 private fun SubProjectConfig.conventionPluginAliasFromConfig(): String =
     when (conventionPluginId) {
-        null, "org.convention.cmp.feature.ui" -> "cmp.feature.ui.convention"
-        "org.convention.cmp.feature" -> "cmp.feature.convention"
+        null, "org.convention.cmp.feature" -> "cmp.feature.convention"
+        "org.convention.cmp.feature.ui" -> "cmp.feature.ui.convention"
         "org.convention.cmp.feature.no.js" -> "cmp.feature.no.js.convention"
         else -> "cmp.feature.convention"
     }
