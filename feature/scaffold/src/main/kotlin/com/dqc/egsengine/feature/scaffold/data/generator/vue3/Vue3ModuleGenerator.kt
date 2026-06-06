@@ -51,11 +51,11 @@ class Vue3ModuleGenerator : PlatformModuleGenerator {
         moduleName: String,
         config: SubProjectConfig,
     ): List<File> {
-        val subProjectRoot = projectRoot.resolve(config.path)
+        // projectRoot is already the sub-project root (resolved by caller in scaffoldForProject)
         val created = mutableListOf<File>()
 
         for (entry in preview(projectRoot, moduleName, config)) {
-            val file = subProjectRoot.resolve(entry.path)
+            val file = projectRoot.resolve(entry.path)
             file.parentFile.mkdirs()
             if (entry.content != null) {
                 file.writeText(entry.content)
