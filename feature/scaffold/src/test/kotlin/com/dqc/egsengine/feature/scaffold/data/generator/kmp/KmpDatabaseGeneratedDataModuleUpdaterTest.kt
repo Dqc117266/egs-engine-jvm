@@ -66,7 +66,7 @@ class KmpDatabaseGeneratedDataModuleUpdaterTest {
         assertTrue(text.contains("singleOf(::StorageDatabaseDataSource)"))
         assertTrue(text.contains("singleOf(::GeneratedStorageDbRepositorySupport)"))
         assertTrue(text.contains("get<StorageDatabase>().t1Dao()"))
-        assertTrue(text.contains("template.core.base.database.AppRoomDatabase"))
+        assertTrue(text.contains("org.example.core.base.database.AppRoomDatabase"))
     }
 
     @Test
