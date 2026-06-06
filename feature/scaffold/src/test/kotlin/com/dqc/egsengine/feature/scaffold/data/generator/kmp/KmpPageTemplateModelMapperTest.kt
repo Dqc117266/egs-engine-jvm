@@ -221,11 +221,12 @@ class KmpPageTemplateModelMapperTest {
         )
 
         val screen = renderer.renderScreen()
-        assertTrue(screen.contains("KptScreenStateContent"), screen)
+        assertTrue(screen.contains("KptPagingStateContent"), screen)
         assertTrue(screen.contains("rememberKptPullToRefreshState"), screen)
         assertTrue(screen.contains("TaskListContract.Intent.LoadMore").not(), screen)
         assertTrue(screen.contains("TodolistsContract.Intent.LoadMore"), screen)
         assertTrue(screen.contains("TodolistsContract.Intent.Retry"), screen)
+        assertTrue(screen.contains("TodolistsContract.Intent.Refresh"), screen)
     }
 
     @Test
@@ -255,7 +256,7 @@ class KmpPageTemplateModelMapperTest {
         val engine = TemplateEngine(TemplateRegistry())
         val renderer = KmpPageTemplateRenderer(engine, pt, "src/commonMain/kotlin")
         val vm = renderer.renderViewModel()
-        assertTrue(vm.contains("updateState { copy(getUserId = ret, error = null) }"), vm)
+        assertTrue(vm.contains("updateState { copy(getUserId = ret, isLoading = false, failure = null) }"), vm)
         assertFalse(vm.contains("// TODO: map result to State"), vm)
     }
 
@@ -291,7 +292,7 @@ class KmpPageTemplateModelMapperTest {
         val engine = TemplateEngine(TemplateRegistry())
         val renderer = KmpPageTemplateRenderer(engine, pt, "src/commonMain/kotlin")
         val vm = renderer.renderViewModel()
-        assertTrue(vm.contains("updateState { copy(updatedUserSession = entity, error = null) }"), vm)
+        assertTrue(vm.contains("updateState { copy(updatedUserSession = entity, isLoading = false, failure = null) }"), vm)
         assertFalse(vm.contains("// TODO: map result to State"), vm)
     }
 }
