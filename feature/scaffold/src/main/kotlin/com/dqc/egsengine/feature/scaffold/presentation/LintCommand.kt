@@ -23,6 +23,6 @@ class LintFixCommand : CliktCommand(name = "fix") {
         .default(".")
 
     override fun run() {
-        echo(CliFormatter.formatInfo("egs lint fix -- not yet implemented"))
+        echo(CliFormatter.formatWarning("lint fix is not yet implemented. Use detektCheck/spotlessCheck via Gradle directly."))
     }
 }

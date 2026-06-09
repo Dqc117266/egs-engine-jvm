@@ -6,6 +6,19 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PagePagingDetector
+import com.dqc.egsengine.feature.scaffold.data.generator.common.buildPagedUseCaseArgumentList
+import com.dqc.egsengine.feature.scaffold.data.generator.common.collectContractImportsForType
+import com.dqc.egsengine.feature.scaffold.data.generator.common.contractShortTypeDisplay
+import com.dqc.egsengine.feature.scaffold.data.generator.common.contractShortTypeDisplayInner
+import com.dqc.egsengine.feature.scaffold.data.generator.common.defaultLiteralForUseCaseParamType
+import com.dqc.egsengine.feature.scaffold.data.generator.common.extractResultInnerType
+import com.dqc.egsengine.feature.scaffold.data.generator.common.isDirectReturnToStateUseCase
+import com.dqc.egsengine.feature.scaffold.data.generator.common.isUnitParamEchoUseCase
+import com.dqc.egsengine.feature.scaffold.data.generator.common.resolveParamTypeString
+import com.dqc.egsengine.feature.scaffold.data.generator.common.resolvePagedItemFqn
+import com.dqc.egsengine.feature.scaffold.data.generator.common.resolveStatePropertyTypeString
+import com.dqc.egsengine.feature.scaffold.data.generator.common.shouldEmitStateFieldForReturnType
+import com.dqc.egsengine.feature.scaffold.data.generator.common.unitEchoStatePropertyNameFor
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
@@ -65,7 +78,7 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
     if (primaryOffsetUc != null) {
         val inner = extractResultInnerType(primaryOffsetUc.returnType.orEmpty()).orEmpty()
         pagedConcreteInnerShort = contractShortTypeDisplayInner(inner)
-        pagedItemFqn = resolvePagedItemFqn(inner, modelPackage, modulePackage)
+        pagedItemFqn = resolvePagedItemFqn(inner, modelPackage, modulePackage) { extractResultInnerType(it) }
         pagedItemContractRef = contractShortTypeDisplay(pagedItemFqn)
     }
     var flowPagedItemContractRef = ""
@@ -82,7 +95,7 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
             val rt = uc.returnType ?: return@forEach
             if (PagePagingDetector.isOffsetPageResultUseCase(rt, pagingOpt, uc.parameters)) return@forEach
             if (PagePagingDetector.isPaging3FlowUseCase(rt, pagingOpt)) return@forEach
-            if (!shouldEmitStateFieldForReturnType(rt)) return@forEach
+            if (!shouldEmitStateFieldForReturnType(rt) { extractResultInnerType(it) }) return@forEach
             val propName = uc.camelName
             val typeFqn = resolveStatePropertyTypeString(rt, modelPackage, modulePackage)
             add(
@@ -324,53 +337,24 @@ internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
     )
 }
 
-private fun buildPagedUseCaseArgumentList(
-    uc: UseCaseInfo,
-    pageParam: String,
-    pageSizeParam: String,
-): String =
-    uc.parameters.joinToString(",\n            ") { p ->
-        val value = when (p.name) {
-            pageParam -> "page"
-            pageSizeParam -> "size"
-            else -> defaultLiteralForUseCaseParamType(p.type)
-        }
-        "${p.name} = $value"
-    }
-
-private fun defaultLiteralForUseCaseParamType(type: String): String {
-    val t = type.trim()
-    if (t.endsWith("?")) return "null"
-    val base = t.removeSuffix("?").substringAfterLast(".")
-    return when (base) {
-        "Long" -> "0L"
-        "Int" -> "0"
-        "String" -> "\"\""
-        "Boolean" -> "false"
-        "Float" -> "0f"
-        "Double" -> "0.0"
-        else ->
-            if (t.startsWith("List<") || t.contains(".List<")) {
-                "emptyList()"
-            } else {
-                "null"
-            }
-    }
+private fun looksLikeFlowReturn(returnType: String): Boolean {
+    if (returnType.isBlank()) return false
+    if (returnType.contains("kotlinx.coroutines.flow")) return true
+    return FLOW_TYPE_REGEX.containsMatchIn(returnType)
 }
 
-private fun resolvePagedItemFqn(innerResultType: String, modelPackage: String, modulePackage: String): String {
-    val rt = innerResultType.trim()
-    return when {
-        PagePagingDetector.isGenericPageResultType(rt) -> {
-            val raw = PagePagingDetector.extractPageResultItemRaw(rt) ?: return ""
-            resolveParamTypeString(raw, modelPackage, modulePackage)
-        }
-        PagePagingDetector.isConcretePageResultInner(rt) -> {
-            val simple = PagePagingDetector.extractConcretePageResultItemSimpleName(rt) ?: return ""
-            resolveParamTypeString(simple, modelPackage, modulePackage)
-        }
-        else -> ""
-    }
+private val FLOW_TYPE_REGEX =
+    Regex("""\b(Flow|StateFlow|SharedFlow|MutableStateFlow|MutableSharedFlow)\s*<""")
+
+private fun looksLikeResultReturn(returnType: String): Boolean {
+    if (returnType.isBlank()) return false
+    return returnType.contains("Result<") ||
+        returnType.contains(".Result<") ||
+        returnType.contains("domain.result.Result<") ||
+        returnType.contains("generate.domain.result.Result<") ||
+        returnType.contains("base.domain.result.Result<") ||
+        returnType.endsWith(".Result") ||
+        returnType.contains("network.domain.Result")
 }
 
 private fun UseCaseParam.toPageParamModel(modelPackage: String, modulePackage: String): PageUseCaseParamModel {
@@ -397,273 +381,6 @@ private fun UseCaseInfo.toPageUseCaseModel(modelPackage: String, modulePackage: 
     )
 }
 
-private fun looksLikeFlowReturn(returnType: String): Boolean {
-    if (returnType.isBlank()) return false
-    if (returnType.contains("kotlinx.coroutines.flow")) return true
-    return FLOW_TYPE_REGEX.containsMatchIn(returnType)
-}
-
-private val FLOW_TYPE_REGEX =
-    Regex("""\b(Flow|StateFlow|SharedFlow|MutableStateFlow|MutableSharedFlow)\s*<""")
-
-private fun looksLikeResultReturn(returnType: String): Boolean {
-    if (returnType.isBlank()) return false
-    return returnType.contains("Result<") ||
-        returnType.contains(".Result<") ||
-        returnType.contains("domain.result.Result<") ||
-        returnType.contains("generate.domain.result.Result<") ||
-        returnType.contains("base.domain.result.Result<") ||
-        returnType.endsWith(".Result") ||
-        returnType.contains("network.domain.Result")
-}
-
-/**
- * Unit-returning DB / prefs use cases that take a single argument — Insert / InsertAll / Update /
- * UpdateAll / Delete / DeleteAll / Set. We echo the caller-provided argument into State so Compose
- * can observe the last successful write without rewriting the UseCase signature.
- *
- * DeleteAll-style no-arg variants fall through to the default `// TODO` path since there is
- * nothing meaningful to echo.
- */
-internal fun isUnitParamEchoUseCase(
-    uc: UseCaseInfo,
-    @Suppress("UNUSED_PARAMETER") modelPackage: String,
-    @Suppress("UNUSED_PARAMETER") modulePackage: String,
-): Boolean {
-    if (!uc.name.endsWith("UseCase")) return false
-    val rt = uc.returnType?.trim()
-    if (!rt.isNullOrBlank() && rt != "Unit" && rt != "kotlin.Unit") return false
-    if (uc.parameters.size != 1) return false
-    val base = uc.name.removeSuffix("UseCase")
-    return UNIT_ECHO_PREFIX_REGEX.containsMatchIn(base)
-}
-
-private val UNIT_ECHO_PREFIX_REGEX =
-    Regex("""^(UpdateAll|InsertAll|DeleteAll|Update|Insert|Delete|Set)(?=[A-Z]|$)""")
-
-/**
- * State property name for [isUnitParamEchoUseCase] hits.
- *
- * For backward compatibility with existing Contracts, `Update*(entity: *Entity)` keeps the legacy
- * `updatedFoo` naming. Every other matched prefix (Insert / InsertAll / Delete / DeleteAll / Set /
- * UpdateAll) uses the use case's camelName directly (matches `handleGetUserId`-style).
- */
-internal fun unitEchoStatePropertyNameFor(uc: UseCaseInfo, paramFqn: String): String {
-    val base = uc.name.removeSuffix("UseCase")
-    if (base.startsWith("Update") && !base.startsWith("UpdateAll")) {
-        val simple = paramFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
-        if (simple.isNotEmpty() && paramFqn.trimEnd('?').substringAfterLast(".").endsWith("Entity")) {
-            return "updated" + simple.replaceFirstChar { it.uppercase() }
-        }
-    }
-    return uc.camelName
-}
-
-/**
- * Prefs `Get*UseCase` / plain suspend APIs that return a value directly (not [Result], not Flow).
- * Maps invoke result into State under [UseCaseInfo.camelName].
- */
-private fun isDirectReturnToStateUseCase(
-    uc: UseCaseInfo,
-    modelPackage: String,
-    modulePackage: String,
-): Boolean {
-    val rt = uc.returnType?.trim() ?: return false
-    if (rt.isBlank()) return false
-    if (looksLikeFlowReturn(rt)) return false
-    if (looksLikeResultReturn(rt)) return false
-    if (isUnitParamEchoUseCase(uc, modelPackage, modulePackage)) return false
-    if (!shouldEmitStateFieldForReturnType(rt)) return false
-    return true
-}
-
-/** No [State] field for Flow returns or for Unit / Result<Unit> (side-effect DB writes). */
-private fun shouldEmitStateFieldForReturnType(returnType: String): Boolean {
-    if (returnType.isBlank()) return false
-    if (looksLikeFlowReturn(returnType)) return false
-    val norm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
-    val effective = extractResultInnerType(norm)
-        ?: Regex("""Result<([^>]+)>""").find(norm)?.groupValues?.get(1)?.trim()
-        ?: norm
-    val trimmed = effective.trimEnd('?')
-    val simple = trimmed.substringAfterLast(".")
-    if (simple == "Unit" || trimmed == "kotlin.Unit") return false
-    return true
-}
-
-/**
- * Use case sources may use fully qualified stdlib types (`kotlin.Long`, `kotlin.Int`).
- * Generated Contract / ViewModel should use short names (`Long`, `Int`) without extra imports.
- */
-private fun shortenKotlinStdlibPrimitiveFqns(typeStr: String): String {
-    var s = typeStr
-    val nonChar = Regex("""kotlin\.(Long|Int|String|Boolean|Double|Float|Byte|Short)(\?)?""")
-    s = nonChar.replace(s) { m -> m.groupValues[1] + m.groupValues[2] }
-    val charOnly = Regex("""kotlin\.Char(\?)?(?![a-zA-Z])""")
-    s = charOnly.replace(s) { m -> "Char" + m.groupValues[1] }
-    return s
-}
-
-private fun resolveStatePropertyTypeString(returnType: String, modelPackage: String, modulePackage: String): String {
-    val returnTypeNorm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
-    val innerType = extractResultInnerType(returnTypeNorm)
-        ?: Regex("""Result<([^>]+)>""").find(returnTypeNorm)?.groupValues?.get(1)?.trim()
-        ?: returnTypeNorm
-    val simpleType = innerType.substringAfterLast(".")
-    val typePackage = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
-    return resolveBasicTypeString(simpleType, typePackage, modelPackage, modulePackage)
-}
-
-private fun extractResultInnerType(returnType: String): String? {
-    val idx = returnType.indexOf("Result<")
-    if (idx < 0) return null
-    val start = idx + "Result<".length
-    var depth = 1
-    var i = start
-    while (i < returnType.length && depth > 0) {
-        when (returnType[i]) {
-            '<' -> depth++
-            '>' -> depth--
-        }
-        i++
-    }
-    if (depth != 0) return null
-    return returnType.substring(start, i - 1).trim()
-}
-
-private fun resolveBasicTypeString(simpleType: String, typePackage: String, modelPackage: String, modulePackage: String): String {
-    val cleaned = shortenKotlinStdlibPrimitiveFqns(simpleType)
-    if (cleaned.startsWith("List<") && cleaned.endsWith(">")) {
-        val innerType = extractFirstGenericArgument(cleaned, "List<")
-            ?: cleaned.substring(5, cleaned.length - 1)
-        val innerSimple = innerType.substringAfterLast(".")
-        val innerPkg = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
-        val inner = resolveBasicTypeString(innerSimple, innerPkg, modelPackage, modulePackage)
-        return "List<$inner>"
-    }
-    return when (cleaned) {
-        "Boolean", "ModelBoolean", "KotlinBoolean" -> "Boolean"
-        "Int", "ModelInt", "KotlinInt" -> "Int"
-        "Long", "ModelLong", "KotlinLong" -> "Long"
-        "String", "ModelString", "KotlinString" -> "String"
-        "Double", "ModelDouble", "KotlinDouble" -> "Double"
-        "Float", "ModelFloat", "KotlinFloat" -> "Float"
-        else -> {
-            val raw = if (cleaned.endsWith("ApiModel")) {
-                "$modelPackage.${cleaned.removeSuffix("ApiModel")}"
-            } else {
-                "$typePackage.$cleaned"
-            }
-            fixRoomEntityFqn(normalizeSwaggerModelFqn(raw, modulePackage), cleaned, modulePackage)
-        }
-    }
-}
-
-private fun resolveParamTypeString(typeStr: String, modelPackage: String, modulePackage: String): String {
-    val normalized = shortenKotlinStdlibPrimitiveFqns(typeStr.trim())
-    val nullable = normalized.endsWith("?")
-    val base = normalized.removeSuffix("?")
-    val typeName = when {
-        base.startsWith("List<") -> {
-            val inner = extractFirstGenericArgument(base, "List<")
-                ?: Regex("""List<([^>]+)>""").find(base)?.groupValues?.get(1)
-                ?: return "List"
-            val innerType = resolveParamTypeString(inner, modelPackage, modulePackage)
-            "List<$innerType>"
-        }
-        else -> base.split(".").let { parts ->
-            val simple = parts.last()
-            val pkg = if (parts.size > 1) parts.dropLast(1).joinToString(".") else modelPackage
-            when (simple) {
-                "Boolean", "ModelBoolean", "KotlinBoolean" -> "Boolean"
-                "Int", "ModelInt", "KotlinInt" -> "Int"
-                "Long", "ModelLong", "KotlinLong" -> "Long"
-                "String", "ModelString", "KotlinString" -> "String"
-                "Double", "ModelDouble", "KotlinDouble" -> "Double"
-                "Float", "ModelFloat", "KotlinFloat" -> "Float"
-                else ->
-                    if (simple.endsWith("ApiModel")) {
-                        "$modelPackage.${simple.removeSuffix("ApiModel")}"
-                    } else if (simple.endsWith("Entity")) {
-                        val entityPkg = databaseEntityPackage(modulePackage)
-                        val candidate = when {
-                            parts.size == 1 -> "$entityPkg.$simple"
-                            pkg == modelPackage || pkg.endsWith(".generate.domain.model") -> "$entityPkg.$simple"
-                            else -> "$pkg.$simple"
-                        }
-                        fixRoomEntityFqn(normalizeSwaggerModelFqn(candidate, modulePackage), simple, modulePackage)
-                    } else {
-                        normalizeSwaggerModelFqn("$pkg.$simple", modulePackage)
-                    }
-            }
-        }
-    }
-    return if (nullable) "$typeName?" else typeName
-}
-
-private fun databaseEntityPackage(modulePackage: String): String =
-    "$modulePackage.generate.data.datasource.database.entity"
-
-/** Room entities belong under [databaseEntityPackage], not [generate.domain.model]. */
-private fun fixRoomEntityFqn(fqn: String, simple: String, modulePackage: String): String {
-    if (!simple.endsWith("Entity")) return fqn
-    val entityPkg = databaseEntityPackage(modulePackage)
-    val wrong = "$modulePackage.generate.domain.model.$simple"
-    if (fqn == wrong) return "$entityPkg.$simple"
-    return fqn
-}
-
-/** API-sync DTOs live under [modulePackage].generate.domain.model; older sources may still say …domain.model…. */
-private fun normalizeSwaggerModelFqn(fqn: String, modulePackage: String): String {
-    val legacy = "$modulePackage.domain.model."
-    if (fqn.startsWith(legacy)) {
-        return fqn.replaceFirst(legacy, "$modulePackage.generate.domain.model.")
-    }
-    return fqn
-}
-
-private fun contractShortTypeDisplay(typeFqn: String): String {
-    val trimmed = typeFqn.trimEnd('?')
-    val nullable = typeFqn.endsWith("?")
-    val base = contractShortTypeDisplayInner(trimmed)
-    return if (nullable) "$base?" else base
-}
-
-internal fun contractShortTypeDisplayInner(s: String): String {
-    if (s.startsWith("List<") && s.endsWith(">")) {
-        val inner = extractFirstGenericArgument(s, "List<") ?: return s
-        return "List<${contractShortTypeDisplayInner(inner)}>"
-    }
-    val open = s.indexOf('<')
-    if (open > 0 && s.endsWith(">")) {
-        val args = s.substring(open + 1, s.length - 1)
-        val outerShort = s.substring(0, open).substringAfterLast(".")
-        val innerShort = splitTopLevelCommaGenericArgs(args).joinToString(", ") { contractShortTypeDisplayInner(it.trim()) }
-        return "$outerShort<$innerShort>"
-    }
-    return if (s.contains(".")) s.substringAfterLast(".") else s
-}
-
-private fun splitTopLevelCommaGenericArgs(args: String): List<String> {
-    val out = mutableListOf<String>()
-    var depth = 0
-    var start = 0
-    var i = 0
-    while (i <= args.length) {
-        val c = args.getOrNull(i)
-        if (c == null || (c == ',' && depth == 0)) {
-            val part = args.substring(start, i).trim()
-            if (part.isNotEmpty()) out.add(part)
-            start = i + 1
-        } else when (c) {
-            '<' -> depth++
-            '>' -> depth--
-        }
-        i++
-    }
-    return out
-}
-
 private fun buildContractImports(
     stateFields: List<PageStateFieldModel>,
     intentInners: List<PageIntentInnerModel>,
@@ -683,51 +400,6 @@ private fun buildContractImports(
         out.add("import $uiContractPackage.PagingListState")
     }
     return out.sorted()
-}
-
-/** Import lines (`import …`) for types appearing in ViewModel handler parameters (e.g. `List<UserEntity>` → `UserEntity`). */
-internal fun importLinesForKotlinTypeFqns(fqns: Iterable<String>): List<String> {
-    val out = mutableSetOf<String>()
-    fqns.forEach { collectContractImportsForType(it, out) }
-    return out.sorted()
-}
-
-internal fun importLinesForUseCaseHandlerParams(parameters: List<PageUseCaseParamModel>): List<String> =
-    importLinesForKotlinTypeFqns(parameters.map { it.kotlinType })
-
-internal fun collectContractImportsForType(typeFqn: String, out: MutableSet<String>) {
-    val trimmed = typeFqn.trimEnd('?')
-    if (trimmed.startsWith("List<") && trimmed.endsWith(">")) {
-        val inner = extractFirstGenericArgument(trimmed, "List<") ?: return
-        collectContractImportsForType(inner, out)
-        return
-    }
-    if (shouldEmitImportForFqn(trimmed)) {
-        out.add("import $trimmed")
-    }
-}
-
-private fun extractFirstGenericArgument(s: String, prefix: String): String? {
-    if (!s.startsWith(prefix) || !s.endsWith(">")) return null
-    var start = prefix.length
-    var depth = 1
-    var i = start
-    while (i < s.length && depth > 0) {
-        when (s[i]) {
-            '<' -> depth++
-            '>' -> depth--
-        }
-        i++
-    }
-    if (depth != 0) return null
-    return s.substring(start, i - 1).trim()
-}
-
-private fun shouldEmitImportForFqn(typeFqn: String): Boolean {
-    if (!typeFqn.contains(".")) return false
-    if (typeFqn.startsWith("kotlin.")) return false
-    if (typeFqn.startsWith("java.")) return false
-    return true
 }
 
 internal fun buildParamTypeForTemplate(

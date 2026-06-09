@@ -2,7 +2,7 @@
 *.class
 
 # Generated files
-bin/
+**/bin/
 gen/
 out/
 

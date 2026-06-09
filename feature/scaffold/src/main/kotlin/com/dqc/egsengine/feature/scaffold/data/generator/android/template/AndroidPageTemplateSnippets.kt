@@ -6,6 +6,7 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
 import com.dqc.egsengine.feature.scaffold.data.generator.common.ViewModelMergeSnippet
+import com.dqc.egsengine.feature.scaffold.data.generator.common.importLinesForUseCaseHandlerParams
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.template.model.PageIntentInnerModel

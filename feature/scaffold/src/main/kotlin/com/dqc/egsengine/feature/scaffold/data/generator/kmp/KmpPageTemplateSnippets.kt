@@ -5,7 +5,7 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
-import com.dqc.egsengine.feature.scaffold.data.generator.android.template.importLinesForKotlinTypeFqns
+import com.dqc.egsengine.feature.scaffold.data.generator.common.importLinesForKotlinTypeFqns
 import com.dqc.egsengine.feature.scaffold.data.generator.common.ViewModelMergeSnippet
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
