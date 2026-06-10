@@ -41,8 +41,8 @@ jobs:
             **/build/reports/detekt/
           if-no-files-found: ignore
 
-  test:
-    name: golden + unit + konsist
+  build:
+    name: shadow JAR
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,10 +56,37 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Golden snapshot + unit tests + architecture tests (self-contained; no demo-app needed).
+      - name: Build Shadow JAR
+        run: ./gradlew shadowJar --no-daemon --stacktrace
+
+      - name: Smoke test
+        run: java -jar app/build/libs/*.jar --help
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: egs-engine.jar
+          path: app/build/libs/*.jar
+
+  test:
+    name: all tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Run ALL module tests (golden + unit + konsist + init + base).
       # EGS_TEMPLATE_ROOT is intentionally unset so golden compares against bundled templates.
       - name: Run tests
-        run: ./gradlew :feature:scaffold:test :feature:template-engine:test :konsist-test:test --no-daemon --stacktrace
+        run: ./gradlew test --no-daemon --stacktrace
 
       - name: Upload test report
         if: always()
@@ -67,7 +94,5 @@ jobs:
         with:
           name: test-report
           path: |
-            feature/scaffold/build/reports/tests/test
-            feature/template-engine/build/reports/tests/test
-            konsist-test/build/reports/tests/test
+            **/build/reports/tests/test
           if-no-files-found: ignore
