@@ -14,7 +14,6 @@ import java.io.File
  * Skeleton -- concrete .ts/.vue template generation to be implemented later.
  */
 class Vue3ApiGenerator : PlatformApiGenerator {
-
     private val logger = LoggerFactory.getLogger(Vue3ApiGenerator::class.java)
 
     override val platform: Platform = Platform.VUE3
@@ -25,7 +24,14 @@ class Vue3ApiGenerator : PlatformApiGenerator {
         spec: SwaggerSpec,
         config: SubProjectConfig,
     ): List<GeneratedFile> {
-        logger.info("Vue3ApiGenerator.generate() called for module '{}' -- not yet implemented", moduleName)
-        TODO("Vue3 API generation from Swagger not yet implemented")
+        logger.warn(
+            "Vue3 API generation from Swagger is not yet available for module '{}'. " +
+                "Use `create module --type vue3` for Vue3 module scaffolding instead.",
+            moduleName,
+        )
+        throw UnsupportedOperationException(
+            "Vue3 API generation from Swagger is not yet available. " +
+                "Use `create module --type vue3` for Vue3 module scaffolding instead.",
+        )
     }
 }

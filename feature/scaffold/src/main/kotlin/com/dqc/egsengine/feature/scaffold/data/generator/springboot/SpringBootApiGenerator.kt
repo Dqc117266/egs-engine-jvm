@@ -14,7 +14,6 @@ import java.io.File
  * Skeleton -- concrete generation to be implemented later.
  */
 class SpringBootApiGenerator : PlatformApiGenerator {
-
     private val logger = LoggerFactory.getLogger(SpringBootApiGenerator::class.java)
 
     override val platform: Platform = Platform.SPRING_BOOT
@@ -25,7 +24,14 @@ class SpringBootApiGenerator : PlatformApiGenerator {
         spec: SwaggerSpec,
         config: SubProjectConfig,
     ): List<GeneratedFile> {
-        logger.info("SpringBootApiGenerator.generate() called for module '{}' -- not yet implemented", moduleName)
-        TODO("Spring Boot API generation from Swagger not yet implemented")
+        logger.warn(
+            "Spring Boot API generation from Swagger is not yet available for module '{}'. " +
+                "Use `create module --type springboot` for Spring Boot module scaffolding instead.",
+            moduleName,
+        )
+        throw UnsupportedOperationException(
+            "Spring Boot API generation from Swagger is not yet available. " +
+                "Use `create module --type springboot` for Spring Boot module scaffolding instead.",
+        )
     }
 }
