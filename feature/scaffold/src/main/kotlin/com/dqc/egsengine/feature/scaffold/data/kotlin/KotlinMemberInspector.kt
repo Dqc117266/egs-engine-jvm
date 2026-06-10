@@ -7,18 +7,26 @@ package com.dqc.egsengine.feature.scaffold.data.kotlin
 
 /**
  * Lightweight Kotlin source inspection for idempotent ViewModel / Contract merging.
- * Uses brace/paren depth ¡ª not a full parser.
+ * Uses brace/paren depth Â¡Âª not a full parser.
  */
 object KotlinMemberInspector {
+    data class CtorParam(
+        val name: String,
+        val type: String,
+    )
 
-    data class CtorParam(val name: String, val type: String)
-
-    data class ImportBlock(val startIndex: Int, val endExclusive: Int)
+    data class ImportBlock(
+        val startIndex: Int,
+        val endExclusive: Int,
+    )
 
     /**
      * Primary constructor parameters for [classSimpleName], e.g. `FooViewModel`.
      */
-    fun parsePrimaryConstructorParams(source: String, classSimpleName: String): List<CtorParam> {
+    fun parsePrimaryConstructorParams(
+        source: String,
+        classSimpleName: String,
+    ): List<CtorParam> {
         val classIdx = findClassDeclarationIndex(source, classSimpleName) ?: return emptyList()
         val openParen = source.indexOf('(', classIdx)
         if (openParen < 0) return emptyList()
@@ -42,8 +50,9 @@ object KotlinMemberInspector {
      * Member names inside `sealed class Intent` / `sealed interface Intent` (`data object` / `data class`).
      */
     fun sealedIntentMemberNames(source: String): Set<String> {
-        val intentIdx = Regex("""\bsealed\s+(?:class|interface)\s+Intent\b""").find(source)?.range?.first
-            ?: return emptySet()
+        val intentIdx =
+            Regex("""\bsealed\s+(?:class|interface)\s+Intent\b""").find(source)?.range?.first
+                ?: return emptySet()
         val open = source.indexOf('{', intentIdx)
         if (open < 0) return emptySet()
         val close = findMatchingCloseBrace(source, open) ?: return emptySet()
@@ -55,9 +64,12 @@ object KotlinMemberInspector {
     }
 
     /**
-     * Property names in `data class State(` ¡­ `)`.
+     * Property names in `data class State(` Â¡Â­ `)`.
      */
-    fun dataClassPropertyNames(source: String, dataClassName: String = "State"): Set<String> {
+    fun dataClassPropertyNames(
+        source: String,
+        dataClassName: String = "State",
+    ): Set<String> {
         val marker = Regex("""\bdata\s+class\s+$dataClassName\s*\(""").find(source) ?: return emptySet()
         val openParen = marker.range.last
         val closeParen = findMatchingCloseParen(source, openParen) ?: return emptySet()
@@ -68,14 +80,17 @@ object KotlinMemberInspector {
     }
 
     /**
-     * `registerIntent<¡­Contract.Intent.Name>` ¡ú `Name`.
+     * `registerIntent<Â¡Â­Contract.Intent.Name>` Â¡Ãº `Name`.
      */
-    fun registerIntentBranchNames(source: String, contractSimpleName: String): Set<String> {
+    fun registerIntentBranchNames(
+        source: String,
+        contractSimpleName: String,
+    ): Set<String> {
         val re = Regex("""registerIntent\s*<\s*$contractSimpleName\s*Contract\.Intent\.(\w+)\s*>""")
         return re.findAll(source).map { it.groupValues[1] }.toSet()
     }
 
-    /** `private fun handleFoo` ¡ú `handleFoo` */
+    /** `private fun handleFoo` Â¡Ãº `handleFoo` */
     fun privateHandlerFunctionNames(source: String): Set<String> {
         val names = mutableSetOf<String>()
         Regex("""\bprivate\s+fun\s+(handle\w+)\s*\(""").findAll(source).forEach { names += it.groupValues[1] }
@@ -105,24 +120,38 @@ object KotlinMemberInspector {
         return ImportBlock(startIndex = firstStart, endExclusive = lastEndExclusive)
     }
 
-    fun findMatchingCloseParen(source: String, openParenIndex: Int): Int? {
+    fun findMatchingCloseParen(
+        source: String,
+        openParenIndex: Int,
+    ): Int? {
         if (openParenIndex < 0 || openParenIndex >= source.length) return null
         if (source[openParenIndex] != '(') return null
         return findClosing(source, openParenIndex, '(', ')')
     }
 
-    fun findMatchingCloseBrace(source: String, openBraceIndex: Int): Int? {
+    fun findMatchingCloseBrace(
+        source: String,
+        openBraceIndex: Int,
+    ): Int? {
         if (openBraceIndex < 0 || openBraceIndex >= source.length) return null
         if (source[openBraceIndex] != '{') return null
         return findClosing(source, openBraceIndex, '{', '}')
     }
 
-    private fun findClassDeclarationIndex(source: String, classSimpleName: String): Int? {
+    private fun findClassDeclarationIndex(
+        source: String,
+        classSimpleName: String,
+    ): Int? {
         val re = Regex("""\b(?:internal|public|private)\s+class\s+$classSimpleName\b|\bclass\s+$classSimpleName\b""")
         return re.find(source)?.range?.first
     }
 
-    private fun findClosing(source: String, start: Int, open: Char, close: Char): Int? {
+    private fun findClosing(
+        source: String,
+        start: Int,
+        open: Char,
+        close: Char,
+    ): Int? {
         var depth = 0
         var i = start
         while (i < source.length) {
@@ -150,11 +179,13 @@ object KotlinMemberInspector {
                 val part = s.substring(start, i).trim()
                 if (part.isNotEmpty()) out.add(part)
                 start = i + 1
-            } else when (c) {
-                '<' -> depthAngle++
-                '>' -> depthAngle--
-                '(' -> depthParen++
-                ')' -> depthParen--
+            } else {
+                when (c) {
+                    '<' -> depthAngle++
+                    '>' -> depthAngle--
+                    '(' -> depthParen++
+                    ')' -> depthParen--
+                }
             }
             i++
         }

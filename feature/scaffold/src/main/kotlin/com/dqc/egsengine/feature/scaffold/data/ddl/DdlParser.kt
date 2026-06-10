@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory
  * Supports MySQL-style DDL (comments stripped); multiple tables per file.
  */
 class DdlParser {
-
     private val logger = LoggerFactory.getLogger(DdlParser::class.java)
 
     fun parse(sql: String): List<TableSchema> {
@@ -36,10 +35,11 @@ class DdlParser {
         // block comments /* */
         s = Regex("""/\*[\s\S]*?\*/""").replace(s, " ")
         // line comments --
-        s = s.lines().joinToString("\n") { line ->
-            val idx = line.indexOf("--")
-            if (idx >= 0) line.substring(0, idx) else line
-        }
+        s =
+            s.lines().joinToString("\n") { line ->
+                val idx = line.indexOf("--")
+                if (idx >= 0) line.substring(0, idx) else line
+            }
         return s
     }
 
@@ -82,13 +82,19 @@ class DdlParser {
         return result
     }
 
-    private fun skipWs(s: String, start: Int): Int {
+    private fun skipWs(
+        s: String,
+        start: Int,
+    ): Int {
         var j = start
         while (j < s.length && s[j].isWhitespace()) j++
         return j
     }
 
-    private fun readIdentifier(s: String, start: Int): Pair<String, Int> {
+    private fun readIdentifier(
+        s: String,
+        start: Int,
+    ): Pair<String, Int> {
         var j = skipWs(s, start)
         if (j >= s.length) return "" to j
         return when (s[j]) {
@@ -110,7 +116,10 @@ class DdlParser {
         }
     }
 
-    private fun parseTableBody(tableName: String, body: String): TableSchema {
+    private fun parseTableBody(
+        tableName: String,
+        body: String,
+    ): TableSchema {
         val lines = splitTableBodyLines(body)
         val pkColumns = mutableSetOf<String>()
         val indexList = mutableListOf<IndexSchema>()
@@ -134,8 +143,9 @@ class DdlParser {
         }
 
         val columns = columnLines.mapNotNull { parseColumnLine(it, pkColumns) }
-        val primaryKey = pkColumns.singleOrNull()
-            ?: columns.firstOrNull { it.isPrimaryKey }?.name
+        val primaryKey =
+            pkColumns.singleOrNull()
+                ?: columns.firstOrNull { it.isPrimaryKey }?.name
 
         return TableSchema(
             tableName = tableName,
@@ -150,7 +160,8 @@ class DdlParser {
         val open = line.indexOf('(')
         val close = line.lastIndexOf(')')
         if (open < 0 || close <= open) return emptyList()
-        return line.substring(open + 1, close)
+        return line
+            .substring(open + 1, close)
             .split(',')
             .map { it.trim().trim('`', '"') }
             .filter { it.isNotEmpty() }
@@ -215,7 +226,10 @@ class DdlParser {
         return if (depth == 0) columnDef.removeRange(idx, k).trimEnd() else columnDef
     }
 
-    private fun parseColumnLine(line: String, tablePk: Set<String>): ColumnSchema? {
+    private fun parseColumnLine(
+        line: String,
+        tablePk: Set<String>,
+    ): ColumnSchema? {
         val trimmed = stripInlineCheckConstraint(line.trim())
         if (trimmed.isEmpty()) return null
         val tokens = tokenizeColumnDef(trimmed)
@@ -307,30 +321,39 @@ class DdlParser {
 
     private fun mapSqlTypeToKotlin(sqlTypeRaw: String): Pair<String, Int?> {
         val paren = sqlTypeRaw.indexOf('(')
-        val base = if (paren > 0) {
-            sqlTypeRaw.substring(0, paren).trim()
-        } else {
-            sqlTypeRaw.trim()
-        }.uppercase()
-        val length = if (paren > 0) {
-            sqlTypeRaw.substring(paren + 1).substringBefore(')').toIntOrNull()
-        } else {
-            null
-        }
-        val kt = when {
-            base == "BIGINT" || base == "BIGSERIAL" -> "Long"
-            base == "INT" || base == "INTEGER" || base == "SMALLINT" || base == "MEDIUMINT" ||
-                base == "SERIAL" -> "Int"
-            base == "TINYINT" && length == 1 -> "Boolean"
-            base == "TINYINT" -> "Int"
-            base == "DOUBLE" || base == "FLOAT" || base == "REAL" -> "Double"
-            base == "DECIMAL" || base == "NUMERIC" -> "BigDecimal"
-            base == "TIMESTAMP" || base == "TIMESTAMPTZ" || base == "DATETIME" -> "Instant"
-            base == "BOOLEAN" || base == "BOOL" -> "Boolean"
-            base == "TEXT" || base.startsWith("VARCHAR") || base.startsWith("CHAR") ||
-                base == "JSON" || base == "BLOB" -> "String"
-            else -> "String"
-        }
+        val base =
+            if (paren > 0) {
+                sqlTypeRaw.substring(0, paren).trim()
+            } else {
+                sqlTypeRaw.trim()
+            }.uppercase()
+        val length =
+            if (paren > 0) {
+                sqlTypeRaw.substring(paren + 1).substringBefore(')').toIntOrNull()
+            } else {
+                null
+            }
+        val kt =
+            when {
+                base == "BIGINT" || base == "BIGSERIAL" -> "Long"
+                base == "INT" ||
+                    base == "INTEGER" ||
+                    base == "SMALLINT" ||
+                    base == "MEDIUMINT" ||
+                    base == "SERIAL" -> "Int"
+                base == "TINYINT" && length == 1 -> "Boolean"
+                base == "TINYINT" -> "Int"
+                base == "DOUBLE" || base == "FLOAT" || base == "REAL" -> "Double"
+                base == "DECIMAL" || base == "NUMERIC" -> "BigDecimal"
+                base == "TIMESTAMP" || base == "TIMESTAMPTZ" || base == "DATETIME" -> "Instant"
+                base == "BOOLEAN" || base == "BOOL" -> "Boolean"
+                base == "TEXT" ||
+                    base.startsWith("VARCHAR") ||
+                    base.startsWith("CHAR") ||
+                    base == "JSON" ||
+                    base == "BLOB" -> "String"
+                else -> "String"
+            }
         return kt to length
     }
 }

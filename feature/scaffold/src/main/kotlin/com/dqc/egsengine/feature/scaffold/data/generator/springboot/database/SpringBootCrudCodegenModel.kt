@@ -6,12 +6,12 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.springboot.database
 
 import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
+import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
+import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.FormControl
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.KotlinToTsTypeMapper
-import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
-import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
 
 data class CodegenColumn(
     val sqlName: String,
@@ -30,8 +30,9 @@ data class CodegenColumn(
 object SpringBootCodegenTableValidator {
     fun validateTableForV1(table: TableSchema) {
         val pk = table.primaryKey ?: error("Table '${table.tableName}' must declare a PRIMARY KEY")
-        val pkCol = table.columns.firstOrNull { it.name.equals(pk, ignoreCase = true) }
-            ?: error("Primary key column '$pk' missing in column list for '${table.tableName}'")
+        val pkCol =
+            table.columns.firstOrNull { it.name.equals(pk, ignoreCase = true) }
+                ?: error("Primary key column '$pk' missing in column list for '${table.tableName}'")
         require(pkCol.kotlinType == "Long") {
             "Spring Boot DB codegen v1 supports Long primary keys only; got ${pkCol.kotlinType} for $pk"
         }
@@ -81,52 +82,57 @@ class SpringBootCodegenModelBuilder(
         val pkProp = SqlNaming.snakeToLowerCamel(pkCol.name)
 
         val auditSnake = setOf("created_at", "updated_at")
-        val codegenCols = table.columns.map { col ->
-            val isPk = col.isPrimaryKey || col.name.equals(table.primaryKey, ignoreCase = true)
-            val kn = SqlNaming.snakeToLowerCamel(col.name)
-            val defaultSuffix =
-                when {
-                    isPk && col.kotlinType == "Long" -> " = 0L"
-                    isPk -> " = 0"
-                    col.name.lowercase() in auditSnake -> " = null"
-                    kn == "status" && col.kotlinType == "Int" -> " = 1"
-                    col.nullable -> " = null"
-                    else -> ""
-                }
-            CodegenColumn(
-                sqlName = col.name,
-                kotlinName = kn,
-                kotlinType = col.kotlinType,
-                nullable = col.nullable || (col.name.lowercase() in auditSnake),
-                maxLength = col.length,
-                isPk = isPk,
-                defaultSuffix = defaultSuffix,
-            )
-        }
+        val codegenCols =
+            table.columns.map { col ->
+                val isPk = col.isPrimaryKey || col.name.equals(table.primaryKey, ignoreCase = true)
+                val kn = SqlNaming.snakeToLowerCamel(col.name)
+                val defaultSuffix =
+                    when {
+                        isPk && col.kotlinType == "Long" -> " = 0L"
+                        isPk -> " = 0"
+                        col.name.lowercase() in auditSnake -> " = null"
+                        kn == "status" && col.kotlinType == "Int" -> " = 1"
+                        col.nullable -> " = null"
+                        else -> ""
+                    }
+                CodegenColumn(
+                    sqlName = col.name,
+                    kotlinName = kn,
+                    kotlinType = col.kotlinType,
+                    nullable = col.nullable || (col.name.lowercase() in auditSnake),
+                    maxLength = col.length,
+                    isPk = isPk,
+                    defaultSuffix = defaultSuffix,
+                )
+            }
 
-        val entityBodyCols = codegenCols.filter {
-            !it.isPk && !(traits.useJpaAuditingBase && it.sqlName.lowercase() in auditSnake)
-        }
+        val entityBodyCols =
+            codegenCols.filter {
+                !it.isPk && !(traits.useJpaAuditingBase && it.sqlName.lowercase() in auditSnake)
+            }
 
-        val finderNameCol = entityBodyCols.firstOrNull {
-            it.kotlinName == "name" && it.kotlinType == "String"
-        }
+        val finderNameCol =
+            entityBodyCols.firstOrNull {
+                it.kotlinName == "name" && it.kotlinType == "String"
+            }
 
-        val businessNonPk = codegenCols.filter {
-            !it.isPk && it.sqlName.lowercase() !in auditSnake
-        }
+        val businessNonPk =
+            codegenCols.filter {
+                !it.isPk && it.sqlName.lowercase() !in auditSnake
+            }
 
         val pkCodegen = codegenCols.first { it.isPk }
         val cacheModelColumns = listOf(pkCodegen) + businessNonPk
 
-        val configHttpClientParamLine = buildString {
-            append("        @Value(\"")
-            append('\\')
-            append('$')
-            append("{egs.feature.")
-            append(moduleName)
-            append(".http.base-url:}\") baseUrl: String,")
-        }
+        val configHttpClientParamLine =
+            buildString {
+                append("        @Value(\"")
+                append('\\')
+                append('$')
+                append("{egs.feature.")
+                append(moduleName)
+                append(".http.base-url:}\") baseUrl: String,")
+            }
 
         return SharedCodegenContext(
             traits = traits,
@@ -156,18 +162,19 @@ class SpringBootCodegenModelBuilder(
         options: SpringBootOpinionatedOptions,
     ): BackendCodegenManifest {
         val ctx = buildSharedContext(table, backendModuleName, config, options)
-        val cols = ctx.codegenCols.map { c ->
-            val tsType = KotlinToTsTypeMapper.toTsType(c.kotlinType)
-            BackendCodegenManifestColumn(
-                kotlinName = c.kotlinName,
-                kotlinType = c.kotlinType,
-                tsType = tsType,
-                nullable = c.nullable,
-                isPk = c.isPk,
-                inBusinessForm = ctx.businessNonPk.any { it.kotlinName == c.kotlinName },
-                formControl = FormControl.infer(c.kotlinName, c.kotlinType, tsType),
-            )
-        }
+        val cols =
+            ctx.codegenCols.map { c ->
+                val tsType = KotlinToTsTypeMapper.toTsType(c.kotlinType)
+                BackendCodegenManifestColumn(
+                    kotlinName = c.kotlinName,
+                    kotlinType = c.kotlinType,
+                    tsType = tsType,
+                    nullable = c.nullable,
+                    isPk = c.isPk,
+                    inBusinessForm = ctx.businessNonPk.any { it.kotlinName == c.kotlinName },
+                    formControl = FormControl.infer(c.kotlinName, c.kotlinType, tsType),
+                )
+            }
         return BackendCodegenManifest(
             entityPascal = ctx.entityPascal,
             entityCamel = ctx.entityCamel,

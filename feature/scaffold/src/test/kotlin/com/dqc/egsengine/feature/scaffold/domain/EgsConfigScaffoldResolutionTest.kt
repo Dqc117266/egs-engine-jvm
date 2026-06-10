@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class EgsConfigScaffoldResolutionTest {
-
     private fun minimalConfig(
         basePackage: String? = null,
         baseClasses: List<BaseClassInfo> = emptyList(),
@@ -33,17 +32,19 @@ class EgsConfigScaffoldResolutionTest {
 
     @Test
     fun `resolveScaffoldBaseClasses prefers FQN overrides over scanned list`() {
-        val scanned = BaseClassInfo(
-            name = "BaseViewModel",
-            packageName = "wrong.pkg",
-            module = ":m",
-            filePath = "x.kt",
-            kind = BaseClassKind.ABSTRACT_CLASS,
-        )
-        val c = minimalConfig(
-            baseClasses = listOf(scanned),
-            overrides = ScaffoldOverrides(baseViewModelFqn = "template.core.base.ui.BaseViewModel"),
-        )
+        val scanned =
+            BaseClassInfo(
+                name = "BaseViewModel",
+                packageName = "wrong.pkg",
+                module = ":m",
+                filePath = "x.kt",
+                kind = BaseClassKind.ABSTRACT_CLASS,
+            )
+        val c =
+            minimalConfig(
+                baseClasses = listOf(scanned),
+                overrides = ScaffoldOverrides(baseViewModelFqn = "template.core.base.ui.BaseViewModel"),
+            )
         assertEquals(
             "template.core.base.ui.BaseViewModel",
             c.resolveScaffoldBaseClasses(includeRetrofitProvider = false).baseViewModel,

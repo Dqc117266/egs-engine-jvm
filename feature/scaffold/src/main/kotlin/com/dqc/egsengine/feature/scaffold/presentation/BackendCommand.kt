@@ -2,9 +2,9 @@ package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootOpinionatedOptions
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.SpringBootDatabaseScaffolder
-import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootOpinionatedOptions
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -20,11 +20,10 @@ class BackendCommand : CliktCommand(name = "backend") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): BackendCommand =
-            BackendCommand().subcommands(
-                BackendModuleCommand.withSubcommands(),
-                BackendGenCommand.withSubcommands(),
-            )
+        fun withSubcommands(): BackendCommand = BackendCommand().subcommands(
+            BackendModuleCommand.withSubcommands(),
+            BackendGenCommand.withSubcommands(),
+        )
     }
 }
 
@@ -32,10 +31,9 @@ class BackendGenCommand : CliktCommand(name = "gen") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): BackendGenCommand =
-            BackendGenCommand().subcommands(
-                BackendGenDatabaseCommand(),
-            )
+        fun withSubcommands(): BackendGenCommand = BackendGenCommand().subcommands(
+            BackendGenDatabaseCommand(),
+        )
     }
 }
 
@@ -43,15 +41,15 @@ class BackendModuleCommand : CliktCommand(name = "module") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): BackendModuleCommand =
-            BackendModuleCommand().subcommands(
-                BackendModuleCreateCommand(),
-            )
+        fun withSubcommands(): BackendModuleCommand = BackendModuleCommand().subcommands(
+            BackendModuleCreateCommand(),
+        )
     }
 }
 
-class BackendModuleCreateCommand : CliktCommand(name = "create"), KoinComponent {
-
+class BackendModuleCreateCommand :
+    CliktCommand(name = "create"),
+    KoinComponent {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -65,12 +63,13 @@ class BackendModuleCreateCommand : CliktCommand(name = "create"), KoinComponent 
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
 
-            val result = scaffolder.scaffoldForProject(
-                projectRoot = dir,
-                moduleName = name,
-                projectKey = "backend",
-                dryRun = dryRun,
-            )
+            val result =
+                scaffolder.scaffoldForProject(
+                    projectRoot = dir,
+                    moduleName = name,
+                    projectKey = "backend",
+                    dryRun = dryRun,
+                )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
@@ -90,8 +89,9 @@ class BackendModuleCreateCommand : CliktCommand(name = "create"), KoinComponent 
     }
 }
 
-class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent {
-
+class BackendGenDatabaseCommand :
+    CliktCommand(name = "database"),
+    KoinComponent {
     private val scaffolder: SpringBootDatabaseScaffolder by inject()
 
     private val sqlFile by argument(help = "Path to SQL DDL file (CREATE TABLE)")
@@ -134,22 +134,24 @@ class BackendGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent
             val sqlPath = File(sqlFile)
             val resolvedSql = if (sqlPath.isAbsolute) sqlPath else File(System.getProperty("user.dir")).resolve(sqlPath).normalize()
 
-            val options = SpringBootOpinionatedOptions(
-                auditColumns = !noAudit,
-                softDelete = !noSoftDelete,
-                statusEnum = !noStatusEnum,
-            )
+            val options =
+                SpringBootOpinionatedOptions(
+                    auditColumns = !noAudit,
+                    softDelete = !noSoftDelete,
+                    statusEnum = !noStatusEnum,
+                )
 
-            val result = scaffolder.scaffoldDatabase(
-                projectRoot = dir,
-                sqlFile = resolvedSql,
-                moduleName = moduleName,
-                dryRun = dryRun,
-                force = force,
-                mainTable = mainTable,
-                options = options,
-                withAdmin = withAdmin,
-            )
+            val result =
+                scaffolder.scaffoldDatabase(
+                    projectRoot = dir,
+                    sqlFile = resolvedSql,
+                    moduleName = moduleName,
+                    dryRun = dryRun,
+                    force = force,
+                    mainTable = mainTable,
+                    options = options,
+                    withAdmin = withAdmin,
+                )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run — ${result.tableName} → module '${result.moduleName}' (${result.files.size} files):"))

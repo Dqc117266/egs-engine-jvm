@@ -13,7 +13,6 @@ import java.io.File
 import java.io.PrintStream
 
 class ClientListUsecasesCommandTest {
-
     @AfterEach
     fun tearDown() {
         stopKoin()
@@ -75,15 +74,19 @@ class ClientListUsecasesCommandTest {
     }
 
     private fun createClientProjectWithUseCase(): File {
-        val root = kotlin.io.path.createTempDirectory("client-list-usecases-test").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("client-list-usecases-test")
+                .toFile()
         root.resolve("settings.gradle.kts").writeText(
             """
             rootProject.name = "list-usecases-test"
             """.trimIndent(),
         )
-        val uc = root.resolve(
-            "feature/demo/src/commonMain/kotlin/com/example/feature/demo/domain/usecase/FooUseCase.kt",
-        )
+        val uc =
+            root.resolve(
+                "feature/demo/src/commonMain/kotlin/com/example/feature/demo/domain/usecase/FooUseCase.kt",
+            )
         uc.parentFile.mkdirs()
         uc.writeText(
             """

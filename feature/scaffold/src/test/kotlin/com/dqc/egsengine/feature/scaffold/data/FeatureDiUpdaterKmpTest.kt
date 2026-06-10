@@ -4,13 +4,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.io.File
 
 class FeatureDiUpdaterKmpTest {
-
     @Test
     fun `updatePresentationModule uses presentation camel package for KMP layout`() {
-        val root = kotlin.io.path.createTempDirectory("feature-di-kmp").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("feature-di-kmp")
+                .toFile()
         val pkg = "com.example.feature.task"
         val pkgPath = pkg.replace(".", "/")
         val pm = root.resolve("feature/task/src/commonMain/kotlin/$pkgPath/presentation/PresentationModule.kt")
@@ -44,7 +45,10 @@ class FeatureDiUpdaterKmpTest {
 
     @Test
     fun `updatePresentationModule uses presentation fragment package when useScreenPresentationLayout false`() {
-        val root = kotlin.io.path.createTempDirectory("feature-di-frag").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("feature-di-frag")
+                .toFile()
         val pkg = "com.example.feature.legacy"
         val pkgPath = pkg.replace(".", "/")
         val pm = root.resolve("feature/legacy/src/main/kotlin/$pkgPath/presentation/PresentationModule.kt")
@@ -77,7 +81,10 @@ class FeatureDiUpdaterKmpTest {
 
     @Test
     fun `updatePresentationModule is idempotent when ViewModel already registered`() {
-        val root = kotlin.io.path.createTempDirectory("feature-di-kmp-idem").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("feature-di-kmp-idem")
+                .toFile()
         val pkg = "com.example.feature.task"
         val pkgPath = pkg.replace(".", "/")
         val pm = root.resolve("feature/task/src/commonMain/kotlin/$pkgPath/presentation/PresentationModule.kt")

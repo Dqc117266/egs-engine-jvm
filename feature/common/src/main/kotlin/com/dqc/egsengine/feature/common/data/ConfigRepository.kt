@@ -6,6 +6,7 @@ import java.util.Properties
 
 interface ConfigRepository {
     fun loadConfig(): AppConfig
+
     fun saveConfig(config: AppConfig)
 }
 

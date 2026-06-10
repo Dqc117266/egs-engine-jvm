@@ -27,9 +27,7 @@ data class KmpDatabaseTableRow(
 )
 
 object KmpDatabaseTemplateModels {
-
-    fun buildRows(tables: List<TableSchema>): List<KmpDatabaseTableRow> =
-        tables.map { buildRow(it) }
+    fun buildRows(tables: List<TableSchema>): List<KmpDatabaseTableRow> = tables.map { buildRow(it) }
 
     fun buildRow(table: TableSchema): KmpDatabaseTableRow {
         val base = SqlNaming.snakeToPascal(table.tableName)
@@ -39,23 +37,25 @@ object KmpDatabaseTemplateModels {
         val sorted = sortColumns(table)
         val pkCol = sorted.firstOrNull { it.isPrimaryKey } ?: sorted.first()
         val pkPropertyName = SqlNaming.snakeToLowerCamel(pkCol.name)
-        val entityColumns = sorted.map { col ->
-            val autoGen = col.isAutoIncrement && col.kotlinType in setOf("Long", "Int")
-            // Map JVM-only types to KMP Room compatible types
-            val kmpType = when (col.kotlinType) {
-                "BigDecimal" -> "Double"
-                "Instant" -> "Long"
-                else -> col.kotlinType
+        val entityColumns =
+            sorted.map { col ->
+                val autoGen = col.isAutoIncrement && col.kotlinType in setOf("Long", "Int")
+                // Map JVM-only types to KMP Room compatible types
+                val kmpType =
+                    when (col.kotlinType) {
+                        "BigDecimal" -> "Double"
+                        "Instant" -> "Long"
+                        else -> col.kotlinType
+                    }
+                mapOf(
+                    "name" to col.name,
+                    "kotlinPropertyName" to SqlNaming.snakeToLowerCamel(col.name),
+                    "kotlinType" to kmpType,
+                    "nullableMark" to if (col.nullable) "?" else "",
+                    "isPrimaryKey" to col.isPrimaryKey,
+                    "autoGenerate" to autoGen,
+                )
             }
-            mapOf(
-                "name" to col.name,
-                "kotlinPropertyName" to SqlNaming.snakeToLowerCamel(col.name),
-                "kotlinType" to kmpType,
-                "nullableMark" to if (col.nullable) "?" else "",
-                "isPrimaryKey" to col.isPrimaryKey,
-                "autoGenerate" to autoGen,
-            )
-        }
         // KMP Room uses only basic types - no extra imports needed
         val entityImports = emptyList<String>()
 

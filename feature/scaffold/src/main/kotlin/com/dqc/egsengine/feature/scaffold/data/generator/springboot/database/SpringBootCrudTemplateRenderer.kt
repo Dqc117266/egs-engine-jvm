@@ -24,8 +24,7 @@ class SpringBootCrudTemplateRenderer(
         val ec = model["entityCamel"] as String
         val moduleName = model["moduleName"] as String
         val featurePath = model["featurePackagePath"] as String
-        fun rel(fileUnderFeature: String): String =
-            "feature/$moduleName/src/main/kotlin/$featurePath/$fileUnderFeature"
+        fun rel(fileUnderFeature: String): String = "feature/$moduleName/src/main/kotlin/$featurePath/$fileUnderFeature"
 
         val pairs: List<Pair<String, String>> = buildList {
             add("springboot/database/domain_model.ftl" to rel("generate/domain/model/$ep.kt"))

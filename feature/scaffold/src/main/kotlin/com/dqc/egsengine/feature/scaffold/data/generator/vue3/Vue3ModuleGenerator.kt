@@ -18,7 +18,6 @@ import java.io.File
  * Skeleton -- concrete .vue/.ts template generation to be implemented later.
  */
 class Vue3ModuleGenerator : PlatformModuleGenerator {
-
     private val logger = LoggerFactory.getLogger(Vue3ModuleGenerator::class.java)
 
     override val platform: Platform = Platform.VUE3
@@ -91,7 +90,7 @@ class Vue3ModuleGenerator : PlatformModuleGenerator {
     private fun generateViewStub(moduleName: String): String = buildString {
         val pascal = moduleName.toPascal()
         appendLine("<template>")
-        appendLine("  <div class=\"${moduleName}-container\">")
+        appendLine("  <div class=\"$moduleName-container\">")
         appendLine("    <!-- TODO: Implement $pascal view -->")
         appendLine("    <h1>$pascal</h1>")
         appendLine("  </div>")
@@ -139,10 +138,9 @@ class Vue3ModuleGenerator : PlatformModuleGenerator {
         appendLine("export default ${moduleName}Routes")
     }
 
-    private fun String.toPascal(): String =
-        split("-", "_").joinToString("") { part ->
-            part.replaceFirstChar { it.uppercase() }
-        }
+    private fun String.toPascal(): String = split("-", "_").joinToString("") { part ->
+        part.replaceFirstChar { it.uppercase() }
+    }
 
     /**
      * Flyway-ready snippet for `egs-server-template` `sys_menus` (see V5__sys_menu.sql).

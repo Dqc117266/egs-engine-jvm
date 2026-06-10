@@ -14,7 +14,6 @@ import java.io.File
 class SwaggerTemplateRenderer(
     private val engine: TemplateEngine,
 ) {
-
     fun renderDataModel(
         schema: SwaggerSchema,
         ctx: SwaggerGeneratorContext,
@@ -23,23 +22,25 @@ class SwaggerTemplateRenderer(
     ): String {
         val className = ctx.dataModelName(schema.name)
         val domainSimpleName = ctx.domainModelName(schema.name)
-        val props = schema.properties.map { prop ->
-            val kotlinType = ctx.resolveType(prop.type, forDomain = false)
-            mapOf(
-                "name" to prop.name,
-                "originalName" to prop.originalName,
-                "kotlinType" to kotlinType,
-                "nullable" to (!prop.required),
-                "toDomainExpr" to ctx.toDomainExpression(prop.type, "this.${prop.name}", !prop.required),
-                "toDataExpr" to ctx.toDataExpression(prop.type, "this.${prop.name}", !prop.required),
-            )
-        }
-        val imports = buildSet {
-            schema.properties.forEach { prop ->
-                addAll(ctx.importsForType(prop.type, forDomain = false, currentPackage = ctx.dataModelPackage))
+        val props =
+            schema.properties.map { prop ->
+                val kotlinType = ctx.resolveType(prop.type, forDomain = false)
+                mapOf(
+                    "name" to prop.name,
+                    "originalName" to prop.originalName,
+                    "kotlinType" to kotlinType,
+                    "nullable" to (!prop.required),
+                    "toDomainExpr" to ctx.toDomainExpression(prop.type, "this.${prop.name}", !prop.required),
+                    "toDataExpr" to ctx.toDataExpression(prop.type, "this.${prop.name}", !prop.required),
+                )
             }
-            add("${ctx.domainModelPackage}.$domainSimpleName")
-        }.sorted()
+        val imports =
+            buildSet {
+                schema.properties.forEach { prop ->
+                    addAll(ctx.importsForType(prop.type, forDomain = false, currentPackage = ctx.dataModelPackage))
+                }
+                add("${ctx.domainModelPackage}.$domainSimpleName")
+            }.sorted()
         return engine.render(
             "android/swagger/DataModel.kt.ftl",
             mapOf(
@@ -54,21 +55,27 @@ class SwaggerTemplateRenderer(
         )
     }
 
-    fun renderDomainModel(schema: SwaggerSchema, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
+    fun renderDomainModel(
+        schema: SwaggerSchema,
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String {
         val className = ctx.domainModelName(schema.name)
-        val props = schema.properties.map { prop ->
-            val kotlinType = ctx.resolveType(prop.type, forDomain = true)
-            mapOf(
-                "name" to prop.name,
-                "kotlinType" to kotlinType,
-                "nullable" to (!prop.required),
-            )
-        }
-        val imports = buildSet {
-            schema.properties.forEach { prop ->
-                addAll(ctx.importsForType(prop.type, forDomain = true, currentPackage = ctx.domainModelPackage))
+        val props =
+            schema.properties.map { prop ->
+                val kotlinType = ctx.resolveType(prop.type, forDomain = true)
+                mapOf(
+                    "name" to prop.name,
+                    "kotlinType" to kotlinType,
+                    "nullable" to (!prop.required),
+                )
             }
-        }.sorted()
+        val imports =
+            buildSet {
+                schema.properties.forEach { prop ->
+                    addAll(ctx.importsForType(prop.type, forDomain = true, currentPackage = ctx.domainModelPackage))
+                }
+            }.sorted()
         return engine.render(
             "android/swagger/DomainModel.kt.ftl",
             mapOf(
@@ -81,58 +88,68 @@ class SwaggerTemplateRenderer(
         )
     }
 
-    fun renderServiceInterface(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
-        val operations = spec.operations.map { op ->
-            val params = op.params.map { param ->
-                val type = ctx.resolveType(param.type, forDomain = false)
-                    .let { if (!param.required) "$it?" else it }
+    fun renderServiceInterface(
+        spec: SwaggerSpec,
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String {
+        val operations =
+            spec.operations.map { op ->
+                val params =
+                    op.params.map { param ->
+                        val type =
+                            ctx
+                                .resolveType(param.type, forDomain = false)
+                                .let { if (!param.required) "$it?" else it }
+                        mapOf(
+                            "name" to param.name.toSafeIdentifier(),
+                            "type" to type,
+                            "originalName" to param.originalName,
+                            "location" to param.location.lowercase(),
+                            "pathAnnotation" to (param.location.lowercase() == "path"),
+                        )
+                    }
+                val requestBodyType = op.requestBody?.let { ctx.resolveType(it, forDomain = false) }
                 mapOf(
-                    "name" to param.name.toSafeIdentifier(),
-                    "type" to type,
-                    "originalName" to param.originalName,
-                    "location" to param.location.lowercase(),
-                    "pathAnnotation" to (param.location.lowercase() == "path"),
+                    "operationId" to op.operationId,
+                    "method" to op.method,
+                    "path" to op.path,
+                    "returnType" to ctx.serviceReturnType(op.responseBody),
+                    "params" to params,
+                    "hasBody" to (op.requestBody != null),
+                    "bodyType" to requestBodyType,
+                    "methodAnnotationImport" to ctx.retrofitMethodAnnotationImport(op.method),
+                    "methodAnnotationSimple" to ctx.retrofitMethodAnnotationSimple(op.method),
                 )
             }
-            val requestBodyType = op.requestBody?.let { ctx.resolveType(it, forDomain = false) }
-            mapOf(
-                "operationId" to op.operationId,
-                "method" to op.method,
-                "path" to op.path,
-                "returnType" to ctx.serviceReturnType(op.responseBody),
-                "params" to params,
-                "hasBody" to (op.requestBody != null),
-                "bodyType" to requestBodyType,
-                "methodAnnotationImport" to ctx.retrofitMethodAnnotationImport(op.method),
-                "methodAnnotationSimple" to ctx.retrofitMethodAnnotationSimple(op.method),
-            )
-        }
-        val typeImports = buildSet {
-            spec.operations.forEach { op ->
-                op.params.forEach { param ->
-                    addAll(ctx.importsForType(param.type, forDomain = false, currentPackage = ctx.servicePackage))
-                }
-                op.requestBody?.let { body ->
-                    addAll(ctx.importsForType(body, forDomain = false, currentPackage = ctx.servicePackage))
-                }
-                addAll(ctx.importsForServiceReturnType(op.responseBody))
-            }
-        }
-        val imports = buildSet {
-            addAll(typeImports)
-            if (operations.any { it["hasBody"] as Boolean }) {
-                add("retrofit2.http.Body")
-            }
-            operations.forEach { op ->
-                add(op["methodAnnotationImport"] as String)
-                (op["params"] as List<*>).forEach { p ->
-                    val m = p as Map<*, *>
-                    add(
-                        if (m["pathAnnotation"] as Boolean) "retrofit2.http.Path" else "retrofit2.http.Query",
-                    )
+        val typeImports =
+            buildSet {
+                spec.operations.forEach { op ->
+                    op.params.forEach { param ->
+                        addAll(ctx.importsForType(param.type, forDomain = false, currentPackage = ctx.servicePackage))
+                    }
+                    op.requestBody?.let { body ->
+                        addAll(ctx.importsForType(body, forDomain = false, currentPackage = ctx.servicePackage))
+                    }
+                    addAll(ctx.importsForServiceReturnType(op.responseBody))
                 }
             }
-        }.sorted()
+        val imports =
+            buildSet {
+                addAll(typeImports)
+                if (operations.any { it["hasBody"] as Boolean }) {
+                    add("retrofit2.http.Body")
+                }
+                operations.forEach { op ->
+                    add(op["methodAnnotationImport"] as String)
+                    (op["params"] as List<*>).forEach { p ->
+                        val m = p as Map<*, *>
+                        add(
+                            if (m["pathAnnotation"] as Boolean) "retrofit2.http.Path" else "retrofit2.http.Query",
+                        )
+                    }
+                }
+            }.sorted()
         return engine.render(
             "android/swagger/ApiService.kt.ftl",
             mapOf(
@@ -145,36 +162,45 @@ class SwaggerTemplateRenderer(
         )
     }
 
-    fun renderRepositoryInterface(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
-        val operations = spec.operations.map { op ->
-            val params = op.params.map { param ->
-                val type = ctx.resolveType(param.type, forDomain = true)
-                    .let { if (!param.required) "$it?" else it }
+    fun renderRepositoryInterface(
+        spec: SwaggerSpec,
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String {
+        val operations =
+            spec.operations.map { op ->
+                val params =
+                    op.params.map { param ->
+                        val type =
+                            ctx
+                                .resolveType(param.type, forDomain = true)
+                                .let { if (!param.required) "$it?" else it }
+                        mapOf(
+                            "name" to param.name.toSafeIdentifier(),
+                            "type" to type,
+                        )
+                    }
+                val bodyType = op.requestBody?.let { ctx.resolveType(it, forDomain = true) }
                 mapOf(
-                    "name" to param.name.toSafeIdentifier(),
-                    "type" to type,
+                    "operationId" to op.operationId,
+                    "returnType" to ctx.repositoryReturnType(op.responseBody),
+                    "params" to params,
+                    "hasBody" to (op.requestBody != null),
+                    "bodyType" to bodyType,
                 )
             }
-            val bodyType = op.requestBody?.let { ctx.resolveType(it, forDomain = true) }
-            mapOf(
-                "operationId" to op.operationId,
-                "returnType" to ctx.repositoryReturnType(op.responseBody),
-                "params" to params,
-                "hasBody" to (op.requestBody != null),
-                "bodyType" to bodyType,
-            )
-        }
-        val imports = buildSet {
-            spec.operations.forEach { op ->
-                op.params.forEach { param ->
-                    addAll(ctx.importsForType(param.type, forDomain = true, currentPackage = ctx.domainRepositoryPackage))
+        val imports =
+            buildSet {
+                spec.operations.forEach { op ->
+                    op.params.forEach { param ->
+                        addAll(ctx.importsForType(param.type, forDomain = true, currentPackage = ctx.domainRepositoryPackage))
+                    }
+                    op.requestBody?.let { body ->
+                        addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainRepositoryPackage))
+                    }
+                    addAll(ctx.importsForRepositoryReturnType(op.responseBody))
                 }
-                op.requestBody?.let { body ->
-                    addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainRepositoryPackage))
-                }
-                addAll(ctx.importsForRepositoryReturnType(op.responseBody))
-            }
-        }.sorted()
+            }.sorted()
         return engine.render(
             "android/swagger/ApiRepository.kt.ftl",
             mapOf(
@@ -187,44 +213,53 @@ class SwaggerTemplateRenderer(
         )
     }
 
-    fun renderRepositoryImpl(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
-        val operations = spec.operations.map { op ->
-            val callArgs = mutableListOf<String>()
-            val params = op.params.map { param ->
-                val name = param.name.toSafeIdentifier()
-                callArgs.add(name)
-                val type = ctx.resolveType(param.type, forDomain = true)
-                    .let { if (!param.required) "$it?" else it }
-                mapOf("name" to name, "type" to type)
-            }
-            if (op.requestBody != null) {
-                callArgs.add("body.toData()")
-            }
-            val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
-            val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
-            val stmt = if (ctx.hasResultWrappers()) {
-                if (mapperExpr != null) {
-                    "return $serviceCall.toResult { $mapperExpr }"
-                } else {
-                    "return $serviceCall.toResult()"
+    fun renderRepositoryImpl(
+        spec: SwaggerSpec,
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String {
+        val operations =
+            spec.operations.map { op ->
+                val callArgs = mutableListOf<String>()
+                val params =
+                    op.params.map { param ->
+                        val name = param.name.toSafeIdentifier()
+                        callArgs.add(name)
+                        val type =
+                            ctx
+                                .resolveType(param.type, forDomain = true)
+                                .let { if (!param.required) "$it?" else it }
+                        mapOf("name" to name, "type" to type)
+                    }
+                if (op.requestBody != null) {
+                    callArgs.add("body.toData()")
                 }
-            } else {
-                if (mapperExpr != null) {
-                    val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
-                    "return $mapped"
-                } else {
-                    "return $serviceCall"
-                }
+                val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
+                val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
+                val stmt =
+                    if (ctx.hasResultWrappers()) {
+                        if (mapperExpr != null) {
+                            "return $serviceCall.toResult { $mapperExpr }"
+                        } else {
+                            "return $serviceCall.toResult()"
+                        }
+                    } else {
+                        if (mapperExpr != null) {
+                            val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
+                            "return $mapped"
+                        } else {
+                            "return $serviceCall"
+                        }
+                    }
+                mapOf(
+                    "operationId" to op.operationId,
+                    "returnType" to ctx.repositoryReturnType(op.responseBody),
+                    "params" to params,
+                    "hasBody" to (op.requestBody != null),
+                    "bodyType" to op.requestBody?.let { ctx.resolveType(it, forDomain = true) },
+                    "statement" to stmt,
+                )
             }
-            mapOf(
-                "operationId" to op.operationId,
-                "returnType" to ctx.repositoryReturnType(op.responseBody),
-                "params" to params,
-                "hasBody" to (op.requestBody != null),
-                "bodyType" to op.requestBody?.let { ctx.resolveType(it, forDomain = true) },
-                "statement" to stmt,
-            )
-        }
         val imports = androidGeneratedRepositorySupportImports(spec, ctx)
         val repositoryInterface =
             if (ctx.usesSplitRepositoryLayout) ctx.apiRepositoryName else ctx.repositoryName
@@ -245,44 +280,53 @@ class SwaggerTemplateRenderer(
     /**
      * Generated `open class GeneratedRepositorySupport` under `/generate/` (not overwritten by module scaffold).
      */
-    fun renderGeneratedRepositorySupport(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
-        val operations = spec.operations.map { op ->
-            val callArgs = mutableListOf<String>()
-            val params = op.params.map { param ->
-                val name = param.name.toSafeIdentifier()
-                callArgs.add(name)
-                val type = ctx.resolveType(param.type, forDomain = true)
-                    .let { if (!param.required) "$it?" else it }
-                mapOf("name" to name, "type" to type)
-            }
-            if (op.requestBody != null) {
-                callArgs.add("body.toData()")
-            }
-            val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
-            val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
-            val stmt = if (ctx.hasResultWrappers()) {
-                if (mapperExpr != null) {
-                    "return $serviceCall.toResult { $mapperExpr }"
-                } else {
-                    "return $serviceCall.toResult()"
+    fun renderGeneratedRepositorySupport(
+        spec: SwaggerSpec,
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String {
+        val operations =
+            spec.operations.map { op ->
+                val callArgs = mutableListOf<String>()
+                val params =
+                    op.params.map { param ->
+                        val name = param.name.toSafeIdentifier()
+                        callArgs.add(name)
+                        val type =
+                            ctx
+                                .resolveType(param.type, forDomain = true)
+                                .let { if (!param.required) "$it?" else it }
+                        mapOf("name" to name, "type" to type)
+                    }
+                if (op.requestBody != null) {
+                    callArgs.add("body.toData()")
                 }
-            } else {
-                if (mapperExpr != null) {
-                    val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
-                    "return $mapped"
-                } else {
-                    "return $serviceCall"
-                }
+                val serviceCall = "service.${op.operationId}(${callArgs.joinToString(", ")})"
+                val mapperExpr = ctx.repositoryResponseMapExpression(op.responseBody, "it")
+                val stmt =
+                    if (ctx.hasResultWrappers()) {
+                        if (mapperExpr != null) {
+                            "return $serviceCall.toResult { $mapperExpr }"
+                        } else {
+                            "return $serviceCall.toResult()"
+                        }
+                    } else {
+                        if (mapperExpr != null) {
+                            val mapped = ctx.repositoryResponseMapExpression(op.responseBody, serviceCall)
+                            "return $mapped"
+                        } else {
+                            "return $serviceCall"
+                        }
+                    }
+                mapOf(
+                    "operationId" to op.operationId,
+                    "returnType" to ctx.repositoryReturnType(op.responseBody),
+                    "params" to params,
+                    "hasBody" to (op.requestBody != null),
+                    "bodyType" to op.requestBody?.let { ctx.resolveType(it, forDomain = true) },
+                    "statement" to stmt,
+                )
             }
-            mapOf(
-                "operationId" to op.operationId,
-                "returnType" to ctx.repositoryReturnType(op.responseBody),
-                "params" to params,
-                "hasBody" to (op.requestBody != null),
-                "bodyType" to op.requestBody?.let { ctx.resolveType(it, forDomain = true) },
-                "statement" to stmt,
-            )
-        }
         val imports = androidGeneratedRepositorySupportImports(spec, ctx)
         return engine.render(
             "android/swagger/GeneratedRepositorySupport.kt.ftl",
@@ -336,18 +380,20 @@ class SwaggerTemplateRenderer(
         }.sorted()
     }
 
-    fun renderGeneratedDataModule(ctx: SwaggerGeneratorContext, projectRoot: File? = null): String =
-        engine.render(
-            "android/swagger/GeneratedDataModule.kt.ftl",
-            mapOf(
-                "generateDiPackage" to ctx.generateDiPackage,
-                "servicePackage" to ctx.servicePackage,
-                "serviceName" to ctx.serviceName,
-                "dataRepositoryPackage" to ctx.dataRepositoryPackage,
-                "apiRepositorySupportName" to ctx.apiRepositorySupportName,
-            ),
-            projectRoot,
-        )
+    fun renderGeneratedDataModule(
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String = engine.render(
+        "android/swagger/GeneratedDataModule.kt.ftl",
+        mapOf(
+            "generateDiPackage" to ctx.generateDiPackage,
+            "servicePackage" to ctx.servicePackage,
+            "serviceName" to ctx.serviceName,
+            "dataRepositoryPackage" to ctx.dataRepositoryPackage,
+            "apiRepositorySupportName" to ctx.apiRepositorySupportName,
+        ),
+        projectRoot,
+    )
 
     fun renderGeneratedDomainModule(
         spec: SwaggerSpec,
@@ -356,12 +402,13 @@ class SwaggerTemplateRenderer(
         preservedPrefsUseCaseClassNames: List<String> = emptyList(),
         projectRoot: File? = null,
     ): String {
-        val swaggerUseCases = spec.operations.map { op ->
-            mapOf(
-                "useCaseClass" to "${op.operationId.toSafePascal()}UseCase",
-                "domainUseCasePackage" to ctx.domainUseCasePackage,
-            )
-        }
+        val swaggerUseCases =
+            spec.operations.map { op ->
+                mapOf(
+                    "useCaseClass" to "${op.operationId.toSafePascal()}UseCase",
+                    "domainUseCasePackage" to ctx.domainUseCasePackage,
+                )
+            }
         val dbUseCases = preservedDbUseCaseClassNames.map { mapOf("useCaseClass" to it) }
         val dbUseCaseImports = preservedDbUseCaseClassNames.map { "${ctx.domainUseCasePackage}.$it" }
         val prefsUseCases = preservedPrefsUseCaseClassNames.map { mapOf("useCaseClass" to it) }
@@ -380,28 +427,35 @@ class SwaggerTemplateRenderer(
         )
     }
 
-    fun renderDataModule(ctx: SwaggerGeneratorContext, projectRoot: File? = null): String =
-        engine.render(
-            "android/swagger/ApiDataModule.kt.ftl",
-            mapOf(
-                "dataPackage" to ctx.dataPackage,
-                "dataRepositoryPackage" to ctx.dataRepositoryPackage,
-                "repositoryImplName" to ctx.repositoryImplName,
-                "domainRepositoryPackage" to ctx.domainRepositoryPackage,
-                "apiRepositoryName" to ctx.apiRepositoryName,
-                "servicePackage" to ctx.servicePackage,
-                "serviceName" to ctx.serviceName,
-            ),
-            projectRoot,
-        )
+    fun renderDataModule(
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String = engine.render(
+        "android/swagger/ApiDataModule.kt.ftl",
+        mapOf(
+            "dataPackage" to ctx.dataPackage,
+            "dataRepositoryPackage" to ctx.dataRepositoryPackage,
+            "repositoryImplName" to ctx.repositoryImplName,
+            "domainRepositoryPackage" to ctx.domainRepositoryPackage,
+            "apiRepositoryName" to ctx.apiRepositoryName,
+            "servicePackage" to ctx.servicePackage,
+            "serviceName" to ctx.serviceName,
+        ),
+        projectRoot,
+    )
 
-    fun renderDomainModule(spec: SwaggerSpec, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
-        val useCases = spec.operations.map { op ->
-            mapOf(
-                "useCaseClass" to "${op.operationId.toSafePascal()}UseCase",
-                "domainUseCasePackage" to ctx.domainUseCasePackage,
-            )
-        }
+    fun renderDomainModule(
+        spec: SwaggerSpec,
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String {
+        val useCases =
+            spec.operations.map { op ->
+                mapOf(
+                    "useCaseClass" to "${op.operationId.toSafePascal()}UseCase",
+                    "domainUseCasePackage" to ctx.domainUseCasePackage,
+                )
+            }
         return engine.render(
             "android/swagger/ApiDomainModule.kt.ftl",
             mapOf(
@@ -412,42 +466,52 @@ class SwaggerTemplateRenderer(
         )
     }
 
-    fun renderRootKoinModule(ctx: SwaggerGeneratorContext, projectRoot: File? = null): String =
-        engine.render(
-            "android/swagger/ApiRootKoinModule.kt.ftl",
-            mapOf(
-                "rootPackage" to ctx.rootPackage,
-                "pascalModuleName" to ctx.pascalModuleName,
-                "domainPackage" to ctx.domainPackage,
-                "dataPackage" to ctx.dataPackage,
-            ),
-            projectRoot,
-        )
+    fun renderRootKoinModule(
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String = engine.render(
+        "android/swagger/ApiRootKoinModule.kt.ftl",
+        mapOf(
+            "rootPackage" to ctx.rootPackage,
+            "pascalModuleName" to ctx.pascalModuleName,
+            "domainPackage" to ctx.domainPackage,
+            "dataPackage" to ctx.dataPackage,
+        ),
+        projectRoot,
+    )
 
-    fun renderUseCase(op: SwaggerOperation, ctx: SwaggerGeneratorContext, projectRoot: File? = null): String {
+    fun renderUseCase(
+        op: SwaggerOperation,
+        ctx: SwaggerGeneratorContext,
+        projectRoot: File? = null,
+    ): String {
         val useCaseName = "${op.operationId.toSafePascal()}UseCase"
         val args = mutableListOf<String>()
-        val params = op.params.map { param ->
-            val name = param.name.toSafeIdentifier()
-            args.add(name)
-            val type = ctx.resolveType(param.type, forDomain = true)
-                .let { if (!param.required) "$it?" else it }
-            mapOf("name" to name, "type" to type)
-        }
+        val params =
+            op.params.map { param ->
+                val name = param.name.toSafeIdentifier()
+                args.add(name)
+                val type =
+                    ctx
+                        .resolveType(param.type, forDomain = true)
+                        .let { if (!param.required) "$it?" else it }
+                mapOf("name" to name, "type" to type)
+            }
         if (op.requestBody != null) {
             args.add("body")
         }
         val bodyType = op.requestBody?.let { ctx.resolveType(it, forDomain = true) }
-        val imports = buildSet {
-            op.params.forEach { param ->
-                addAll(ctx.importsForType(param.type, forDomain = true, currentPackage = ctx.domainUseCasePackage))
-            }
-            op.requestBody?.let { body ->
-                addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainUseCasePackage))
-            }
-            addAll(ctx.importsForRepositoryReturnType(op.responseBody))
-            add("${ctx.domainRepositoryPackage}.${ctx.repositoryName}")
-        }.sorted()
+        val imports =
+            buildSet {
+                op.params.forEach { param ->
+                    addAll(ctx.importsForType(param.type, forDomain = true, currentPackage = ctx.domainUseCasePackage))
+                }
+                op.requestBody?.let { body ->
+                    addAll(ctx.importsForType(body, forDomain = true, currentPackage = ctx.domainUseCasePackage))
+                }
+                addAll(ctx.importsForRepositoryReturnType(op.responseBody))
+                add("${ctx.domainRepositoryPackage}.${ctx.repositoryName}")
+            }.sorted()
         return engine.render(
             "android/swagger/UseCase.kt.ftl",
             mapOf(

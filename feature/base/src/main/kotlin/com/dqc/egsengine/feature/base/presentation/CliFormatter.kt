@@ -1,19 +1,19 @@
 package com.dqc.egsengine.feature.base.presentation
 
 object CliFormatter {
-
     fun formatTable(
         headers: List<String>,
         rows: List<List<String>>,
     ): String {
         if (headers.isEmpty()) return ""
 
-        val columnWidths = headers.indices.map { col ->
-            maxOf(
-                headers[col].length,
-                rows.maxOfOrNull { it.getOrElse(col) { "" }.length } ?: 0,
-            )
-        }
+        val columnWidths =
+            headers.indices.map { col ->
+                maxOf(
+                    headers[col].length,
+                    rows.maxOfOrNull { it.getOrElse(col) { "" }.length } ?: 0,
+                )
+            }
 
         val sb = StringBuilder()
 

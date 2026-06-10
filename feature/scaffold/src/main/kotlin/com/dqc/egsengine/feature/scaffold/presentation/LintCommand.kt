@@ -10,15 +10,13 @@ class LintCommand : CliktCommand(name = "lint") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): LintCommand =
-            LintCommand().subcommands(
-                LintFixCommand(),
-            )
+        fun withSubcommands(): LintCommand = LintCommand().subcommands(
+            LintFixCommand(),
+        )
     }
 }
 
 class LintFixCommand : CliktCommand(name = "fix") {
-
     private val projectPath by option("--project", "-p", help = "Workspace root path")
         .default(".")
 

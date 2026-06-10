@@ -15,18 +15,19 @@ import com.dqc.egsengine.template.di.featureTemplateEngineModule
 import org.koin.dsl.module
 
 /** Shared bindings used across all platforms. */
-val scaffoldSharedModule = module {
-    includes(featureTemplateEngineModule)
+val scaffoldSharedModule =
+    module {
+        includes(featureTemplateEngineModule)
 
-    single { EgsConfigReader() }
-    single { SettingsGradleUpdater() }
-    single { SwaggerParser() }
-    single { SwaggerTemplateRenderer(get()) }
-    single { SwaggerCodeGenerator(get(), get(), get()) }
-    single { FtlSwaggerCodeGenerator(get()) }
-    single { PageGenerator(get()) }
-    single { UseCaseScanner() }
-    single { FeatureDiUpdater() }
-    single { DdlParser() }
-    single { WorkspaceConfigResolver(get()) }
-}
+        single { EgsConfigReader() }
+        single { SettingsGradleUpdater() }
+        single { SwaggerParser() }
+        single { SwaggerTemplateRenderer(get()) }
+        single { SwaggerCodeGenerator(get(), get(), get()) }
+        single { FtlSwaggerCodeGenerator(get()) }
+        single { PageGenerator(get()) }
+        single { UseCaseScanner() }
+        single { FeatureDiUpdater() }
+        single { DdlParser() }
+        single { WorkspaceConfigResolver(get()) }
+    }

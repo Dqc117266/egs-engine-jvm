@@ -6,7 +6,6 @@ internal enum class GitHubGitProtocol {
 }
 
 internal object GitHubCloneUrlPolicy {
-
     fun resolveProtocol(cliOverride: String?): GitHubGitProtocol {
         val cli = cliOverride?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
         if (cli != null) {
@@ -22,7 +21,10 @@ internal object GitHubCloneUrlPolicy {
         return GitHubGitProtocol.SSH
     }
 
-    fun cloneUrlForProtocol(url: String, protocol: GitHubGitProtocol): String {
+    fun cloneUrlForProtocol(
+        url: String,
+        protocol: GitHubGitProtocol,
+    ): String {
         when {
             url.startsWith("git@") || url.startsWith("ssh://") ->
                 return when (protocol) {
@@ -38,7 +40,11 @@ internal object GitHubCloneUrlPolicy {
         return url
     }
 
-    fun embedHttpsToken(url: String, token: String?, username: String): String {
+    fun embedHttpsToken(
+        url: String,
+        token: String?,
+        username: String,
+    ): String {
         val t = token?.trim()?.takeIf { it.isNotBlank() } ?: return url
         if (!url.startsWith("https://github.com/")) return url
         val rest = url.removePrefix("https://github.com/")
@@ -54,13 +60,14 @@ internal object GitHubCloneUrlPolicy {
 
     private fun githubSshToHttps(sshUrl: String): String? {
         val withoutGit = sshUrl.removeSuffix(".git")
-        val path = when {
-            sshUrl.startsWith("git@github.com:") ->
-                withoutGit.removePrefix("git@github.com:")
-            sshUrl.startsWith("ssh://git@github.com/") ->
-                withoutGit.removePrefix("ssh://git@github.com/")
-            else -> return null
-        }
+        val path =
+            when {
+                sshUrl.startsWith("git@github.com:") ->
+                    withoutGit.removePrefix("git@github.com:")
+                sshUrl.startsWith("ssh://git@github.com/") ->
+                    withoutGit.removePrefix("ssh://git@github.com/")
+                else -> return null
+            }
         return "https://github.com/${path.trim('/')}.git"
     }
 }

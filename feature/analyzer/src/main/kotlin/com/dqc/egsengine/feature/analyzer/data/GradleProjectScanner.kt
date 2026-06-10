@@ -16,8 +16,9 @@ class GradleProjectScanner(
     fun scanProject(projectPath: File): ProjectInfo {
         require(projectPath.isDirectory) { "Project path must be a directory: $projectPath" }
 
-        val settingsFile = projectPath.resolve("settings.gradle.kts").takeIf { it.exists() }
-            ?: projectPath.resolve("settings.gradle").takeIf { it.exists() }
+        val settingsFile =
+            projectPath.resolve("settings.gradle.kts").takeIf { it.exists() }
+                ?: projectPath.resolve("settings.gradle").takeIf { it.exists() }
 
         requireNotNull(settingsFile) { "Not a Gradle project (no settings.gradle found): $projectPath" }
 
@@ -50,27 +51,30 @@ class GradleProjectScanner(
         val gradleVersion: String,
     )
 
-    private fun tryToolingApi(projectPath: File): ToolingApiResult? {
-        return try {
-            val connector = GradleConnector.newConnector()
+    private fun tryToolingApi(projectPath: File): ToolingApiResult? = try {
+        val connector =
+            GradleConnector
+                .newConnector()
                 .forProjectDirectory(projectPath)
 
-            connector.connect().use { connection ->
-                val buildEnv = connection.getModel(BuildEnvironment::class.java)
-                val gradleProject = connection.getModel(GradleProject::class.java)
+        connector.connect().use { connection ->
+            val buildEnv = connection.getModel(BuildEnvironment::class.java)
+            val gradleProject = connection.getModel(GradleProject::class.java)
 
-                ToolingApiResult(
-                    projectName = gradleProject.name,
-                    gradleVersion = buildEnv.gradle.gradleVersion,
-                )
-            }
-        } catch (e: Exception) {
-            logger.warn("Gradle Tooling API connection failed, falling back to file-based analysis: ${e.message}")
-            null
+            ToolingApiResult(
+                projectName = gradleProject.name,
+                gradleVersion = buildEnv.gradle.gradleVersion,
+            )
         }
+    } catch (e: Exception) {
+        logger.warn("Gradle Tooling API connection failed, falling back to file-based analysis: ${e.message}")
+        null
     }
 
-    private fun scanModules(projectRoot: File, includedModules: List<String>): List<ModuleInfo> {
+    private fun scanModules(
+        projectRoot: File,
+        includedModules: List<String>,
+    ): List<ModuleInfo> {
         val modules = mutableListOf<ModuleInfo>()
 
         for (modulePath in includedModules) {
@@ -106,7 +110,8 @@ class GradleProjectScanner(
         val srcDir = moduleDir.resolve("src")
         if (!srcDir.isDirectory) return emptyList()
 
-        return srcDir.listFiles()
+        return srcDir
+            .listFiles()
             ?.filter { it.isDirectory }
             ?.map { it.name }
             ?.sorted()
@@ -123,9 +128,10 @@ class GradleProjectScanner(
     }
 
     private fun detectProjectName(projectRoot: File): String {
-        val settingsFile = projectRoot.resolve("settings.gradle.kts").takeIf { it.exists() }
-            ?: projectRoot.resolve("settings.gradle").takeIf { it.exists() }
-            ?: return projectRoot.name
+        val settingsFile =
+            projectRoot.resolve("settings.gradle.kts").takeIf { it.exists() }
+                ?: projectRoot.resolve("settings.gradle").takeIf { it.exists() }
+                ?: return projectRoot.name
 
         val content = settingsFile.readText()
         val namePattern = Regex("""rootProject\.name\s*=\s*"([^"]+)"""")

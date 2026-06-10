@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Files
 
 class SpringBootCrudGeneratorTemplateRegressionTest {
-
     @Test
     fun `generate handles nullable ints and large varchar lengths without invalid Kotlin`() {
         val ddl =

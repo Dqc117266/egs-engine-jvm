@@ -63,10 +63,16 @@ class ClientAppNavigationWiring {
         }
     }
 
-    private fun findFile(appDir: File, simpleName: String): File? =
-        appDir.walkTopDown().maxDepth(25).firstOrNull { it.isFile && it.name == simpleName }
+    private fun findFile(
+        appDir: File,
+        simpleName: String,
+    ): File? = appDir.walkTopDown().maxDepth(25).firstOrNull { it.isFile && it.name == simpleName }
 
-    private fun inferAppPackage(appKt: File?, mainFile: File, navFile: File): String {
+    private fun inferAppPackage(
+        appKt: File?,
+        mainFile: File,
+        navFile: File,
+    ): String {
         if (appKt != null) {
             val pkg = readPackage(appKt)
             if (pkg != null) return pkg
@@ -79,7 +85,10 @@ class ClientAppNavigationWiring {
         return line.trim().removePrefix("package ").trim()
     }
 
-    private fun appendNavigationRoute(file: File, routeName: String) {
+    private fun appendNavigationRoute(
+        file: File,
+        routeName: String,
+    ) {
         var text = file.readText()
         val marker = "data object $routeName : NavigationRoute"
         if (text.contains(marker)) {
@@ -115,12 +124,13 @@ class ClientAppNavigationWiring {
         val importLine = "import $screenImportFqn"
         if (!text.contains(importLine)) {
             val pkgLine = text.lineSequence().indexOfFirst { it.trim().startsWith("package ") }
-            val insertAt = if (pkgLine >= 0) {
-                text.lines().take(pkgLine + 1).joinToString("\n") + "\n" + importLine + "\n" +
-                    text.lines().drop(pkgLine + 1).joinToString("\n")
-            } else {
-                importLine + "\n\n" + text
-            }
+            val insertAt =
+                if (pkgLine >= 0) {
+                    text.lines().take(pkgLine + 1).joinToString("\n") + "\n" + importLine + "\n" +
+                        text.lines().drop(pkgLine + 1).joinToString("\n")
+                } else {
+                    importLine + "\n\n" + text
+                }
             text = insertAt
         }
         val graphBlock = Regex("""navController\.createGraph\([^)]*\)\s*\{""").find(text)
@@ -139,7 +149,10 @@ class ClientAppNavigationWiring {
         logger.info("Appended composable for $routeName to MainTemplateScreen")
     }
 
-    private fun appendGradleFeatureDependency(gradle: File, moduleName: String) {
+    private fun appendGradleFeatureDependency(
+        gradle: File,
+        moduleName: String,
+    ) {
         var text = gradle.readText()
         val dep = "implementation(projects.feature.$moduleName)"
         if (text.contains("projects.feature.$moduleName")) {
@@ -154,7 +167,12 @@ class ClientAppNavigationWiring {
         logger.info("Added Gradle dependency $dep")
     }
 
-    private fun appendKoinModules(appKt: File, appPackage: String, moduleName: String, featureModulesName: String) {
+    private fun appendKoinModules(
+        appKt: File,
+        appPackage: String,
+        moduleName: String,
+        featureModulesName: String,
+    ) {
         var text = appKt.readText()
         if (text.contains("modules($featureModulesName)")) {
             logger.debug("Koin already lists $featureModulesName")
@@ -172,27 +190,27 @@ class ClientAppNavigationWiring {
         val modulesLine = "            modules($featureModulesName)"
         val featureModulesRegex = Regex("""modules\(feature\w+Modules\)""")
         val lastFeature = featureModulesRegex.findAll(text).lastOrNull()
-        val insertPos: Int = if (lastFeature != null) {
-            lastFeature.range.last + 1
-        } else {
-            val m = Regex("""modules\(appModule\)""").find(text)
-            when {
-                m != null -> m.range.last + 1
-                else -> {
-                    val i = text.indexOf("androidContext(")
-                    if (i < 0) {
-                        logger.warn("Could not find insertion point for Koin modules in App.kt")
-                        return
+        val insertPos: Int =
+            if (lastFeature != null) {
+                lastFeature.range.last + 1
+            } else {
+                val m = Regex("""modules\(appModule\)""").find(text)
+                when {
+                    m != null -> m.range.last + 1
+                    else -> {
+                        val i = text.indexOf("androidContext(")
+                        if (i < 0) {
+                            logger.warn("Could not find insertion point for Koin modules in App.kt")
+                            return
+                        }
+                        i
                     }
-                    i
                 }
             }
-        }
         text = text.substring(0, insertPos) + "\n$modulesLine" + text.substring(insertPos)
         appKt.writeText(text)
         logger.info("Appended Koin $featureModulesName to App.kt")
     }
 }
 
-internal fun featureModulesBindingName(moduleName: String): String =
-    "feature" + moduleName.replaceFirstChar { it.uppercaseChar() } + "Modules"
+internal fun featureModulesBindingName(moduleName: String): String = "feature" + moduleName.replaceFirstChar { it.uppercaseChar() } + "Modules"

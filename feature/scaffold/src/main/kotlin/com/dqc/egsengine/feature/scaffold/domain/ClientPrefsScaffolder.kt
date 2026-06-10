@@ -27,25 +27,28 @@ class ClientPrefsScaffolder(
     ): KmpPreferencesScaffolder.KmpPreferencesScaffoldResult {
         val platform = workspaceConfigResolver.resolveClient(projectRoot).platform
         return when (platform) {
-            Platform.ANDROID -> androidPreferencesScaffolder.scaffoldPrefs(
-                projectRoot = projectRoot,
-                moduleName = moduleName,
-                fieldsArg = fieldsArg,
-                keyArg = keyArg,
-                dryRun = dryRun,
-                force = force,
-            )
-            Platform.KMP, Platform.KMP_ANDROID -> kmpPreferencesScaffolder.scaffoldPrefs(
-                projectRoot = projectRoot,
-                moduleName = moduleName,
-                fieldsArg = fieldsArg,
-                keyArg = keyArg,
-                dryRun = dryRun,
-                force = force,
-            )
-            else -> error(
-                "client gen prefs requires workspace project 'client' with platform kmp, kmp_android, or android; got $platform",
-            )
+            Platform.ANDROID ->
+                androidPreferencesScaffolder.scaffoldPrefs(
+                    projectRoot = projectRoot,
+                    moduleName = moduleName,
+                    fieldsArg = fieldsArg,
+                    keyArg = keyArg,
+                    dryRun = dryRun,
+                    force = force,
+                )
+            Platform.KMP, Platform.KMP_ANDROID ->
+                kmpPreferencesScaffolder.scaffoldPrefs(
+                    projectRoot = projectRoot,
+                    moduleName = moduleName,
+                    fieldsArg = fieldsArg,
+                    keyArg = keyArg,
+                    dryRun = dryRun,
+                    force = force,
+                )
+            else ->
+                error(
+                    "client gen prefs requires workspace project 'client' with platform kmp, kmp_android, or android; got $platform",
+                )
         }
     }
 }

@@ -37,19 +37,17 @@ class PageGenerator(
         )
     }
 
-    fun generate(projectRoot: File, template: PageTemplate, projectType: String): List<File> =
-        preview(projectRoot, template, projectType).map { generated ->
-            projectRoot.resolve(generated.path).also { file ->
-                file.parentFile.mkdirs()
-                file.writeText(generated.content)
-            }
+    fun generate(projectRoot: File, template: PageTemplate, projectType: String): List<File> = preview(projectRoot, template, projectType).map { generated ->
+        projectRoot.resolve(generated.path).also { file ->
+            file.parentFile.mkdirs()
+            file.writeText(generated.content)
         }
+    }
 
-    private fun render(projectRoot: File, templateName: String, model: PageTemplateModel, path: String): GeneratedFileInfo =
-        GeneratedFileInfo(
-            path = path,
-            content = templateEngine.render(templateName, model, projectRoot),
-        )
+    private fun render(projectRoot: File, templateName: String, model: PageTemplateModel, path: String): GeneratedFileInfo = GeneratedFileInfo(
+        path = path,
+        content = templateEngine.render(templateName, model, projectRoot),
+    )
 
     private fun PageTemplate.toModel(projectType: String): PageTemplateModel {
         val pascal = pageName
@@ -109,16 +107,15 @@ class PageGenerator(
         )
     }
 
-    private fun UseCaseInfo.toModel(modelPackage: String): PageUseCaseModel =
-        PageUseCaseModel(
-            name = name,
-            camelName = camelName,
-            packageName = packageName,
-            returnType = returnType,
-            parameters = parameters.map { it.toModel(modelPackage) },
-            intentName = name.removeSuffix("UseCase"),
-            handlerName = "handle${name.removeSuffix("UseCase").replaceFirstChar { it.uppercase() }}",
-        )
+    private fun UseCaseInfo.toModel(modelPackage: String): PageUseCaseModel = PageUseCaseModel(
+        name = name,
+        camelName = camelName,
+        packageName = packageName,
+        returnType = returnType,
+        parameters = parameters.map { it.toModel(modelPackage) },
+        intentName = name.removeSuffix("UseCase"),
+        handlerName = "handle${name.removeSuffix("UseCase").replaceFirstChar { it.uppercase() }}",
+    )
 
     private fun UseCaseParam.toModel(modelPackage: String): PageUseCaseParamModel {
         val normalized = type.normalizeKotlinType(modelPackage)
@@ -173,21 +170,19 @@ class PageGenerator(
             .map { "import $it" }
     }
 
-    private fun BaseClassPackages.toModel(): BaseClassPackagesModel =
-        BaseClassPackagesModel(
-            baseViewModel = baseViewModel,
-            baseFragment = baseFragment,
-            resultClass = resultClass,
-            retrofitProvider = retrofitProvider,
-        )
+    private fun BaseClassPackages.toModel(): BaseClassPackagesModel = BaseClassPackagesModel(
+        baseViewModel = baseViewModel,
+        baseFragment = baseFragment,
+        resultClass = resultClass,
+        retrofitProvider = retrofitProvider,
+    )
 
     private data class KotlinTypeRef(
         val reference: String,
         val importFqn: String?,
     )
 
-    private fun String.resultInnerType(): String? =
-        Regex("""Result<(.+)>""").find(this)?.groupValues?.get(1)
+    private fun String.resultInnerType(): String? = Regex("""Result<(.+)>""").find(this)?.groupValues?.get(1)
 
     private fun String.normalizeKotlinType(defaultPackage: String): KotlinTypeRef {
         val nullable = endsWith("?")
@@ -217,6 +212,5 @@ class PageGenerator(
 
     private fun String.toPath(): String = replace('.', '/')
 
-    private fun String.toSnakeCase(): String =
-        replace(Regex("([a-z0-9])([A-Z])"), "$1_$2").lowercase()
+    private fun String.toSnakeCase(): String = replace(Regex("([a-z0-9])([A-Z])"), "$1_$2").lowercase()
 }

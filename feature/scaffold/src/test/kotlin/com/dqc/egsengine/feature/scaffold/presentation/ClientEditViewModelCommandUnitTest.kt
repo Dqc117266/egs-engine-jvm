@@ -14,7 +14,6 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 
 class ClientEditViewModelCommandUnitTest {
-
     @AfterEach
     fun tearDown() {
         stopKoin()
@@ -46,22 +45,22 @@ class ClientEditViewModelCommandUnitTest {
         } returns
             ViewModelEditScaffolder.ViewModelEditResult(
                 pageScaffoldResult =
-                    com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult(
-                        pageName = "Profile",
-                        moduleName = "user",
-                        files = emptyList(),
-                        dryRun = true,
-                    ),
+                com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult(
+                    pageName = "Profile",
+                    moduleName = "user",
+                    files = emptyList(),
+                    dryRun = true,
+                ),
                 stats =
-                    ViewModelEditScaffolder.EditStats(
-                        ctorParams = 0,
-                        intents = 0,
-                        stateFields = 0,
-                        registerBlocks = 0,
-                        handlers = 0,
-                        contractImports = 0,
-                        viewModelImports = 0,
-                    ),
+                ViewModelEditScaffolder.EditStats(
+                    ctorParams = 0,
+                    intents = 0,
+                    stateFields = 0,
+                    registerBlocks = 0,
+                    handlers = 0,
+                    contractImports = 0,
+                    viewModelImports = 0,
+                ),
                 diffs = emptyMap(),
             )
 
@@ -74,7 +73,10 @@ class ClientEditViewModelCommandUnitTest {
             )
         }
 
-        val projectRoot = kotlin.io.path.createTempDirectory("egs-edit-vm-cli").toFile()
+        val projectRoot =
+            kotlin.io.path
+                .createTempDirectory("egs-edit-vm-cli")
+                .toFile()
         projectRoot.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test"""")
         projectRoot.resolve(".egs").mkdirs()
         projectRoot.resolve(".egs/config.json").writeText(
@@ -137,22 +139,22 @@ class ClientEditViewModelCommandUnitTest {
         } returns
             ViewModelEditScaffolder.ViewModelEditResult(
                 pageScaffoldResult =
-                    com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult(
-                        pageName = "Profile",
-                        moduleName = "user",
-                        files = emptyList(),
-                        dryRun = true,
-                    ),
+                com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult(
+                    pageName = "Profile",
+                    moduleName = "user",
+                    files = emptyList(),
+                    dryRun = true,
+                ),
                 stats =
-                    ViewModelEditScaffolder.EditStats(
-                        ctorParams = 0,
-                        intents = 0,
-                        stateFields = 0,
-                        registerBlocks = 0,
-                        handlers = 0,
-                        contractImports = 0,
-                        viewModelImports = 0,
-                    ),
+                ViewModelEditScaffolder.EditStats(
+                    ctorParams = 0,
+                    intents = 0,
+                    stateFields = 0,
+                    registerBlocks = 0,
+                    handlers = 0,
+                    contractImports = 0,
+                    viewModelImports = 0,
+                ),
                 diffs = emptyMap(),
             )
 
@@ -165,7 +167,10 @@ class ClientEditViewModelCommandUnitTest {
             )
         }
 
-        val projectRoot = kotlin.io.path.createTempDirectory("egs-edit-vm-cli-spaces").toFile()
+        val projectRoot =
+            kotlin.io.path
+                .createTempDirectory("egs-edit-vm-cli-spaces")
+                .toFile()
         projectRoot.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test"""")
         projectRoot.resolve(".egs").mkdirs()
         projectRoot.resolve(".egs/config.json").writeText(
@@ -196,7 +201,8 @@ class ClientEditViewModelCommandUnitTest {
                 projectRoot = any(),
                 moduleName = "user",
                 pageName = "Profile",
-                selectedUseCases = match { uc ->
+                selectedUseCases =
+                match { uc ->
                     uc.map { it.name } == listOf("FirstUseCase", "SecondUseCase")
                 },
                 dryRun = true,

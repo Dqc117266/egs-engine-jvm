@@ -11,7 +11,8 @@ include(
     ":feature:init",
     ":feature:scaffold",
     ":feature:template-engine",
-    ":konsist-test",)
+    ":konsist-test",
+)
 
 pluginManagement {
     includeBuild("build-logic")

@@ -11,7 +11,6 @@ import java.io.File
 import java.nio.file.Files
 
 internal class AdminVueFlywayNamingTest {
-
     @Test
     fun `reuses migration file for same module slug`() {
         val d = Files.createTempDirectory("flyway").toFile()

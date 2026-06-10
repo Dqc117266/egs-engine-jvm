@@ -18,7 +18,6 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabase
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidFeatureBuildGradleUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -53,24 +52,27 @@ class AndroidDatabaseScaffolder(
         cached: Boolean = false,
     ): KmpDatabaseScaffolder.KmpDatabaseScaffoldResult {
         val tables = ddlParser.parseFile(sqlFile)
-        val template = workspaceConfigResolver.resolveClient(projectRoot).let { cfg ->
-            cfg.toModuleTemplate(moduleName)
-        }
+        val template =
+            workspaceConfigResolver.resolveClient(projectRoot).let { cfg ->
+                cfg.toModuleTemplate(moduleName)
+            }
         val generated = androidDatabaseCodeGenerator.generate(template, tables, projectRoot).toMutableList()
 
         val clientConfig = workspaceConfigResolver.resolveClient(projectRoot)
         val subProjectRoot = projectRoot.resolve(clientConfig.path)
         val modulePascal = SqlNaming.moduleNameToPascal(moduleName)
         val pkgPath = template.packageName.replace('.', '/')
-        val androidApiSupport = subProjectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}ApiRepositorySupport.kt",
-        )
+        val androidApiSupport =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/main/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}ApiRepositorySupport.kt",
+            )
         val hasApi = androidApiSupport.exists()
 
-        val swaggerSpec = runCatching {
-            swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
-        }.onFailure { logger.debug("Swagger not available for DB VO mapping: {}", it.message) }
-            .getOrNull()
+        val swaggerSpec =
+            runCatching {
+                swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
+            }.onFailure { logger.debug("Swagger not available for DB VO mapping: {}", it.message) }
+                .getOrNull()
 
         if (swaggerSpec != null) {
             generated += androidDatabaseEntityMapperGenerator.generate(template, tables, swaggerSpec, projectRoot)
@@ -93,55 +95,63 @@ class AndroidDatabaseScaffolder(
         if (effectiveRepo) {
             when {
                 !cached && hasApi -> {
-                    generated += androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
-                        template,
-                        tables,
-                        projectRoot,
-                        swaggerSpec,
-                    )
-                    generated += androidDatabaseUseCaseGenerator.generate(
-                        template = template,
-                        tables = tables,
-                        projectRoot = projectRoot,
-                        subProjectRoot = subProjectRoot,
-                        useCaseRepositorySimpleName = "${modulePascal}DbRepository",
-                        spec = swaggerSpec,
-                    )
+                    generated +=
+                        androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                            template,
+                            tables,
+                            projectRoot,
+                            swaggerSpec,
+                        )
+                    generated +=
+                        androidDatabaseUseCaseGenerator.generate(
+                            template = template,
+                            tables = tables,
+                            projectRoot = projectRoot,
+                            subProjectRoot = subProjectRoot,
+                            useCaseRepositorySimpleName = "${modulePascal}DbRepository",
+                            spec = swaggerSpec,
+                        )
                     androidApiDbRepositoryImplGenerator.generateOrMerge(template, subProjectRoot)?.let { generated += it }
                 }
                 !cached && !hasApi -> {
-                    generated += androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
-                        template,
-                        tables,
-                        projectRoot,
-                        swaggerSpec,
-                    )
-                    generated += androidDatabaseUseCaseGenerator.generate(
-                        template = template,
-                        tables = tables,
-                        projectRoot = projectRoot,
-                        subProjectRoot = subProjectRoot,
-                        spec = swaggerSpec,
-                    )
-                    val prefsSlice = androidCombinedRepositoryGenerator.detectSlices(
-                        subProjectRoot,
-                        moduleName,
-                        template,
-                    ).hasPrefs
-                    androidCombinedRepositoryGenerator.generate(
-                        template = template,
-                        subProjectRoot = subProjectRoot,
-                        includeApi = false,
-                        includeDb = true,
-                        includePrefs = prefsSlice,
-                    )?.let { generated += it }
-                    androidDbOnlyRepositoryImplGenerator.generateOrMerge(
-                        template = template,
-                        subProjectRoot = subProjectRoot,
-                        includeApi = false,
-                        includeDb = true,
-                        includePrefs = prefsSlice,
-                    )?.let { generated += it }
+                    generated +=
+                        androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                            template,
+                            tables,
+                            projectRoot,
+                            swaggerSpec,
+                        )
+                    generated +=
+                        androidDatabaseUseCaseGenerator.generate(
+                            template = template,
+                            tables = tables,
+                            projectRoot = projectRoot,
+                            subProjectRoot = subProjectRoot,
+                            spec = swaggerSpec,
+                        )
+                    val prefsSlice =
+                        androidCombinedRepositoryGenerator
+                            .detectSlices(
+                                subProjectRoot,
+                                moduleName,
+                                template,
+                            ).hasPrefs
+                    androidCombinedRepositoryGenerator
+                        .generate(
+                            template = template,
+                            subProjectRoot = subProjectRoot,
+                            includeApi = false,
+                            includeDb = true,
+                            includePrefs = prefsSlice,
+                        )?.let { generated += it }
+                    androidDbOnlyRepositoryImplGenerator
+                        .generateOrMerge(
+                            template = template,
+                            subProjectRoot = subProjectRoot,
+                            includeApi = false,
+                            includeDb = true,
+                            includePrefs = prefsSlice,
+                        )?.let { generated += it }
                 }
             }
         }

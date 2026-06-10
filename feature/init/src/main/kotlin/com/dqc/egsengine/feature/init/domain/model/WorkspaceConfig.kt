@@ -55,7 +55,8 @@ fun SubProjectConfig.toEgsConfig(projectName: String): EgsConfig = EgsConfig(
     rootPath = path,
     conventionPluginId = conventionPluginId,
     basePackage = basePackage,
-    moduleStructure = moduleStructure ?: ModuleStructure(
+    moduleStructure =
+    moduleStructure ?: ModuleStructure(
         layers = listOf("data", "domain", "presentation"),
         hasRes = false,
     ),

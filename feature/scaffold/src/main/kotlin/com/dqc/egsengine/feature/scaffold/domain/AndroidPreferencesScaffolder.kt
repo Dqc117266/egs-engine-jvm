@@ -11,14 +11,13 @@ import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidCombinedRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidFeatureBuildGradleUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsGeneratedDataModuleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesBlockMerger
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesKotlinEmitter
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsFieldParser
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsGenerationMode
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsFileMerger
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsGenerationMode
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsGenerationModeResolver
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -96,64 +95,70 @@ class AndroidPreferencesScaffolder(
         }
 
         val dataSourceFile = subProjectRoot.resolve(dataSourcePath)
-        val dsContent = PrefsFileMerger.mergeOrCreateDataSource(
-            existingFile = dataSourceFile,
-            prefsPkg = prefsPkg,
-            modelPkg = modelPkg,
-            dataSourceClass = dataSourceClass,
-            prefsKeysObject = prefsKeysObject,
-            prefsKeysFq = prefsKeysFq,
-            mode = mode,
-            force = force,
-            storeImport = "import template.core.base.preferences.TypedPreferenceStore",
-        )
+        val dsContent =
+            PrefsFileMerger.mergeOrCreateDataSource(
+                existingFile = dataSourceFile,
+                prefsPkg = prefsPkg,
+                modelPkg = modelPkg,
+                dataSourceClass = dataSourceClass,
+                prefsKeysObject = prefsKeysObject,
+                prefsKeysFq = prefsKeysFq,
+                mode = mode,
+                force = force,
+                storeImport = "import template.core.base.preferences.TypedPreferenceStore",
+            )
         generated += GeneratedFile(dataSourcePath, dsContent)
 
         val prefsRepoFile = subProjectRoot.resolve(prefsRepoPath)
-        val repoIface = PrefsFileMerger.mergeOrCreatePrefsRepository(
-            prefsRepoFile,
-            domainRepoPkg,
-            prefsRepoName,
-            mode,
-        )
+        val repoIface =
+            PrefsFileMerger.mergeOrCreatePrefsRepository(
+                prefsRepoFile,
+                domainRepoPkg,
+                prefsRepoName,
+                mode,
+            )
         generated += GeneratedFile(prefsRepoPath, repoIface)
 
         val supportFile = subProjectRoot.resolve(prefsSupportPath)
-        val supportBody = PrefsFileMerger.mergeOrCreatePrefsSupport(
-            supportFile,
-            dataRepoPkg,
-            domainRepoPkg,
-            prefsSupportName,
-            prefsRepoName,
-            dataSourceClass,
-            prefsPkg,
-            mode,
-        )
+        val supportBody =
+            PrefsFileMerger.mergeOrCreatePrefsSupport(
+                supportFile,
+                dataRepoPkg,
+                domainRepoPkg,
+                prefsSupportName,
+                prefsRepoName,
+                dataSourceClass,
+                prefsPkg,
+                mode,
+            )
         generated += GeneratedFile(prefsSupportPath, supportBody)
 
         val slices = androidCombinedRepositoryGenerator.detectSlices(subProjectRoot, moduleName, template)
-        androidCombinedRepositoryGenerator.generate(
-            template = template,
-            subProjectRoot = subProjectRoot,
-            includeApi = slices.hasApi,
-            includeDb = slices.hasDb,
-            includePrefs = true,
-        )?.let { generated += it }
+        androidCombinedRepositoryGenerator
+            .generate(
+                template = template,
+                subProjectRoot = subProjectRoot,
+                includeApi = slices.hasApi,
+                includeDb = slices.hasDb,
+                includePrefs = true,
+            )?.let { generated += it }
 
-        androidDbOnlyRepositoryImplGenerator.generateOrMerge(
-            template = template,
-            subProjectRoot = subProjectRoot,
-            includeApi = slices.hasApi,
-            includeDb = slices.hasDb,
-            includePrefs = true,
-        )?.let { generated += it }
+        androidDbOnlyRepositoryImplGenerator
+            .generateOrMerge(
+                template = template,
+                subProjectRoot = subProjectRoot,
+                includeApi = slices.hasApi,
+                includeDb = slices.hasDb,
+                includePrefs = true,
+            )?.let { generated += it }
 
-        generated += androidPrefsUseCaseGenerator.generate(
-            template = template,
-            mode = mode,
-            projectRoot = projectRoot,
-            subProjectRoot = subProjectRoot,
-        )
+        generated +=
+            androidPrefsUseCaseGenerator.generate(
+                template = template,
+                mode = mode,
+                projectRoot = projectRoot,
+                subProjectRoot = subProjectRoot,
+            )
 
         if (!dryRun) {
             for (file in generated) {

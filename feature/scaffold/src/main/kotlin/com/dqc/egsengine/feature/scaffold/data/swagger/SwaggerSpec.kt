@@ -48,10 +48,22 @@ data class SwaggerParameter(
 )
 
 sealed class SwaggerType {
-    data class Primitive(val kind: PrimitiveKind) : SwaggerType()
-    data class ModelRef(val name: String) : SwaggerType()
-    data class ListType(val elementType: SwaggerType) : SwaggerType()
-    data class MapType(val valueType: SwaggerType) : SwaggerType()
+    data class Primitive(
+        val kind: PrimitiveKind,
+    ) : SwaggerType()
+
+    data class ModelRef(
+        val name: String,
+    ) : SwaggerType()
+
+    data class ListType(
+        val elementType: SwaggerType,
+    ) : SwaggerType()
+
+    data class MapType(
+        val valueType: SwaggerType,
+    ) : SwaggerType()
+
     data object Unknown : SwaggerType()
 }
 

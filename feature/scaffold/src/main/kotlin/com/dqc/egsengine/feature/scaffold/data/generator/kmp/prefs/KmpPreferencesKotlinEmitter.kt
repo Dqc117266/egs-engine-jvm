@@ -8,18 +8,17 @@ package com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 
 internal object KmpPreferencesKotlinEmitter {
-
     /** Maps `userId` / `user_id` to `UserId` for `getUserId` / `observeUserId`. */
-    fun kotlinPropertyToPascal(name: String): String =
-        name.split('_').filter { it.isNotBlank() }
-            .joinToString("") { it.replaceFirstChar { c -> c.uppercase() } }
+    fun kotlinPropertyToPascal(name: String): String = name
+        .split('_')
+        .filter { it.isNotBlank() }
+        .joinToString("") { it.replaceFirstChar { c -> c.uppercase() } }
 
-
-    fun upperConstFromLogicalKey(logicalKey: String): String =
-        logicalKey.split('-', '_', '.')
-            .filter { it.isNotBlank() }
-            .joinToString("_") { it.uppercase() }
-            .ifEmpty { "KEY" }
+    fun upperConstFromLogicalKey(logicalKey: String): String = logicalKey
+        .split('-', '_', '.')
+        .filter { it.isNotBlank() }
+        .joinToString("_") { it.uppercase() }
+        .ifEmpty { "KEY" }
 
     fun defaultLiteral(field: PrefsParsedField): String = when (field.storageKind) {
         PrefsStorageKind.STRING -> "\"\""
@@ -30,7 +29,10 @@ internal object KmpPreferencesKotlinEmitter {
 
     fun storageStringForScalarField(fieldName: String): String = fieldName
 
-    fun scalarPrefsKeysLines(logicalKey: String, field: PrefsParsedField): String {
+    fun scalarPrefsKeysLines(
+        logicalKey: String,
+        field: PrefsParsedField,
+    ): String {
         val upper = upperConstFromLogicalKey(logicalKey)
         val storage = storageStringForScalarField(field.name)
         val defConst = "${upper}_DEFAULT"
@@ -59,7 +61,8 @@ internal object KmpPreferencesKotlinEmitter {
         val observer = "observe$pascal"
         val keysRef = "$modulePrefsKeysObject.Scalar"
         return when (field.storageKind) {
-            PrefsStorageKind.STRING -> """
+            PrefsStorageKind.STRING ->
+                """
                 suspend fun $getter(): ${field.kotlinType} =
                     store.getString($keysRef.$upper, $keysRef.$def)
 
@@ -69,9 +72,10 @@ internal object KmpPreferencesKotlinEmitter {
 
                 fun $observer(): Flow<${field.kotlinType}> =
                     store.observeString($keysRef.$upper, $keysRef.$def)
-            """.trimIndent()
+                """.trimIndent()
 
-            PrefsStorageKind.BOOLEAN -> """
+            PrefsStorageKind.BOOLEAN ->
+                """
                 suspend fun $getter(): ${field.kotlinType} =
                     store.getBoolean($keysRef.$upper, $keysRef.$def)
 
@@ -81,9 +85,10 @@ internal object KmpPreferencesKotlinEmitter {
 
                 fun $observer(): Flow<${field.kotlinType}> =
                     store.observeBoolean($keysRef.$upper, $keysRef.$def)
-            """.trimIndent()
+                """.trimIndent()
 
-            PrefsStorageKind.INT -> """
+            PrefsStorageKind.INT ->
+                """
                 suspend fun $getter(): ${field.kotlinType} =
                     store.getInt($keysRef.$upper, $keysRef.$def)
 
@@ -93,9 +98,10 @@ internal object KmpPreferencesKotlinEmitter {
 
                 fun $observer(): Flow<${field.kotlinType}> =
                     store.observeInt($keysRef.$upper, $keysRef.$def)
-            """.trimIndent()
+                """.trimIndent()
 
-            PrefsStorageKind.LONG -> """
+            PrefsStorageKind.LONG ->
+                """
                 suspend fun $getter(): ${field.kotlinType} =
                     store.getLong($keysRef.$upper, $keysRef.$def)
 
@@ -105,7 +111,7 @@ internal object KmpPreferencesKotlinEmitter {
 
                 fun $observer(): Flow<${field.kotlinType}> =
                     store.observeLong($keysRef.$upper, $keysRef.$def)
-            """.trimIndent()
+                """.trimIndent()
         }
     }
 
@@ -139,17 +145,19 @@ internal object KmpPreferencesKotlinEmitter {
         """.trimIndent()
     }
 
-    fun snapshotSerializableModel(className: String, fields: List<PrefsParsedField>): String =
-        buildString {
-            appendLine("    @kotlinx.serialization.Serializable")
-            appendLine("    data class $className(")
-            fields.forEachIndexed { index, f ->
-                val def = defaultLiteral(f)
-                val comma = if (index < fields.lastIndex) "," else ""
-                appendLine("        val ${f.name}: ${f.kotlinType} = $def$comma")
-            }
-            appendLine("    )")
-        }.trimEnd()
+    fun snapshotSerializableModel(
+        className: String,
+        fields: List<PrefsParsedField>,
+    ): String = buildString {
+        appendLine("    @kotlinx.serialization.Serializable")
+        appendLine("    data class $className(")
+        fields.forEachIndexed { index, f ->
+            val def = defaultLiteral(f)
+            val comma = if (index < fields.lastIndex) "," else ""
+            appendLine("        val ${f.name}: ${f.kotlinType} = $def$comma")
+        }
+        appendLine("    )")
+    }.trimEnd()
 
     fun scalarRepositoryMethods(field: PrefsParsedField): String {
         val pascal = kotlinPropertyToPascal(field.name)
@@ -178,7 +186,10 @@ internal object KmpPreferencesKotlinEmitter {
         """.trimIndent()
     }
 
-    fun scalarSupportDelegates(field: PrefsParsedField, dataSourceClass: String): String {
+    fun scalarSupportDelegates(
+        field: PrefsParsedField,
+        dataSourceClass: String,
+    ): String {
         val pascal = kotlinPropertyToPascal(field.name)
         val getter = "get$pascal"
         val setter = "set$pascal"
@@ -192,7 +203,10 @@ internal object KmpPreferencesKotlinEmitter {
         """.trimIndent()
     }
 
-    fun snapshotSupportDelegates(snapshotClassSimple: String, dataSourceClass: String): String {
+    fun snapshotSupportDelegates(
+        snapshotClassSimple: String,
+        dataSourceClass: String,
+    ): String {
         val getter = "get$snapshotClassSimple"
         val setter = "set$snapshotClassSimple"
         val observer = "observe$snapshotClassSimple"

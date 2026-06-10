@@ -7,7 +7,6 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 class EgsConfigReader {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     fun read(projectRoot: File): EgsConfig {
@@ -22,7 +21,10 @@ class EgsConfigReader {
      * Reads config for scaffolding under [scaffoldRoot] (usually `client/` in a workspace).
      * Tries `scaffoldRoot/.egs/config.json`, then [workspaceRoot]`.egs/workspace.json` (client project).
      */
-    fun readForScaffold(scaffoldRoot: File, workspaceRoot: File = scaffoldRoot): EgsConfig {
+    fun readForScaffold(
+        scaffoldRoot: File,
+        workspaceRoot: File = scaffoldRoot,
+    ): EgsConfig {
         val direct = scaffoldRoot.resolve(".egs/config.json")
         if (direct.exists()) {
             return json.decodeFromString(EgsConfig.serializer(), direct.readText())
@@ -30,10 +32,11 @@ class EgsConfigReader {
         val workspaceFile = workspaceRoot.resolve(".egs/workspace.json")
         if (workspaceFile.exists()) {
             val workspace = json.decodeFromString(WorkspaceConfig.serializer(), workspaceFile.readText())
-            val client = workspace.projects["client"]
-                ?: throw IllegalArgumentException(
-                    "No 'client' entry in .egs/workspace.json. Available: ${workspace.projects.keys}",
-                )
+            val client =
+                workspace.projects["client"]
+                    ?: throw IllegalArgumentException(
+                        "No 'client' entry in .egs/workspace.json. Available: ${workspace.projects.keys}",
+                    )
             return client.toEgsConfig(workspace.name)
         }
         throw IllegalArgumentException(

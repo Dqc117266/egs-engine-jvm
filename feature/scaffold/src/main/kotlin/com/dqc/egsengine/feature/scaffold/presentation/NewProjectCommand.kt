@@ -25,13 +25,13 @@ class NewCommand : CliktCommand(name = "new") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): NewCommand =
-            NewCommand().subcommands(NewProjectCommand())
+        fun withSubcommands(): NewCommand = NewCommand().subcommands(NewProjectCommand())
     }
 }
 
-class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
-
+class NewProjectCommand :
+    CliktCommand(name = "project"),
+    KoinComponent {
     private val workspaceConfigWriter: WorkspaceConfigWriter by inject()
     private val workspaceConfigResolver: WorkspaceConfigResolver by inject()
 
@@ -58,7 +58,8 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
     )
 
     private val outputPath by option(
-        "--output", "-o",
+        "--output",
+        "-o",
         help = "Output directory (default: current dir)",
     ).default(".")
 
@@ -109,16 +110,18 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
             val projects = mutableMapOf<String, SubProjectConfig>()
 
-            val cloner = ProjectTemplateCloner(
-                githubTokenOption,
-                githubUsernameOption,
-            ) { echo(CliFormatter.formatInfo(it)) }
+            val cloner =
+                ProjectTemplateCloner(
+                    githubTokenOption,
+                    githubUsernameOption,
+                ) { echo(CliFormatter.formatInfo(it)) }
 
             if (includeClient && clientPlatform != null) {
                 val clientPath = "client"
                 val defaultUrl = NewProjectInputResolver.defaultClientTemplateUrl(clientPlatform)
-                val templateUrl = clientTemplateOption ?: defaultUrl
-                    ?: throw IllegalArgumentException("No template URL for client platform $clientPlatform")
+                val templateUrl =
+                    clientTemplateOption ?: defaultUrl
+                        ?: throw IllegalArgumentException("No template URL for client platform $clientPlatform")
                 val resolvedUrl = GitHubCloneUrlPolicy.cloneUrlForProtocol(templateUrl, gitProtocol)
                 if (dryRun) {
                     echo(CliFormatter.formatInfo("[dry-run] Would clone client ($clientPlatform) from $resolvedUrl -> $clientPath/"))
@@ -130,12 +133,13 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
                         packageName = packageName,
                     )
                 }
-                projects["client"] = SubProjectConfig(
-                    platform = clientPlatform,
-                    path = clientPath,
-                    basePackage = packageName,
-                    templateUrl = resolvedUrl,
-                )
+                projects["client"] =
+                    SubProjectConfig(
+                        platform = clientPlatform,
+                        path = clientPath,
+                        basePackage = packageName,
+                        templateUrl = resolvedUrl,
+                    )
             }
 
             if (includeBackend) {
@@ -147,23 +151,24 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
                 } else {
                     cloner.cloneAndCustomize(resolvedUrl, targetDir.resolve(backendPath), projectName, packageName)
                 }
-                val backendConfig = if (dryRun) {
-                    SubProjectConfig(
-                        platform = Platform.SPRING_BOOT,
-                        path = backendPath,
-                        basePackage = packageName,
-                        templateUrl = resolvedUrl,
-                    )
-                } else {
-                    val backendRoot = targetDir.resolve(backendPath)
-                    SubProjectConfig(
-                        platform = Platform.SPRING_BOOT,
-                        path = backendPath,
-                        basePackage = workspaceConfigResolver.detectSpringBootBasePackage(backendRoot) ?: packageName,
-                        templateUrl = resolvedUrl,
-                        conventionPluginId = workspaceConfigResolver.detectSpringBootConventionPluginId(backendRoot),
-                    )
-                }
+                val backendConfig =
+                    if (dryRun) {
+                        SubProjectConfig(
+                            platform = Platform.SPRING_BOOT,
+                            path = backendPath,
+                            basePackage = packageName,
+                            templateUrl = resolvedUrl,
+                        )
+                    } else {
+                        val backendRoot = targetDir.resolve(backendPath)
+                        SubProjectConfig(
+                            platform = Platform.SPRING_BOOT,
+                            path = backendPath,
+                            basePackage = workspaceConfigResolver.detectSpringBootBasePackage(backendRoot) ?: packageName,
+                            templateUrl = resolvedUrl,
+                            conventionPluginId = workspaceConfigResolver.detectSpringBootConventionPluginId(backendRoot),
+                        )
+                    }
                 projects["backend"] = backendConfig
             }
 
@@ -176,25 +181,28 @@ class NewProjectCommand : CliktCommand(name = "project"), KoinComponent {
                 } else {
                     cloner.cloneAndCustomize(resolvedUrl, targetDir.resolve(adminPath), projectName)
                 }
-                projects["admin"] = SubProjectConfig(
-                    platform = Platform.VUE3,
-                    path = adminPath,
-                    basePackage = packageName,
-                    templateUrl = resolvedUrl,
+                projects["admin"] =
+                    SubProjectConfig(
+                        platform = Platform.VUE3,
+                        path = adminPath,
+                        basePackage = packageName,
+                        templateUrl = resolvedUrl,
+                    )
+            }
+
+            val swaggerConfig =
+                if (includeBackend && (includeClient || includeWeb)) {
+                    SwaggerSyncConfig()
+                } else {
+                    null
+                }
+
+            val workspaceConfig =
+                WorkspaceConfig(
+                    name = projectName,
+                    projects = projects,
+                    swagger = swaggerConfig,
                 )
-            }
-
-            val swaggerConfig = if (includeBackend && (includeClient || includeWeb)) {
-                SwaggerSyncConfig()
-            } else {
-                null
-            }
-
-            val workspaceConfig = WorkspaceConfig(
-                name = projectName,
-                projects = projects,
-                swagger = swaggerConfig,
-            )
 
             if (!dryRun) {
                 workspaceConfigWriter.write(workspaceConfig, targetDir)

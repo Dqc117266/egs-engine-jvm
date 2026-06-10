@@ -14,8 +14,9 @@ import org.koin.core.component.inject
 import java.io.File
 import java.util.Base64
 
-class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
-
+class CreateProjectCommand :
+    CliktCommand(name = "project"),
+    KoinComponent {
     private val initializer: ProjectInitializer by inject()
 
     private val projectNameArg by argument(help = "Project name").optional()
@@ -114,23 +115,21 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         return "android"
     }
 
-    private fun resolveProjectName(): String =
-        projectNameArg?.trim()?.takeIf { it.isNotBlank() } ?: promptProjectName()
+    private fun resolveProjectName(): String = projectNameArg?.trim()?.takeIf { it.isNotBlank() } ?: promptProjectName()
 
-    private fun resolvePackageName(): String =
-        packageNameOption?.trim()?.takeIf { it.isNotBlank() } ?: promptPackageName()
+    private fun resolvePackageName(): String = packageNameOption?.trim()?.takeIf { it.isNotBlank() } ?: promptPackageName()
 
-    private fun resolveCloneAuthMode(): CloneAuthMode =
-        CloneAuthMode.from(authOption)
-            ?: throw IllegalArgumentException("Unsupported --auth: $authOption (use: none, login, token)")
+    private fun resolveCloneAuthMode(): CloneAuthMode = CloneAuthMode.from(authOption)
+        ?: throw IllegalArgumentException("Unsupported --auth: $authOption (use: none, login, token)")
 
     private fun resolveGitHubToken(mode: CloneAuthMode): String? {
         if (mode != CloneAuthMode.TOKEN) {
             return null
         }
 
-        val token = githubTokenOption?.trim()?.takeIf { it.isNotBlank() }
-            ?: System.getenv("GITHUB_TOKEN")?.trim()?.takeIf { it.isNotBlank() }
+        val token =
+            githubTokenOption?.trim()?.takeIf { it.isNotBlank() }
+                ?: System.getenv("GITHUB_TOKEN")?.trim()?.takeIf { it.isNotBlank() }
 
         require(!token.isNullOrBlank()) {
             "--auth token requires --token or GITHUB_TOKEN"
@@ -185,39 +184,40 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         githubToken: String?,
     ) {
         val parentDir = targetDir.parentFile ?: File(".")
-        val result = when (authMode) {
-            CloneAuthMode.NONE -> {
-                exec(
-                    command = listOf("git", "clone", "--depth", "1", templateUrl, targetDir.absolutePath),
-                    workDir = parentDir,
-                )
-            }
-
-            CloneAuthMode.LOGIN -> {
-                prepareGitHubLoginIfNeeded(templateUrl, parentDir)
-                exec(
-                    command = listOf("git", "clone", "--depth", "1", templateUrl, targetDir.absolutePath),
-                    workDir = parentDir,
-                    environment = mapOf("GIT_TERMINAL_PROMPT" to "0"),
-                )
-            }
-
-            CloneAuthMode.TOKEN -> {
-                val env = mutableMapOf("GIT_TERMINAL_PROMPT" to "0")
-                if (isGitHubHttpsUrl(templateUrl)) {
-                    val token = githubToken ?: error("githubToken must not be null")
-                    val raw = "$githubUsername:$token"
-                    val encoded = Base64.getEncoder().encodeToString(raw.toByteArray())
-                    env["GIT_HTTP_EXTRAHEADER"] = "Authorization: Basic $encoded"
+        val result =
+            when (authMode) {
+                CloneAuthMode.NONE -> {
+                    exec(
+                        command = listOf("git", "clone", "--depth", "1", templateUrl, targetDir.absolutePath),
+                        workDir = parentDir,
+                    )
                 }
 
-                exec(
-                    command = listOf("git", "clone", "--depth", "1", templateUrl, targetDir.absolutePath),
-                    workDir = parentDir,
-                    environment = env,
-                )
+                CloneAuthMode.LOGIN -> {
+                    prepareGitHubLoginIfNeeded(templateUrl, parentDir)
+                    exec(
+                        command = listOf("git", "clone", "--depth", "1", templateUrl, targetDir.absolutePath),
+                        workDir = parentDir,
+                        environment = mapOf("GIT_TERMINAL_PROMPT" to "0"),
+                    )
+                }
+
+                CloneAuthMode.TOKEN -> {
+                    val env = mutableMapOf("GIT_TERMINAL_PROMPT" to "0")
+                    if (isGitHubHttpsUrl(templateUrl)) {
+                        val token = githubToken ?: error("githubToken must not be null")
+                        val raw = "$githubUsername:$token"
+                        val encoded = Base64.getEncoder().encodeToString(raw.toByteArray())
+                        env["GIT_HTTP_EXTRAHEADER"] = "Authorization: Basic $encoded"
+                    }
+
+                    exec(
+                        command = listOf("git", "clone", "--depth", "1", templateUrl, targetDir.absolutePath),
+                        workDir = parentDir,
+                        environment = env,
+                    )
+                }
             }
-        }
 
         if (result.exitCode != 0) {
             throw IllegalStateException(
@@ -241,7 +241,10 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         )
     }
 
-    private fun prepareGitHubLoginIfNeeded(templateUrl: String, workDir: File) {
+    private fun prepareGitHubLoginIfNeeded(
+        templateUrl: String,
+        workDir: File,
+    ) {
         if (!isGitHubHttpsUrl(templateUrl)) {
             return
         }
@@ -254,10 +257,11 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         val status = exec(listOf("gh", "auth", "status"), workDir = workDir)
         if (status.exitCode != 0) {
             echo(CliFormatter.formatInfo("Not logged in to GitHub; starting gh auth login..."))
-            val loginExitCode = execInteractive(
-                command = listOf("gh", "auth", "login"),
-                workDir = workDir,
-            )
+            val loginExitCode =
+                execInteractive(
+                    command = listOf("gh", "auth", "login"),
+                    workDir = workDir,
+                )
             require(loginExitCode == 0) {
                 "GitHub login failed; retry or use --auth token"
             }
@@ -269,14 +273,18 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         }
     }
 
-    private fun isGitHubHttpsUrl(url: String): Boolean =
-        url.startsWith("https://github.com/", ignoreCase = true) ||
-            url.startsWith("http://github.com/", ignoreCase = true)
+    private fun isGitHubHttpsUrl(url: String): Boolean = url.startsWith("https://github.com/", ignoreCase = true) ||
+        url.startsWith("http://github.com/", ignoreCase = true)
 
-    private fun exec(command: List<String>, workDir: File, environment: Map<String, String> = emptyMap()): ProcessResult {
-        val process = ProcessBuilder(command)
-            .directory(workDir)
-            .redirectErrorStream(true)
+    private fun exec(
+        command: List<String>,
+        workDir: File,
+        environment: Map<String, String> = emptyMap(),
+    ): ProcessResult {
+        val process =
+            ProcessBuilder(command)
+                .directory(workDir)
+                .redirectErrorStream(true)
 
         environment.forEach { (key, value) ->
             process.environment()[key] = value
@@ -284,16 +292,24 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
 
         val running = process.start()
 
-        val output = running.inputStream.bufferedReader().readText().trim()
+        val output =
+            running.inputStream
+                .bufferedReader()
+                .readText()
+                .trim()
         val exitCode = running.waitFor()
         return ProcessResult(exitCode, output)
     }
 
-    private fun execInteractive(command: List<String>, workDir: File): Int {
-        val process = ProcessBuilder(command)
-            .directory(workDir)
-            .inheritIO()
-            .start()
+    private fun execInteractive(
+        command: List<String>,
+        workDir: File,
+    ): Int {
+        val process =
+            ProcessBuilder(command)
+                .directory(workDir)
+                .inheritIO()
+                .start()
         return process.waitFor()
     }
 
@@ -302,15 +318,16 @@ class CreateProjectCommand : CliktCommand(name = "project"), KoinComponent {
         val output: String,
     )
 
-    private enum class CloneAuthMode(val value: String) {
+    private enum class CloneAuthMode(
+        val value: String,
+    ) {
         NONE("none"),
         LOGIN("login"),
         TOKEN("token"),
         ;
 
         companion object {
-            fun from(value: String): CloneAuthMode? =
-                entries.firstOrNull { it.value == value.lowercase() }
+            fun from(value: String): CloneAuthMode? = entries.firstOrNull { it.value == value.lowercase() }
         }
     }
 

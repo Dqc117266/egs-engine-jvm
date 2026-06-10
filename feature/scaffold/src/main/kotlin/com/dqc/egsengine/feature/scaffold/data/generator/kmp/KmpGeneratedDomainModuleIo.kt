@@ -12,21 +12,22 @@ import java.io.File
  * Preserves DB use case registrations when API sync regenerates [GeneratedDomainModule].
  */
 object KmpGeneratedDomainModuleIo {
-
     /**
      * Body may be empty (FreeMarker emits begin/end markers on consecutive lines). A newline between
      * body and end marker is not guaranteed when the list is empty, so the regex allows optional
      * whitespace before the closing marker (not only a single newline).
      */
-    private val dbBlockPattern = Regex(
-        """//\s*egs-gen:db-usecases-begin\s*\n([\s\S]*?)\s*//\s*egs-gen:db-usecases-end""",
-        RegexOption.MULTILINE,
-    )
+    private val dbBlockPattern =
+        Regex(
+            """//\s*egs-gen:db-usecases-begin\s*\n([\s\S]*?)\s*//\s*egs-gen:db-usecases-end""",
+            RegexOption.MULTILINE,
+        )
 
-    private val prefsBlockPattern = Regex(
-        """//\s*egs-gen:prefs-usecases-begin\s*\n([\s\S]*?)\s*//\s*egs-gen:prefs-usecases-end""",
-        RegexOption.MULTILINE,
-    )
+    private val prefsBlockPattern =
+        Regex(
+            """//\s*egs-gen:prefs-usecases-begin\s*\n([\s\S]*?)\s*//\s*egs-gen:prefs-usecases-end""",
+            RegexOption.MULTILINE,
+        )
 
     private val singleOfPattern = Regex("""singleOf\s*\(\s*::\s*(\w+)\s*\)""")
 
@@ -37,9 +38,10 @@ object KmpGeneratedDomainModuleIo {
         kotlinSourceSet: String = "commonMain",
     ): List<String> {
         val pkgPath = template.packageName.replace('.', '/')
-        val file = subProjectRoot.resolve(
-            "feature/$moduleName/src/$kotlinSourceSet/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
-        )
+        val file =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/$kotlinSourceSet/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+            )
         if (!file.exists()) return emptyList()
         val text = file.readText()
         val block = dbBlockPattern.find(text)?.groupValues?.get(1) ?: return emptyList()
@@ -50,29 +52,34 @@ object KmpGeneratedDomainModuleIo {
      * Match full lines for begin/end so replace does not leave a second indent before `//`.
      * Body may be empty (consecutive markers); [RegexOption.MULTILINE] makes `^` match line starts.
      */
-    private val dataModuleDbPattern = Regex(
-        """^\s*//\s*egs-gen:database-begin\s*\n([\s\S]*?)^\s*//\s*egs-gen:database-end""",
-        RegexOption.MULTILINE,
-    )
+    private val dataModuleDbPattern =
+        Regex(
+            """^\s*//\s*egs-gen:database-begin\s*\n([\s\S]*?)^\s*//\s*egs-gen:database-end""",
+            RegexOption.MULTILINE,
+        )
 
-    private val dataModulePrefsPattern = Regex(
-        """^\s*//\s*egs-gen:prefs-begin\s*\n([\s\S]*?)^\s*//\s*egs-gen:prefs-end""",
-        RegexOption.MULTILINE,
-    )
+    private val dataModulePrefsPattern =
+        Regex(
+            """^\s*//\s*egs-gen:prefs-begin\s*\n([\s\S]*?)^\s*//\s*egs-gen:prefs-end""",
+            RegexOption.MULTILINE,
+        )
 
-    private val kotlinImportLineRegex = Regex(
-        """^\s*import\s+.+$""",
-        RegexOption.MULTILINE,
-    )
+    private val kotlinImportLineRegex =
+        Regex(
+            """^\s*import\s+.+$""",
+            RegexOption.MULTILINE,
+        )
 
-    private fun String.trimSurroundingNewlinesOnly(): String =
-        trimStart { it == '\n' || it == '\r' }.trimEnd { it == '\n' || it == '\r' }
+    private fun String.trimSurroundingNewlinesOnly(): String = trimStart { it == '\n' || it == '\r' }.trimEnd { it == '\n' || it == '\r' }
 
     /**
      * API sync regenerates [GeneratedDataModule] with only Retrofit/API imports; merge non-API imports
      * (Room, prefs, etc.) from the existing file.
      */
-    private fun mergeImportSectionFromExisting(existing: String, generated: String): String {
+    private fun mergeImportSectionFromExisting(
+        existing: String,
+        generated: String,
+    ): String {
         val existingImports = kotlinImportLineRegex.findAll(existing).map { it.value.trim() }.toList()
         val generatedImports = kotlinImportLineRegex.findAll(generated).map { it.value.trim() }.toList()
         val generatedSet = generatedImports.toSet()
@@ -107,17 +114,29 @@ object KmpGeneratedDomainModuleIo {
     ): String {
         val existing = existingContent ?: return generatedContent
         var result = mergeImportSectionFromExisting(existing, generatedContent)
-        val existingDb = dataModuleDbPattern.find(existing)?.groupValues?.get(1)?.trimSurroundingNewlinesOnly()
+        val existingDb =
+            dataModuleDbPattern
+                .find(existing)
+                ?.groupValues
+                ?.get(1)
+                ?.trimSurroundingNewlinesOnly()
         if (!existingDb.isNullOrBlank()) {
-            result = dataModuleDbPattern.replace(result) {
-                "    // egs-gen:database-begin\n$existingDb\n    // egs-gen:database-end"
-            }
+            result =
+                dataModuleDbPattern.replace(result) {
+                    "    // egs-gen:database-begin\n$existingDb\n    // egs-gen:database-end"
+                }
         }
-        val existingPrefs = dataModulePrefsPattern.find(existing)?.groupValues?.get(1)?.trimSurroundingNewlinesOnly()
+        val existingPrefs =
+            dataModulePrefsPattern
+                .find(existing)
+                ?.groupValues
+                ?.get(1)
+                ?.trimSurroundingNewlinesOnly()
         if (!existingPrefs.isNullOrBlank()) {
-            result = dataModulePrefsPattern.replace(result) {
-                "    // egs-gen:prefs-begin\n$existingPrefs\n    // egs-gen:prefs-end"
-            }
+            result =
+                dataModulePrefsPattern.replace(result) {
+                    "    // egs-gen:prefs-begin\n$existingPrefs\n    // egs-gen:prefs-end"
+                }
         }
         return result
     }
@@ -126,11 +145,12 @@ object KmpGeneratedDomainModuleIo {
         existingContent: String,
         dbUseCaseClassNames: List<String>,
     ): String {
-        val body = buildString {
-            for (name in dbUseCaseClassNames) {
-                appendLine("    singleOf(::$name)")
-            }
-        }.trimEnd()
+        val body =
+            buildString {
+                for (name in dbUseCaseClassNames) {
+                    appendLine("    singleOf(::$name)")
+                }
+            }.trimEnd()
         val replacement = "// egs-gen:db-usecases-begin\n$body\n    // egs-gen:db-usecases-end"
         return if (dbBlockPattern.containsMatchIn(existingContent)) {
             dbBlockPattern.replace(existingContent, replacement)
@@ -146,9 +166,10 @@ object KmpGeneratedDomainModuleIo {
         kotlinSourceSet: String = "commonMain",
     ): List<String> {
         val pkgPath = template.packageName.replace('.', '/')
-        val file = subProjectRoot.resolve(
-            "feature/$moduleName/src/$kotlinSourceSet/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
-        )
+        val file =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/$kotlinSourceSet/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+            )
         if (!file.exists()) return emptyList()
         val text = file.readText()
         val block = prefsBlockPattern.find(text)?.groupValues?.get(1) ?: return emptyList()
@@ -159,11 +180,12 @@ object KmpGeneratedDomainModuleIo {
         existingContent: String,
         prefsUseCaseClassNames: List<String>,
     ): String {
-        val body = buildString {
-            for (name in prefsUseCaseClassNames) {
-                appendLine("    singleOf(::$name)")
-            }
-        }.trimEnd()
+        val body =
+            buildString {
+                for (name in prefsUseCaseClassNames) {
+                    appendLine("    singleOf(::$name)")
+                }
+            }.trimEnd()
         val replacement = "// egs-gen:prefs-usecases-begin\n$body\n    // egs-gen:prefs-usecases-end"
         return if (prefsBlockPattern.containsMatchIn(existingContent)) {
             prefsBlockPattern.replace(existingContent, replacement)

@@ -6,13 +6,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class DdlParserTest {
-
     private val parser = DdlParser()
 
     @Test
     fun `parses user sql tables and columns`() {
-        val url = javaClass.classLoader.getResource("ddl/user.sql")
-            ?: error("ddl/user.sql not on test classpath")
+        val url =
+            javaClass.classLoader.getResource("ddl/user.sql")
+                ?: error("ddl/user.sql not on test classpath")
         val tables = parser.parseFile(java.io.File(url.toURI()))
 
         assertEquals(2, tables.size)

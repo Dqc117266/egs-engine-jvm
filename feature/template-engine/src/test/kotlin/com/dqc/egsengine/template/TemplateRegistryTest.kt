@@ -7,7 +7,6 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
 class TemplateRegistryTest {
-
     @TempDir
     lateinit var tempDir: Path
 

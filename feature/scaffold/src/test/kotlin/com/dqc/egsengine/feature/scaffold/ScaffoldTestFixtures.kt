@@ -19,34 +19,38 @@ import java.io.File
 internal object ScaffoldTestFixtures {
     private val templateEngine = TemplateEngine(TemplateRegistry())
 
-    fun androidModuleGenerator(): ModuleGenerator =
-        ModuleGenerator(AndroidModuleGenerator(SettingsGradleUpdater(), templateEngine))
+    fun androidModuleGenerator(): ModuleGenerator = ModuleGenerator(AndroidModuleGenerator(SettingsGradleUpdater(), templateEngine))
 
-    fun previewModule(projectRoot: File, template: ModuleTemplate): List<Pair<String, String?>> =
-        when (template.projectType.uppercase()) {
-            "KMP", "KMP_ANDROID" -> {
-                val config = SubProjectConfig(
+    fun previewModule(
+        projectRoot: File,
+        template: ModuleTemplate,
+    ): List<Pair<String, String?>> = when (template.projectType.uppercase()) {
+        "KMP", "KMP_ANDROID" -> {
+            val config =
+                SubProjectConfig(
                     platform = Platform.KMP,
                     path = ".",
-                    basePackage = template.basePackage
+                    basePackage =
+                    template.basePackage
                         ?: template.packageName.substringBefore(".feature.", template.packageName),
                     conventionPluginId = template.conventionPluginId,
                 )
-                KmpModuleGenerator(SettingsGradleUpdater(), templateEngine)
-                    .preview(projectRoot, template.name, config)
-                    .map { it.path to it.content }
-            }
-
-            else -> androidModuleGenerator().preview(projectRoot, template)
+            KmpModuleGenerator(SettingsGradleUpdater(), templateEngine)
+                .preview(projectRoot, template.name, config)
                 .map { it.path to it.content }
         }
 
-    fun pageScaffolder(): PageScaffolder =
-        PageScaffolder(
-            configReader = EgsConfigReader(),
-            useCaseScanner = UseCaseScanner(),
-            diUpdater = FeatureDiUpdater(),
-            templateEngine = templateEngine,
-            clientAppNavigationWiring = ClientAppNavigationWiring(),
-        )
+        else ->
+            androidModuleGenerator()
+                .preview(projectRoot, template)
+                .map { it.path to it.content }
+    }
+
+    fun pageScaffolder(): PageScaffolder = PageScaffolder(
+        configReader = EgsConfigReader(),
+        useCaseScanner = UseCaseScanner(),
+        diUpdater = FeatureDiUpdater(),
+        templateEngine = templateEngine,
+        clientAppNavigationWiring = ClientAppNavigationWiring(),
+    )
 }

@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class KmpGeneratedDomainModuleIoPrefsTest {
-
     @Test
     fun `replacePrefsUseCasesBlock fills empty consecutive markers from swagger template`() {
-        val before = """
+        val before =
+            """
             internal val generatedDomainModule = module {
                 // egs-gen:swagger-usecases-begin
                 singleOf(::FooUseCase)
@@ -19,12 +19,13 @@ class KmpGeneratedDomainModuleIoPrefsTest {
                 // egs-gen:prefs-usecases-begin
                 // egs-gen:prefs-usecases-end
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val after = KmpGeneratedDomainModuleIo.replacePrefsUseCasesBlock(
-            before,
-            listOf("GetUserIdUseCase", "SetUserIdUseCase", "ObserveUserIdUseCase"),
-        )
+        val after =
+            KmpGeneratedDomainModuleIo.replacePrefsUseCasesBlock(
+                before,
+                listOf("GetUserIdUseCase", "SetUserIdUseCase", "ObserveUserIdUseCase"),
+            )
         assertTrue(after.contains("singleOf(::GetUserIdUseCase)"))
         assertTrue(after.contains("singleOf(::SetUserIdUseCase)"))
         assertTrue(after.contains("singleOf(::ObserveUserIdUseCase)"))
@@ -33,7 +34,8 @@ class KmpGeneratedDomainModuleIoPrefsTest {
 
     @Test
     fun `merge preserves prefs block when swagger template is regenerated`() {
-        val existing = """
+        val existing =
+            """
             package p.generate.di
 
             import org.koin.dsl.module
@@ -48,9 +50,10 @@ class KmpGeneratedDomainModuleIoPrefsTest {
                 singleOf(::PrefsDataSource)
                 // egs-gen:prefs-end
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val generated = """
+        val generated =
+            """
             package p.generate.di
 
             import org.koin.dsl.module
@@ -65,7 +68,7 @@ class KmpGeneratedDomainModuleIoPrefsTest {
 
                 // egs-gen:prefs-end
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val merged = KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, generated)
         assertTrue(merged.contains("single { \"freshApi\" }"))
@@ -75,7 +78,8 @@ class KmpGeneratedDomainModuleIoPrefsTest {
 
     @Test
     fun `merge preserves imports and indentation for database blocks`() {
-        val existing = """
+        val existing =
+            """
             package p.generate.di
 
             import org.koin.dsl.module
@@ -88,9 +92,10 @@ class KmpGeneratedDomainModuleIoPrefsTest {
                 single<TodoDatabase> { get() }
                 // egs-gen:database-end
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val generated = """
+        val generated =
+            """
             package p.generate.di
 
             import org.koin.dsl.module
@@ -101,7 +106,7 @@ class KmpGeneratedDomainModuleIoPrefsTest {
 
                 // egs-gen:database-end
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val merged = KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, generated)
         assertTrue(merged.contains("import androidx.room.RoomDatabase"))

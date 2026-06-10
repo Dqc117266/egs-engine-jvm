@@ -7,18 +7,20 @@ package com.dqc.egsengine.feature.scaffold.data.generator.common
 
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
+import com.dqc.egsengine.feature.scaffold.data.swagger.PrimitiveKind
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerSchema
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerSpec
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerType
-import com.dqc.egsengine.feature.scaffold.data.swagger.PrimitiveKind
 
 /**
  * Matches DDL tables to Swagger schemas and builds FreeMarker mapper blocks for
  * [KmpDatabaseEntityMapperGenerator] / [com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseEntityMapperGenerator].
  */
 object DatabaseEntityDomainMapping {
-
-    fun matchSchema(table: TableSchema, spec: SwaggerSpec): SwaggerSchema? {
+    fun matchSchema(
+        table: TableSchema,
+        spec: SwaggerSpec,
+    ): SwaggerSchema? {
         val base = SqlNaming.snakeToPascal(table.tableName)
         return spec.schemas.find { it.name == "${base}RespVO" }
             ?: spec.schemas.find {
@@ -83,48 +85,65 @@ object DatabaseEntityDomainMapping {
         )
     }
 
-    private fun swaggerTypeToKotlin(type: SwaggerType, required: Boolean): String {
-        val base = when (type) {
-            is SwaggerType.Primitive -> when (type.kind) {
-                PrimitiveKind.STRING -> "String"
-                PrimitiveKind.INT -> "Int"
-                PrimitiveKind.LONG -> "Long"
-                PrimitiveKind.DOUBLE -> "Double"
-                PrimitiveKind.BOOLEAN -> "Boolean"
+    private fun swaggerTypeToKotlin(
+        type: SwaggerType,
+        required: Boolean,
+    ): String {
+        val base =
+            when (type) {
+                is SwaggerType.Primitive ->
+                    when (type.kind) {
+                        PrimitiveKind.STRING -> "String"
+                        PrimitiveKind.INT -> "Int"
+                        PrimitiveKind.LONG -> "Long"
+                        PrimitiveKind.DOUBLE -> "Double"
+                        PrimitiveKind.BOOLEAN -> "Boolean"
+                    }
+                else -> "String"
             }
-            else -> "String"
-        }
         return if (required) base else "$base?"
     }
 
     /** Convert an Entity field value to Domain model type. */
-    private fun convertToDomain(expr: String, fromType: String, toType: String): String? {
+    private fun convertToDomain(
+        expr: String,
+        fromType: String,
+        toType: String,
+    ): String? {
         return buildString {
             when {
                 fromType == toType -> append(expr)
                 fromType == "Long" && (toType == "String?" || toType == "String") -> {
-                    append(expr); append(".toString()")
+                    append(expr)
+                    append(".toString()")
                 }
                 fromType == "Double" && (toType == "String?" || toType == "String") -> {
-                    append(expr); append(".toString()")
+                    append(expr)
+                    append(".toString()")
                 }
                 fromType == "Int" && (toType == "Long" || toType == "Long?") -> {
-                    append(expr); append(".toLong()")
+                    append(expr)
+                    append(".toLong()")
                 }
                 fromType == "Long" && toType == "Int" -> {
-                    append(expr); append(".toInt()")
+                    append(expr)
+                    append(".toInt()")
                 }
                 fromType == "Double" && toType == "Int" -> {
-                    append(expr); append(".toInt()")
+                    append(expr)
+                    append(".toInt()")
                 }
                 fromType == "Int" && toType == "Double" -> {
-                    append(expr); append(".toDouble()")
+                    append(expr)
+                    append(".toDouble()")
                 }
                 fromType == "Long" && toType == "Double" -> {
-                    append(expr); append(".toDouble()")
+                    append(expr)
+                    append(".toDouble()")
                 }
                 fromType == "Double" && toType == "Long" -> {
-                    append(expr); append(".toLong()")
+                    append(expr)
+                    append(".toLong()")
                 }
                 else -> return null
             }
@@ -132,42 +151,58 @@ object DatabaseEntityDomainMapping {
     }
 
     /** Convert a Domain model field value to Entity type. */
-    private fun convertToEntity(expr: String, fromType: String, toType: String): String? {
+    private fun convertToEntity(
+        expr: String,
+        fromType: String,
+        toType: String,
+    ): String? {
         return buildString {
             when {
                 fromType == toType -> append(expr)
                 fromType == "String?" && toType == "Long" -> {
-                    append(expr); append("?.toLongOrNull() ?: 0L")
+                    append(expr)
+                    append("?.toLongOrNull() ?: 0L")
                 }
                 fromType == "String" && toType == "Long" -> {
-                    append(expr); append(".toLongOrNull() ?: 0L")
+                    append(expr)
+                    append(".toLongOrNull() ?: 0L")
                 }
                 fromType == "String?" && toType == "Double" -> {
-                    append(expr); append("?.toDoubleOrNull() ?: 0.0")
+                    append(expr)
+                    append("?.toDoubleOrNull() ?: 0.0")
                 }
                 fromType == "String" && toType == "Double" -> {
-                    append(expr); append(".toDoubleOrNull() ?: 0.0")
+                    append(expr)
+                    append(".toDoubleOrNull() ?: 0.0")
                 }
                 fromType == "Long" && toType == "Int" -> {
-                    append(expr); append(".toInt()")
+                    append(expr)
+                    append(".toInt()")
                 }
                 fromType == "Long?" && toType == "Int" -> {
-                    append("("); append(expr); append(" ?: 0L).toInt()")
+                    append("(")
+                    append(expr)
+                    append(" ?: 0L).toInt()")
                 }
                 fromType == "Double" && toType == "Int" -> {
-                    append(expr); append(".toInt()")
+                    append(expr)
+                    append(".toInt()")
                 }
                 fromType == "Int" && toType == "Long" -> {
-                    append(expr); append(".toLong()")
+                    append(expr)
+                    append(".toLong()")
                 }
                 fromType == "Int" && toType == "Double" -> {
-                    append(expr); append(".toDouble()")
+                    append(expr)
+                    append(".toDouble()")
                 }
                 fromType == "Long" && toType == "Double" -> {
-                    append(expr); append(".toDouble()")
+                    append(expr)
+                    append(".toDouble()")
                 }
                 fromType == "Double" && toType == "Long" -> {
-                    append(expr); append(".toLong()")
+                    append(expr)
+                    append(".toLong()")
                 }
                 else -> return null
             }
@@ -177,7 +212,10 @@ object DatabaseEntityDomainMapping {
     /**
      * Simple name of the Swagger VO when the table matches and at least one overlapping field exists; otherwise null (use Entity).
      */
-    fun resolveDomainClassName(table: TableSchema, spec: SwaggerSpec?): String? {
+    fun resolveDomainClassName(
+        table: TableSchema,
+        spec: SwaggerSpec?,
+    ): String? {
         if (spec == null) return null
         val schema = matchSchema(table, spec) ?: return null
         val entityClassName = SqlNaming.snakeToPascal(table.tableName) + "Entity"

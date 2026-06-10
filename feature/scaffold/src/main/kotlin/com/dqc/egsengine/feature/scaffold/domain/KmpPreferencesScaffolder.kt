@@ -14,11 +14,10 @@ import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGrad
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpPrefsGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpPrefsUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesBlockMerger
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesKotlinEmitter
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsFieldParser
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsGenerationMode
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsFileMerger
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsGenerationMode
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsGenerationModeResolver
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -105,67 +104,73 @@ class KmpPreferencesScaffolder(
         }
 
         val dataSourceFile = subProjectRoot.resolve(dataSourcePath)
-        val coreBase = template.basePackage?.let { "${it}.core.base" } ?: "template.core.base"
-        val dsContent = PrefsFileMerger.mergeOrCreateDataSource(
-            existingFile = dataSourceFile,
-            prefsPkg = prefsPkg,
-            modelPkg = modelPkg,
-            dataSourceClass = dataSourceClass,
-            prefsKeysObject = prefsKeysObject,
-            prefsKeysFq = prefsKeysFq,
-            mode = mode,
-            force = force,
-            storeImport = "import ${coreBase}.preferences.TypedPreferenceStore",
-        )
+        val coreBase = template.basePackage?.let { "$it.core.base" } ?: "template.core.base"
+        val dsContent =
+            PrefsFileMerger.mergeOrCreateDataSource(
+                existingFile = dataSourceFile,
+                prefsPkg = prefsPkg,
+                modelPkg = modelPkg,
+                dataSourceClass = dataSourceClass,
+                prefsKeysObject = prefsKeysObject,
+                prefsKeysFq = prefsKeysFq,
+                mode = mode,
+                force = force,
+                storeImport = "import $coreBase.preferences.TypedPreferenceStore",
+            )
         generated += GeneratedFile(dataSourcePath, dsContent)
 
         val prefsRepoFile = subProjectRoot.resolve(prefsRepoPath)
-        val repoIface = PrefsFileMerger.mergeOrCreatePrefsRepository(
-            prefsRepoFile,
-            domainRepoPkg,
-            prefsRepoName,
-            mode,
-            modelPkg,
-        )
+        val repoIface =
+            PrefsFileMerger.mergeOrCreatePrefsRepository(
+                prefsRepoFile,
+                domainRepoPkg,
+                prefsRepoName,
+                mode,
+                modelPkg,
+            )
         generated += GeneratedFile(prefsRepoPath, repoIface)
 
         val supportFile = subProjectRoot.resolve(prefsSupportPath)
-        val supportBody = PrefsFileMerger.mergeOrCreatePrefsSupport(
-            supportFile,
-            dataRepoPkg,
-            domainRepoPkg,
-            prefsSupportName,
-            prefsRepoName,
-            dataSourceClass,
-            prefsPkg,
-            mode,
-            modelPkg,
-        )
+        val supportBody =
+            PrefsFileMerger.mergeOrCreatePrefsSupport(
+                supportFile,
+                dataRepoPkg,
+                domainRepoPkg,
+                prefsSupportName,
+                prefsRepoName,
+                dataSourceClass,
+                prefsPkg,
+                mode,
+                modelPkg,
+            )
         generated += GeneratedFile(prefsSupportPath, supportBody)
 
         val slices = kmpCombinedRepositoryGenerator.detectSlices(subProjectRoot, moduleName, template)
-        kmpCombinedRepositoryGenerator.generate(
-            template = template,
-            subProjectRoot = subProjectRoot,
-            includeApi = slices.hasApi,
-            includeDb = slices.hasDb,
-            includePrefs = true,
-        )?.let { generated += it }
+        kmpCombinedRepositoryGenerator
+            .generate(
+                template = template,
+                subProjectRoot = subProjectRoot,
+                includeApi = slices.hasApi,
+                includeDb = slices.hasDb,
+                includePrefs = true,
+            )?.let { generated += it }
 
-        kmpRepositoryImplGenerator.generateOrMerge(
-            template = template,
-            subProjectRoot = subProjectRoot,
-            includeApi = slices.hasApi,
-            includeDb = slices.hasDb,
-            includePrefs = true,
-        )?.let { generated += it }
+        kmpRepositoryImplGenerator
+            .generateOrMerge(
+                template = template,
+                subProjectRoot = subProjectRoot,
+                includeApi = slices.hasApi,
+                includeDb = slices.hasDb,
+                includePrefs = true,
+            )?.let { generated += it }
 
-        generated += kmpPrefsUseCaseGenerator.generate(
-            template = template,
-            mode = mode,
-            projectRoot = projectRoot,
-            subProjectRoot = subProjectRoot,
-        )
+        generated +=
+            kmpPrefsUseCaseGenerator.generate(
+                template = template,
+                mode = mode,
+                projectRoot = projectRoot,
+                subProjectRoot = subProjectRoot,
+            )
 
         if (!dryRun) {
             for (file in generated) {

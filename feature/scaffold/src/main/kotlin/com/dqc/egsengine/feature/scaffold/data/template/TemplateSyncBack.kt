@@ -11,7 +11,6 @@ data class TemplateSyncBackResult(
 class TemplateSyncBack(
     private val packageRewriter: TemplatePackageRewriter = TemplatePackageRewriter(),
 ) {
-
     fun sync(
         fromDir: File,
         toDir: File,
@@ -36,7 +35,8 @@ class TemplateSyncBack(
             val target = toDir.resolve(relativePath)
             if (dryRun) {
                 if (source.isDirectory) {
-                    source.walkTopDown()
+                    source
+                        .walkTopDown()
                         .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
                         .filter { it.isFile }
                         .forEach { file ->
@@ -51,20 +51,21 @@ class TemplateSyncBack(
             }
         }
 
-        val rewrittenFiles = if (dryRun) {
-            emptyList()
-        } else {
-            val before = snapshotTextFiles(toDir, relativePaths)
-            packageRewriter.rewriteReverse(
-                projectDir = toDir,
-                recipe = recipe,
-                fromProjectName = fromProjectName,
-                fromPackage = fromPackage,
-                toProjectName = toProjectName,
-                toPackage = toPackage,
-            )
-            diffTextFiles(toDir, relativePaths, before)
-        }
+        val rewrittenFiles =
+            if (dryRun) {
+                emptyList()
+            } else {
+                val before = snapshotTextFiles(toDir, relativePaths)
+                packageRewriter.rewriteReverse(
+                    projectDir = toDir,
+                    recipe = recipe,
+                    fromProjectName = fromProjectName,
+                    fromPackage = fromPackage,
+                    toProjectName = toProjectName,
+                    toPackage = toPackage,
+                )
+                diffTextFiles(toDir, relativePaths, before)
+            }
 
         return TemplateSyncBackResult(
             dryRun = dryRun,
@@ -73,19 +74,29 @@ class TemplateSyncBack(
         )
     }
 
-    private fun resolveRelativePaths(fromDir: File, pathFilters: List<String>): List<String> =
-        if (pathFilters.isEmpty()) {
-            fromDir.listFiles()
-                .orEmpty()
-                .filter { it.name !in DEFAULT_SKIP_TOP_LEVEL }
-                .map { it.name }
-        } else {
-            pathFilters.map { it.trim().trim('/') }.filter { it.isNotEmpty() }
-        }
+    private fun resolveRelativePaths(
+        fromDir: File,
+        pathFilters: List<String>,
+    ): List<String> = if (pathFilters.isEmpty()) {
+        fromDir
+            .listFiles()
+            .orEmpty()
+            .filter { it.name !in DEFAULT_SKIP_TOP_LEVEL }
+            .map { it.name }
+    } else {
+        pathFilters.map { it.trim().trim('/') }.filter { it.isNotEmpty() }
+    }
 
-    private fun copyPath(source: File, target: File, copiedFiles: MutableList<String>, fromRoot: File, toRoot: File) {
+    private fun copyPath(
+        source: File,
+        target: File,
+        copiedFiles: MutableList<String>,
+        fromRoot: File,
+        toRoot: File,
+    ) {
         if (source.isDirectory) {
-            source.walkTopDown()
+            source
+                .walkTopDown()
                 .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
                 .filter { it.isFile }
                 .forEach { file ->
@@ -102,7 +113,10 @@ class TemplateSyncBack(
         }
     }
 
-    private fun snapshotTextFiles(root: File, relativePaths: List<String>): Map<String, String> {
+    private fun snapshotTextFiles(
+        root: File,
+        relativePaths: List<String>,
+    ): Map<String, String> {
         val snapshot = linkedMapOf<String, String>()
         relativePaths.forEach { relativePath ->
             val base = root.resolve(relativePath)
@@ -111,7 +125,8 @@ class TemplateSyncBack(
                 snapshot[relativePath] = base.readText()
                 return@forEach
             }
-            base.walkTopDown()
+            base
+                .walkTopDown()
                 .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
                 .filter { it.isFile && isTrackableText(it) }
                 .forEach { file ->
@@ -139,9 +154,25 @@ class TemplateSyncBack(
     companion object {
         private val SKIP_DIR_NAMES = setOf(".git", "build", ".gradle", "node_modules", ".idea", ".egs")
         private val DEFAULT_SKIP_TOP_LEVEL = setOf(".git", "build", ".gradle", "node_modules", ".idea", ".egs")
-        private val BINARY_EXTENSIONS = setOf(
-            "png", "jpg", "jpeg", "gif", "webp", "jar", "zip", "ico",
-            "keystore", "jks", "ttf", "otf", "so", "pdf", "mp3", "mp4", "wav",
-        )
+        private val BINARY_EXTENSIONS =
+            setOf(
+                "png",
+                "jpg",
+                "jpeg",
+                "gif",
+                "webp",
+                "jar",
+                "zip",
+                "ico",
+                "keystore",
+                "jks",
+                "ttf",
+                "otf",
+                "so",
+                "pdf",
+                "mp3",
+                "mp4",
+                "wav",
+            )
     }
 }

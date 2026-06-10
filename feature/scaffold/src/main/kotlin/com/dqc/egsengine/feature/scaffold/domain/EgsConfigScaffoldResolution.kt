@@ -10,18 +10,18 @@ import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 // Legacy EgsConfig extensions (backward compat for single-project mode)
 // ---------------------------------------------------------------------------
 
-fun EgsConfig.effectiveBasePackage(): String? =
-    scaffoldOverrides?.basePackage ?: basePackage
+fun EgsConfig.effectiveBasePackage(): String? = scaffoldOverrides?.basePackage ?: basePackage
 
 val EgsConfig.isAndroid: Boolean
     get() = projectType in setOf("ANDROID", "KMP_ANDROID")
 
 private fun EgsConfig.resolveNamedBaseClass(className: String): String? {
-    val fromOverride = when (className) {
-        "BaseViewModel" -> scaffoldOverrides?.baseViewModelFqn
-        "BaseFragment" -> scaffoldOverrides?.baseFragmentFqn
-        else -> null
-    }
+    val fromOverride =
+        when (className) {
+            "BaseViewModel" -> scaffoldOverrides?.baseViewModelFqn
+            "BaseFragment" -> scaffoldOverrides?.baseFragmentFqn
+            else -> null
+        }
     if (!fromOverride.isNullOrBlank()) return fromOverride.trim()
     return baseClasses.find { it.name == className }?.let { "${it.packageName}.$className" }
 }
@@ -40,7 +40,8 @@ fun EgsConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean): Base
         baseFragment = resolveNamedBaseClass("BaseFragment"),
         resultClass = bp?.let { "$it.feature.base.domain.result.Result" },
         pageResultClass = bp?.let { "$it.feature.base.domain.pagination.PageResult" },
-        retrofitProvider = if (includeRetrofitProvider) {
+        retrofitProvider =
+        if (includeRetrofitProvider) {
             bp?.let { "$it.feature.common.network.DynamicRetrofitProvider" }
         } else {
             null
@@ -52,18 +53,18 @@ fun EgsConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean): Base
 // SubProjectConfig extensions (new workspace-aware multi-platform)
 // ---------------------------------------------------------------------------
 
-fun SubProjectConfig.effectiveBasePackage(): String =
-    scaffoldOverrides?.basePackage ?: basePackage
+fun SubProjectConfig.effectiveBasePackage(): String = scaffoldOverrides?.basePackage ?: basePackage
 
 val SubProjectConfig.isAndroid: Boolean
     get() = platform in setOf(Platform.ANDROID, Platform.KMP_ANDROID)
 
 private fun SubProjectConfig.resolveNamedBaseClass(className: String): String? {
-    val fromOverride = when (className) {
-        "BaseViewModel" -> scaffoldOverrides?.baseViewModelFqn
-        "BaseFragment" -> scaffoldOverrides?.baseFragmentFqn
-        else -> null
-    }
+    val fromOverride =
+        when (className) {
+            "BaseViewModel" -> scaffoldOverrides?.baseViewModelFqn
+            "BaseFragment" -> scaffoldOverrides?.baseFragmentFqn
+            else -> null
+        }
     if (!fromOverride.isNullOrBlank()) return fromOverride.trim()
     return baseClasses.find { it.name == className }?.let { "${it.packageName}.$className" }
 }
@@ -71,29 +72,34 @@ private fun SubProjectConfig.resolveNamedBaseClass(className: String): String? {
 fun SubProjectConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean = false): BaseClassPackages {
     val bp = effectiveBasePackage()
     return when (platform) {
-        Platform.ANDROID, Platform.KMP_ANDROID -> BaseClassPackages(
-            baseViewModel = resolveNamedBaseClass("BaseViewModel")
-                ?: "$bp.feature.base.presentation.viewmodel.BaseViewModel",
-            baseFragment = resolveNamedBaseClass("BaseFragment"),
-            resultClass = "$bp.feature.base.domain.result.Result",
-            pageResultClass = "$bp.feature.base.domain.pagination.PageResult",
-            retrofitProvider = if (includeRetrofitProvider) {
-                "$bp.feature.common.network.DynamicRetrofitProvider"
-            } else {
-                null
-            },
-        )
-        Platform.KMP -> BaseClassPackages(
-            baseViewModel = resolveNamedBaseClass("BaseViewModel"),
-            baseFragment = resolveNamedBaseClass("BaseFragment"),
-            resultClass = "$bp.feature.base.domain.result.Result",
-            pageResultClass = "$bp.feature.base.domain.pagination.PageResult",
-            retrofitProvider = if (includeRetrofitProvider) {
-                "$bp.feature.common.network.DynamicRetrofitProvider"
-            } else {
-                null
-            },
-        )
+        Platform.ANDROID, Platform.KMP_ANDROID ->
+            BaseClassPackages(
+                baseViewModel =
+                resolveNamedBaseClass("BaseViewModel")
+                    ?: "$bp.feature.base.presentation.viewmodel.BaseViewModel",
+                baseFragment = resolveNamedBaseClass("BaseFragment"),
+                resultClass = "$bp.feature.base.domain.result.Result",
+                pageResultClass = "$bp.feature.base.domain.pagination.PageResult",
+                retrofitProvider =
+                if (includeRetrofitProvider) {
+                    "$bp.feature.common.network.DynamicRetrofitProvider"
+                } else {
+                    null
+                },
+            )
+        Platform.KMP ->
+            BaseClassPackages(
+                baseViewModel = resolveNamedBaseClass("BaseViewModel"),
+                baseFragment = resolveNamedBaseClass("BaseFragment"),
+                resultClass = "$bp.feature.base.domain.result.Result",
+                pageResultClass = "$bp.feature.base.domain.pagination.PageResult",
+                retrofitProvider =
+                if (includeRetrofitProvider) {
+                    "$bp.feature.common.network.DynamicRetrofitProvider"
+                } else {
+                    null
+                },
+            )
         Platform.SPRING_BOOT, Platform.KOTLIN_JVM -> BaseClassPackages()
         Platform.VUE3 -> BaseClassPackages()
     }
@@ -105,8 +111,9 @@ fun SubProjectConfig.toModuleTemplate(moduleName: String): ModuleTemplate {
     val featurePackage = "$bp.feature.$normalizedModule"
     val isAndroid = this.isAndroid
     val namespace = if (isAndroid) featurePackage else null
-    val resolvedConventionPlugin = conventionPluginId?.takeIf { it.isNotBlank() }
-        ?: if (isAndroid && bp.isNotBlank()) "$bp.convention.feature" else null
+    val resolvedConventionPlugin =
+        conventionPluginId?.takeIf { it.isNotBlank() }
+            ?: if (isAndroid && bp.isNotBlank()) "$bp.convention.feature" else null
 
     return ModuleTemplate(
         name = moduleName,

@@ -17,20 +17,20 @@ class CreateCommand : CliktCommand(name = "create") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): CreateCommand =
-            CreateCommand().subcommands(
-                CreateProjectCommand(),
-                CreateModuleCommand(),
-                CreateApiCommand(),
-                CreateScreenCommand(),
-                CreatePageCommand(), // backward compatibility
-                CreateUseCaseCommand(),
-            )
+        fun withSubcommands(): CreateCommand = CreateCommand().subcommands(
+            CreateProjectCommand(),
+            CreateModuleCommand(),
+            CreateApiCommand(),
+            CreateScreenCommand(),
+            CreatePageCommand(), // backward compatibility
+            CreateUseCaseCommand(),
+        )
     }
 }
 
-class CreateModuleCommand : CliktCommand(name = "module"), KoinComponent {
-
+class CreateModuleCommand :
+    CliktCommand(name = "module"),
+    KoinComponent {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -48,21 +48,22 @@ class CreateModuleCommand : CliktCommand(name = "module"), KoinComponent {
 
             // Try workspace-aware scaffold first (client sub-project)
             val workspaceFile = dir.resolve(".egs/workspace.json")
-            val result = if (workspaceFile.exists()) {
-                scaffolder.scaffoldForProject(
-                    projectRoot = dir,
-                    moduleName = name,
-                    projectKey = "client",
-                    dryRun = dryRun,
-                )
-            } else {
-                scaffolder.scaffold(
-                    projectRoot = dir,
-                    moduleName = name,
-                    customPackage = packageName,
-                    dryRun = dryRun,
-                )
-            }
+            val result =
+                if (workspaceFile.exists()) {
+                    scaffolder.scaffoldForProject(
+                        projectRoot = dir,
+                        moduleName = name,
+                        projectKey = "client",
+                        dryRun = dryRun,
+                    )
+                } else {
+                    scaffolder.scaffold(
+                        projectRoot = dir,
+                        moduleName = name,
+                        customPackage = packageName,
+                        dryRun = dryRun,
+                    )
+                }
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
@@ -86,7 +87,9 @@ class CreateModuleCommand : CliktCommand(name = "module"), KoinComponent {
     }
 }
 
-class CreateApiCommand : CliktCommand(name = "api"), KoinComponent {
+class CreateApiCommand :
+    CliktCommand(name = "api"),
+    KoinComponent {
     private val scaffolder: SwaggerApiScaffolder by inject()
 
     private val moduleName by argument(help = "Target feature module name, e.g. home")
@@ -105,13 +108,14 @@ class CreateApiCommand : CliktCommand(name = "api"), KoinComponent {
 
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
-            val result = scaffolder.scaffold(
-                projectRoot = dir,
-                moduleName = moduleName,
-                swaggerLocation = swaggerUrl,
-                customPackage = packageName,
-                dryRun = dryRun,
-            )
+            val result =
+                scaffolder.scaffold(
+                    projectRoot = dir,
+                    moduleName = moduleName,
+                    swaggerLocation = swaggerUrl,
+                    customPackage = packageName,
+                    dryRun = dryRun,
+                )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - swagger files to generate:"))

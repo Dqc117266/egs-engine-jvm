@@ -13,7 +13,6 @@ import kotlin.io.path.createTempDirectory
  * Catches any unintended change in the wired `android/page` and `kmp/page` FTL templates.
  */
 class GoldenPageTest {
-
     @Test
     fun `android page golden`() {
         val files = PageGenerator().preview(tempRoot(), pageTemplate("com.dqc.example"), "ANDROID")
@@ -34,20 +33,22 @@ class GoldenPageTest {
             pageName = "TaskList",
             moduleName = "task",
             modulePackage = modulePackage,
-            useCases = listOf(
-                UseCaseInfo(
-                    name = "TopicUpdateTopicUseCase",
-                    packageName = "$modulePackage.domain.usecase",
-                    path = "$modulePackage.domain.usecase.TopicUpdateTopicUseCase",
-                    returnType = "Result<Boolean>",
-                    parameters = listOf(UseCaseParam(name = "topicId", type = "Long")),
+            useCases =
+                listOf(
+                    UseCaseInfo(
+                        name = "TopicUpdateTopicUseCase",
+                        packageName = "$modulePackage.domain.usecase",
+                        path = "$modulePackage.domain.usecase.TopicUpdateTopicUseCase",
+                        returnType = "Result<Boolean>",
+                        parameters = listOf(UseCaseParam(name = "topicId", type = "Long")),
+                    ),
                 ),
-            ),
             basePackage = basePackage,
-            baseClassPackages = BaseClassPackages(
-                baseViewModel = "$basePackage.feature.base.presentation.viewmodel.BaseViewModel",
-                resultClass = "$basePackage.feature.base.domain.result.Result",
-            ),
+            baseClassPackages =
+                BaseClassPackages(
+                    baseViewModel = "$basePackage.feature.base.presentation.viewmodel.BaseViewModel",
+                    resultClass = "$basePackage.feature.base.domain.result.Result",
+                ),
         )
     }
 }

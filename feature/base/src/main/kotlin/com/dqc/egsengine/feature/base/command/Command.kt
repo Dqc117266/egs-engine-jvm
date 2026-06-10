@@ -16,6 +16,10 @@ data class CommandResult(
 
     companion object {
         fun success(output: String = "") = CommandResult(exitCode = 0, output = output)
-        fun failure(error: String, exitCode: Int = 1) = CommandResult(exitCode = exitCode, error = error)
+
+        fun failure(
+            error: String,
+            exitCode: Int = 1,
+        ) = CommandResult(exitCode = exitCode, error = error)
     }
 }

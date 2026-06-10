@@ -11,7 +11,6 @@ import java.io.File
 
 /** Thin subclasses under non-`generate/` packages; created when missing unless [force]. */
 class SpringBootHandWrittenShellGenerator {
-
     fun generateIfMissing(
         backendRoot: File,
         moduleName: String,
@@ -26,7 +25,10 @@ class SpringBootHandWrittenShellGenerator {
         val kotlinRoot = "feature/$moduleName/src/main/kotlin/${pkg.replace('.', '/')}"
         val out = mutableListOf<GeneratedFile>()
 
-        fun put(rel: String, content: String) {
+        fun put(
+            rel: String,
+            content: String,
+        ) {
             val path = "$kotlinRoot/$rel"
             val target = backendRoot.resolve(path)
             if (!dryRun && !force && target.exists()) return
@@ -51,22 +53,22 @@ class SpringBootHandWrittenShellGenerator {
 
             @RestController
             class ${entityPascal}Controller(
-                create${entityPascal}: Create${entityPascal}UseCase,
-                update${entityPascal}: Update${entityPascal}UseCase,
+                create$entityPascal: Create${entityPascal}UseCase,
+                update$entityPascal: Update${entityPascal}UseCase,
                 delete${entityPascal}ById: Delete${entityPascal}ByIdUseCase,
                 get${entityPascal}ById: Get${entityPascal}ByIdUseCase,
                 get${entityPascal}Page: Get${entityPascal}PageUseCase,
                 get${entityPascal}All: Get${entityPascal}AllUseCase,
-                count${entityPascal}: Count${entityPascal}UseCase,
+                count$entityPascal: Count${entityPascal}UseCase,
                 mapper: ${entityPascal}EntityMapper,
             ) : Generated${entityPascal}Controller(
-                create${entityPascal},
-                update${entityPascal},
+                create$entityPascal,
+                update$entityPascal,
                 delete${entityPascal}ById,
                 get${entityPascal}ById,
                 get${entityPascal}Page,
                 get${entityPascal}All,
-                count${entityPascal},
+                count$entityPascal,
                 mapper,
             )
             """.trimIndent(),

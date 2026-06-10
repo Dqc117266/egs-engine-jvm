@@ -46,59 +46,65 @@ class AndroidDatabaseRepositoryGenerator(
         val moduleDir = "feature/${template.name}"
         val rows = AndroidDatabaseTemplateModels.buildRows(tables)
 
-        val tableMaps = rows.map { row ->
-            val domainSimple = DatabaseEntityDomainMapping.resolveDomainClassName(row.table, spec)
-            val hasDomainMapping = domainSimple != null
-            val exposedRowType = domainSimple ?: row.entityClassName
-            mapOf(
-                "sqlTableName" to row.table.tableName,
-                "entityClassName" to row.entityClassName,
-                "exposedRowType" to exposedRowType,
-                "hasDomainMapping" to hasDomainMapping,
-                "prefixPascal" to row.prefixPascal,
-                "pkPropertyName" to row.pkPropertyName,
-                "pkKotlinType" to row.pkKotlinType,
-            )
-        }
-
-        val rowImports = rows.map { row ->
-            val domainSimple = DatabaseEntityDomainMapping.resolveDomainClassName(row.table, spec)
-            if (domainSimple != null) {
-                "$domainPackageName.$domainSimple"
-            } else {
-                "$entityPackageName.${row.entityClassName}"
+        val tableMaps =
+            rows.map { row ->
+                val domainSimple = DatabaseEntityDomainMapping.resolveDomainClassName(row.table, spec)
+                val hasDomainMapping = domainSimple != null
+                val exposedRowType = domainSimple ?: row.entityClassName
+                mapOf(
+                    "sqlTableName" to row.table.tableName,
+                    "entityClassName" to row.entityClassName,
+                    "exposedRowType" to exposedRowType,
+                    "hasDomainMapping" to hasDomainMapping,
+                    "prefixPascal" to row.prefixPascal,
+                    "pkPropertyName" to row.pkPropertyName,
+                    "pkKotlinType" to row.pkKotlinType,
+                )
             }
-        }.distinct().sorted()
+
+        val rowImports =
+            rows
+                .map { row ->
+                    val domainSimple = DatabaseEntityDomainMapping.resolveDomainClassName(row.table, spec)
+                    if (domainSimple != null) {
+                        "$domainPackageName.$domainSimple"
+                    } else {
+                        "$entityPackageName.${row.entityClassName}"
+                    }
+                }.distinct()
+                .sorted()
 
         val hasAnyDomainMapping = tableMaps.any { it["hasDomainMapping"] == true }
 
-        val repoInterface = templateEngine.render(
-            "android/database/DbRepository.kt.ftl",
-            mapOf(
-                "repositoryPackageName" to repositoryPackageName,
-                "dbRepositoryName" to dbRepositoryName,
-                "moduleDatabaseName" to moduleDatabaseName,
-                "rowImports" to rowImports,
-                "tables" to tableMaps,
-            ),
-            projectRoot,
-        )
+        val repoInterface =
+            templateEngine.render(
+                "android/database/DbRepository.kt.ftl",
+                mapOf(
+                    "repositoryPackageName" to repositoryPackageName,
+                    "dbRepositoryName" to dbRepositoryName,
+                    "moduleDatabaseName" to moduleDatabaseName,
+                    "rowImports" to rowImports,
+                    "tables" to tableMaps,
+                ),
+                projectRoot,
+            )
 
-        val repoSupport = templateEngine.render(
-            "android/database/DbRepositorySupport.kt.ftl",
-            mapOf(
-                "repositorySupportPackageName" to repositorySupportPackageName,
-                "repositoryPackageName" to repositoryPackageName,
-                "dbRepositoryName" to dbRepositoryName,
-                "dbRepositorySupportName" to dbRepositorySupportName,
-                "databasePackageName" to databasePackageName,
-                "moduleDatabaseName" to moduleDatabaseName,
-                "mapperPackageName" to mapperPackageName,
-                "hasAnyDomainMapping" to hasAnyDomainMapping,
-                "tables" to tableMaps,
-            ),
-            projectRoot,
-        )
+        val repoSupport =
+            templateEngine.render(
+                "android/database/DbRepositorySupport.kt.ftl",
+                mapOf(
+                    "repositorySupportPackageName" to repositorySupportPackageName,
+                    "repositoryPackageName" to repositoryPackageName,
+                    "dbRepositoryName" to dbRepositoryName,
+                    "dbRepositorySupportName" to dbRepositorySupportName,
+                    "databasePackageName" to databasePackageName,
+                    "moduleDatabaseName" to moduleDatabaseName,
+                    "mapperPackageName" to mapperPackageName,
+                    "hasAnyDomainMapping" to hasAnyDomainMapping,
+                    "tables" to tableMaps,
+                ),
+                projectRoot,
+            )
 
         val files = mutableListOf<GeneratedFile>()
         files.add(generatedMain(moduleDir, repositoryPackageName, "$dbRepositoryName.kt", repoInterface))

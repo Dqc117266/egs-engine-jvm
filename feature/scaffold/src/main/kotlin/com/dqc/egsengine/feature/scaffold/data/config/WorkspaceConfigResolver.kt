@@ -16,13 +16,14 @@ class WorkspaceConfigResolver(
 ) {
     private val logger = LoggerFactory.getLogger(WorkspaceConfigResolver::class.java)
 
-    fun readWorkspace(projectRoot: File): WorkspaceConfig =
-        workspaceConfigReader.read(projectRoot)
+    fun readWorkspace(projectRoot: File): WorkspaceConfig = workspaceConfigReader.read(projectRoot)
 
-    fun isWorkspaceProject(projectRoot: File): Boolean =
-        workspaceConfigReader.hasWorkspaceConfig(projectRoot)
+    fun isWorkspaceProject(projectRoot: File): Boolean = workspaceConfigReader.hasWorkspaceConfig(projectRoot)
 
-    fun resolveByKey(projectRoot: File, projectKey: String): SubProjectConfig {
+    fun resolveByKey(
+        projectRoot: File,
+        projectKey: String,
+    ): SubProjectConfig {
         val workspace = readWorkspace(projectRoot)
         return workspace.projects[projectKey]
             ?: throw IllegalArgumentException(
@@ -30,7 +31,10 @@ class WorkspaceConfigResolver(
             )
     }
 
-    fun resolveByPlatform(projectRoot: File, platform: Platform): SubProjectConfig {
+    fun resolveByPlatform(
+        projectRoot: File,
+        platform: Platform,
+    ): SubProjectConfig {
         val workspace = readWorkspace(projectRoot)
         return workspace.projects.values.firstOrNull { it.platform == platform }
             ?: throw IllegalArgumentException(
@@ -38,11 +42,9 @@ class WorkspaceConfigResolver(
             )
     }
 
-    fun resolveClient(projectRoot: File): SubProjectConfig =
-        resolveByKey(projectRoot, "client")
+    fun resolveClient(projectRoot: File): SubProjectConfig = resolveByKey(projectRoot, "client")
 
-    fun resolveBackend(projectRoot: File): SubProjectConfig =
-        resolveByKey(projectRoot, "backend")
+    fun resolveBackend(projectRoot: File): SubProjectConfig = resolveByKey(projectRoot, "backend")
 
     fun resolveEffectiveBackendConfig(projectRoot: File): SubProjectConfig {
         val config = resolveBackend(projectRoot)
@@ -72,13 +74,13 @@ class WorkspaceConfigResolver(
         )
     }
 
-    fun resolveAdmin(projectRoot: File): SubProjectConfig =
-        resolveByKey(projectRoot, "admin")
+    fun resolveAdmin(projectRoot: File): SubProjectConfig = resolveByKey(projectRoot, "admin")
 
     fun resolveSwaggerUrl(projectRoot: File): String {
         val workspace = readWorkspace(projectRoot)
-        val swagger = workspace.swagger
-            ?: throw IllegalStateException("No swagger sync config in workspace.json")
+        val swagger =
+            workspace.swagger
+                ?: throw IllegalStateException("No swagger sync config in workspace.json")
         return joinSwaggerUrl(swagger.baseUrl, swagger.docPath)
     }
 
@@ -86,10 +88,14 @@ class WorkspaceConfigResolver(
      * Resolves Swagger URL for a client feature module using [SwaggerSyncConfig.modules] when present.
      * Priority: per-module [SwaggerModuleConfig.url] > per-module [SwaggerModuleConfig.docPath] > global doc path.
      */
-    fun resolveSwaggerUrl(projectRoot: File, clientModule: String): String {
+    fun resolveSwaggerUrl(
+        projectRoot: File,
+        clientModule: String,
+    ): String {
         val workspace = readWorkspace(projectRoot)
-        val swagger = workspace.swagger
-            ?: throw IllegalStateException("No swagger sync config in workspace.json")
+        val swagger =
+            workspace.swagger
+                ?: throw IllegalStateException("No swagger sync config in workspace.json")
         val mod = swagger.modules[clientModule]
         when {
             !mod?.url.isNullOrBlank() -> return mod!!.url!!.trim()
@@ -105,7 +111,10 @@ class WorkspaceConfigResolver(
         }
     }
 
-    private fun joinSwaggerUrl(baseUrl: String, docPath: String): String {
+    private fun joinSwaggerUrl(
+        baseUrl: String,
+        docPath: String,
+    ): String {
         val base = baseUrl.trimEnd('/')
         val path = if (docPath.startsWith("/")) docPath else "/$docPath"
         return base + path
@@ -123,10 +132,12 @@ class WorkspaceConfigResolver(
 
     fun detectSpringBootConventionPluginId(backendRoot: File): String? {
         val featureDir = backendRoot.resolve("feature")
-        val featureBuild = featureDir.listFiles()
-            ?.filter { it.isDirectory }
-            ?.map { it.resolve("build.gradle.kts") }
-            ?.firstOrNull { it.exists() }
+        val featureBuild =
+            featureDir
+                .listFiles()
+                ?.filter { it.isDirectory }
+                ?.map { it.resolve("build.gradle.kts") }
+                ?.firstOrNull { it.exists() }
         val file = featureBuild ?: return null
         val text = file.readText()
         return Regex("""id\(\"([^\"]+)\"\)""")
@@ -137,7 +148,8 @@ class WorkspaceConfigResolver(
 
     private fun findSpringBootApplicationFile(appSourceRoot: File): File? {
         if (!appSourceRoot.isDirectory) return null
-        return appSourceRoot.walkTopDown()
+        return appSourceRoot
+            .walkTopDown()
             .firstOrNull { file ->
                 file.isFile &&
                     file.extension == "kt" &&
@@ -145,24 +157,22 @@ class WorkspaceConfigResolver(
             }
     }
 
-    private fun extractPackageName(text: String): String? =
-        Regex("""^package\s+([\w.]+)""", RegexOption.MULTILINE)
-            .find(text)
-            ?.groupValues
-            ?.getOrNull(1)
+    private fun extractPackageName(text: String): String? = Regex("""^package\s+([\w.]+)""", RegexOption.MULTILINE)
+        .find(text)
+        ?.groupValues
+        ?.getOrNull(1)
 
-    private fun extractScanBasePackages(text: String): List<String> =
-        Regex("""scanBasePackages\s*=\s*\[(.*?)]""", setOf(RegexOption.DOT_MATCHES_ALL))
-            .find(text)
-            ?.groupValues
-            ?.getOrNull(1)
-            ?.let { body ->
-                Regex("""\"([^\"]+)\"""")
-                    .findAll(body)
-                    .map { it.groupValues[1] }
-                    .toList()
-            }
-            ?: emptyList()
+    private fun extractScanBasePackages(text: String): List<String> = Regex("""scanBasePackages\s*=\s*\[(.*?)]""", setOf(RegexOption.DOT_MATCHES_ALL))
+        .find(text)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.let { body ->
+            Regex("""\"([^\"]+)\"""")
+                .findAll(body)
+                .map { it.groupValues[1] }
+                .toList()
+        }
+        ?: emptyList()
 
     private fun detectFeaturePackageRoot(backendRoot: File): String? {
         val featureRoot = backendRoot.resolve("feature")

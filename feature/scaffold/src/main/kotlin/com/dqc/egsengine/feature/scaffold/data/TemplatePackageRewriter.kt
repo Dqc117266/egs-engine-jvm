@@ -33,7 +33,6 @@ data class TemplateRenameRecipe(
  * transformations.
  */
 class TemplatePackageRewriter {
-
     /**
      * @param projectDir the cloned template directory to mutate in-place.
      * @param recipe pattern describing what textual / directory tokens to rewrite.
@@ -81,10 +80,14 @@ class TemplatePackageRewriter {
         rewriteTextFiles(projectDir, replacements)
     }
 
-    private fun rewriteTextFiles(projectDir: File, replacements: Map<String, String>) {
+    private fun rewriteTextFiles(
+        projectDir: File,
+        replacements: Map<String, String>,
+    ) {
         if (replacements.isEmpty()) return
 
-        projectDir.walkTopDown()
+        projectDir
+            .walkTopDown()
             .filter { it.isFile && isLikelyTextFile(it) }
             .forEach { file ->
                 val original = file.readUtf8TextOrNull() ?: return@forEach
@@ -103,28 +106,29 @@ class TemplatePackageRewriter {
     private fun isLikelyTextFile(file: File): Boolean {
         if (file.extension.lowercase() in BINARY_EXTENSIONS) return false
 
-        val bytes = file.inputStream().use { input ->
-            val preview = ByteArray(8192)
-            val readSize = input.read(preview)
-            if (readSize <= 0) return true
-            preview.copyOf(readSize)
-        }
+        val bytes =
+            file.inputStream().use { input ->
+                val preview = ByteArray(8192)
+                val readSize = input.read(preview)
+                if (readSize <= 0) return true
+                preview.copyOf(readSize)
+            }
 
         if (bytes.any { it == 0.toByte() }) return false
 
-        val controlChars = bytes.count {
-            val value = it.toInt() and 0xFF
-            value < 0x09 || (value in 0x0E..0x1F)
-        }
+        val controlChars =
+            bytes.count {
+                val value = it.toInt() and 0xFF
+                value < 0x09 || (value in 0x0E..0x1F)
+            }
         return controlChars < bytes.size / 3
     }
 
-    private fun File.readUtf8TextOrNull(): String? =
-        try {
-            readText()
-        } catch (_: MalformedInputException) {
-            null
-        }
+    private fun File.readUtf8TextOrNull(): String? = try {
+        readText()
+    } catch (_: MalformedInputException) {
+        null
+    }
 
     private fun relocatePackageDirectories(
         projectDir: File,
@@ -136,63 +140,70 @@ class TemplatePackageRewriter {
         if (oldPackagePath == newPackagePath) return
 
         // Match standard nested directories (e.g. template/core/base/analytics)
-        val nestedMatches = projectDir.walkTopDown()
-            .filter { it.isDirectory }
-            .filter { directory ->
-                val relativePath = directory.relativeTo(projectDir).path.replace(File.separatorChar, '/')
-                relativePath.endsWith(oldPackagePath)
-            }
-            .toList()
+        val nestedMatches =
+            projectDir
+                .walkTopDown()
+                .filter { it.isDirectory }
+                .filter { directory ->
+                    val relativePath = directory.relativeTo(projectDir).path.replace(File.separatorChar, '/')
+                    relativePath.endsWith(oldPackagePath)
+                }.toList()
 
         // Match dot-separated directory names (e.g. template.core.base.analytics as a single dir)
         // Some source sets use flat directory names that don't match the package nesting convention.
         // Match both exact name and names that start with the old package followed by a dot (sub-packages).
-        val dottedMatches = if (oldPackage.contains('.')) {
-            projectDir.walkTopDown()
-                .filter { it.isDirectory }
-                .filter { directory ->
-                    directory.name == oldPackage || directory.name.startsWith(oldPackage + ".")
-                }
-                .toList()
-        } else {
-            emptyList()
-        }
+        val dottedMatches =
+            if (oldPackage.contains('.')) {
+                projectDir
+                    .walkTopDown()
+                    .filter { it.isDirectory }
+                    .filter { directory ->
+                        directory.name == oldPackage || directory.name.startsWith(oldPackage + ".")
+                    }.toList()
+            } else {
+                emptyList()
+            }
 
-        val packageDirectories = (nestedMatches + dottedMatches)
-            .distinctBy { it.absolutePath }
-            .sortedByDescending { it.absolutePath.length }
+        val packageDirectories =
+            (nestedMatches + dottedMatches)
+                .distinctBy { it.absolutePath }
+                .sortedByDescending { it.absolutePath.length }
 
         packageDirectories.forEach { sourceDir ->
             if (!sourceDir.exists()) return@forEach
 
             val relativePath = sourceDir.relativeTo(projectDir).path.replace(File.separatorChar, '/')
             val isDottedMatch = sourceDir.name == oldPackage || sourceDir.name.startsWith(oldPackage + ".")
-            val suffix = when {
-                isDottedMatch -> sourceDir.name
-                relativePath.endsWith(oldPackagePath) -> oldPackagePath
-                relativePath.endsWith(oldPackage) -> oldPackage
-                else -> oldPackagePath
-            }
-            val dottedSuffixExtra = if (isDottedMatch && sourceDir.name != oldPackage) {
-                // e.g. for "template.core.base.analytics", the extra part beyond oldPackage is ".analytics"
-                sourceDir.name.removePrefix(oldPackage)
-            } else {
-                ""
-            }
-            val targetPkgPath = if (dottedSuffixExtra.isNotEmpty()) {
-                // Map the dotted suffix to nested dirs: ".analytics" -> "/analytics"
-                newPackagePath + dottedSuffixExtra.replace('.', '/')
-            } else {
-                newPackagePath
-            }
-            val prefixPath = relativePath.removeSuffix(suffix).trimEnd('/')
-            val targetRelativePath = buildString {
-                if (prefixPath.isNotEmpty()) {
-                    append(prefixPath)
-                    append('/')
+            val suffix =
+                when {
+                    isDottedMatch -> sourceDir.name
+                    relativePath.endsWith(oldPackagePath) -> oldPackagePath
+                    relativePath.endsWith(oldPackage) -> oldPackage
+                    else -> oldPackagePath
                 }
-                append(targetPkgPath)
-            }
+            val dottedSuffixExtra =
+                if (isDottedMatch && sourceDir.name != oldPackage) {
+                    // e.g. for "template.core.base.analytics", the extra part beyond oldPackage is ".analytics"
+                    sourceDir.name.removePrefix(oldPackage)
+                } else {
+                    ""
+                }
+            val targetPkgPath =
+                if (dottedSuffixExtra.isNotEmpty()) {
+                    // Map the dotted suffix to nested dirs: ".analytics" -> "/analytics"
+                    newPackagePath + dottedSuffixExtra.replace('.', '/')
+                } else {
+                    newPackagePath
+                }
+            val prefixPath = relativePath.removeSuffix(suffix).trimEnd('/')
+            val targetRelativePath =
+                buildString {
+                    if (prefixPath.isNotEmpty()) {
+                        append(prefixPath)
+                        append('/')
+                    }
+                    append(targetPkgPath)
+                }
 
             val targetDir = projectDir.resolve(targetRelativePath)
             if (sourceDir.absolutePath == targetDir.absolutePath) return@forEach
@@ -202,7 +213,10 @@ class TemplatePackageRewriter {
         }
     }
 
-    private fun moveDirectoryWithMerge(source: File, target: File) {
+    private fun moveDirectoryWithMerge(
+        source: File,
+        target: File,
+    ) {
         if (!target.exists()) {
             target.parentFile?.mkdirs()
             if (source.renameTo(target)) return
@@ -230,7 +244,10 @@ class TemplatePackageRewriter {
         }
     }
 
-    private fun cleanupEmptyDirectories(start: File?, stopAt: File) {
+    private fun cleanupEmptyDirectories(
+        start: File?,
+        stopAt: File,
+    ) {
         var current = start
         while (current != null && current.absolutePath != stopAt.absolutePath) {
             if (!current.exists() || !current.isDirectory || !current.listFiles().isNullOrEmpty()) {
@@ -243,14 +260,26 @@ class TemplatePackageRewriter {
     }
 
     private companion object {
-        val BINARY_EXTENSIONS = setOf(
-            "png", "jpg", "jpeg", "gif", "webp",
-            "jar", "zip", "ico",
-            "keystore", "jks",
-            "ttf", "otf",
-            "so", "pdf",
-            "mp3", "mp4", "wav",
-        )
+        val BINARY_EXTENSIONS =
+            setOf(
+                "png",
+                "jpg",
+                "jpeg",
+                "gif",
+                "webp",
+                "jar",
+                "zip",
+                "ico",
+                "keystore",
+                "jks",
+                "ttf",
+                "otf",
+                "so",
+                "pdf",
+                "mp3",
+                "mp4",
+                "wav",
+            )
     }
 }
 
@@ -258,37 +287,41 @@ class TemplatePackageRewriter {
  * Built-in rename recipes keyed by template canonical URL (scheme/auth-agnostic match).
  */
 internal object TemplateRenameRecipes {
-
     /** Shared instance for the default Android client template. */
-    val ANDROID_CLIENT: TemplateRenameRecipe = TemplateRenameRecipe(
-        oldPackage = "com.example.egs_android_template",
-        oldProjectName = "egs-android-template",
-        oldProjectNameDisplay = "EGS-Android-Template",
-        oldPackageToken = "egs_android_template",
-        extraOldPackages = mapOf(
-            "org.mifos" to "",
-            "template.core.base" to "core.base",
-        ),
-    )
+    val ANDROID_CLIENT: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            oldPackage = "com.example.egs_android_template",
+            oldProjectName = "egs-android-template",
+            oldProjectNameDisplay = "EGS-Android-Template",
+            oldPackageToken = "egs_android_template",
+            extraOldPackages =
+            mapOf(
+                "org.mifos" to "",
+                "template.core.base" to "core.base",
+            ),
+        )
 
     /** Recipe for the KMP (Compose Multiplatform) client template. */
-    val KMP_CLIENT: TemplateRenameRecipe = TemplateRenameRecipe(
-        oldPackage = "org.mifos",
-        oldProjectName = "egs-kmp-template",
-        oldProjectNameDisplay = "egs-kmp-template",
-        extraOldPackages = mapOf(
-            "template.core.base" to "core.base",
-            "cmp.android.app" to "cmp.android.app",
-            "cmp.navigation" to "cmp.navigation",
-            "cmp.shared" to "cmp.shared",
-        ),
-    )
+    val KMP_CLIENT: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            oldPackage = "org.mifos",
+            oldProjectName = "egs-kmp-template",
+            oldProjectNameDisplay = "egs-kmp-template",
+            extraOldPackages =
+            mapOf(
+                "template.core.base" to "core.base",
+                "cmp.android.app" to "cmp.android.app",
+                "cmp.navigation" to "cmp.navigation",
+                "cmp.shared" to "cmp.shared",
+            ),
+        )
 
     /** Recipe for the Spring Boot backend template. */
-    val BACKEND: TemplateRenameRecipe = TemplateRenameRecipe(
-        oldPackage = "com.egs.server",
-        oldProjectName = "egs-server-template",
-    )
+    val BACKEND: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            oldPackage = "com.egs.server",
+            oldProjectName = "egs-server-template",
+        )
 
     /**
      * Returns a recipe for the given canonical template URL, or null when no rewriting recipe is

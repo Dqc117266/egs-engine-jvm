@@ -6,9 +6,9 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
-import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerGeneratorContext
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.KmpPreferencesKotlinEmitter
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.prefs.PrefsGenerationMode
+import com.dqc.egsengine.feature.scaffold.data.swagger.KmpSwaggerGeneratorContext
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.template.TemplateEngine
 import org.slf4j.LoggerFactory
@@ -46,22 +46,23 @@ class KmpPrefsUseCaseGenerator(
             extraImports: Set<String> = emptySet(),
         ) {
             useCaseNames += useCaseName
-            val content = templateEngine.render(
-                "kmp/preferences/PrefsUseCase.kt.ftl",
-                mapOf(
-                    "useCasePackage" to useCasePkg,
-                    "domainRepositoryImport" to domainRepoImport,
-                    "combinedRepositoryName" to ctx.combinedRepositoryName,
-                    "useCaseName" to useCaseName,
-                    "invokeParams" to invokeParams,
-                    "returnType" to returnType,
-                    "repositoryCall" to repositoryCall,
-                    "suspendInvoke" to suspendInvoke,
-                    "needsFlowImport" to needsFlowImport,
-                    "extraImports" to extraImports.sorted(),
-                ),
-                projectRoot,
-            )
+            val content =
+                templateEngine.render(
+                    "kmp/preferences/PrefsUseCase.kt.ftl",
+                    mapOf(
+                        "useCasePackage" to useCasePkg,
+                        "domainRepositoryImport" to domainRepoImport,
+                        "combinedRepositoryName" to ctx.combinedRepositoryName,
+                        "useCaseName" to useCaseName,
+                        "invokeParams" to invokeParams,
+                        "returnType" to returnType,
+                        "repositoryCall" to repositoryCall,
+                        "suspendInvoke" to suspendInvoke,
+                        "needsFlowImport" to needsFlowImport,
+                        "extraImports" to extraImports.sorted(),
+                    ),
+                    projectRoot,
+                )
             files.add(GeneratedFile("$moduleDir/src/commonMain/kotlin/$pkgPath/$useCaseName.kt", content))
         }
 
@@ -129,13 +130,14 @@ class KmpPrefsUseCaseGenerator(
         }
 
         val domainModulePath = "$moduleDir/src/commonMain/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDomainModule.kt"
-        val domainModule = resolveGeneratedDomainModuleContent(
-            ctx = ctx,
-            useCaseNames = useCaseNames,
-            projectRoot = projectRoot,
-            subProjectRoot = subProjectRoot,
-            template = template,
-        )
+        val domainModule =
+            resolveGeneratedDomainModuleContent(
+                ctx = ctx,
+                useCaseNames = useCaseNames,
+                projectRoot = projectRoot,
+                subProjectRoot = subProjectRoot,
+                template = template,
+            )
         files.add(GeneratedFile(domainModulePath, domainModule))
 
         logger.info("Generated {} prefs use case file(s) for module {}", files.size, template.name)
@@ -150,9 +152,10 @@ class KmpPrefsUseCaseGenerator(
         template: ModuleTemplate,
     ): String {
         val pkgPath = template.packageName.replace('.', '/')
-        val existing = subProjectRoot?.resolve(
-            "feature/${template.name}/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
-        )
+        val existing =
+            subProjectRoot?.resolve(
+                "feature/${template.name}/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+            )
         if (existing != null && existing.exists()) {
             var text = existing.readText()
             if (text.contains("egs-gen:swagger-usecases-begin")) {
@@ -185,7 +188,10 @@ class KmpPrefsUseCaseGenerator(
         projectRoot,
     )
 
-    private fun insertImportAfterPackage(text: String, importLine: String): String {
+    private fun insertImportAfterPackage(
+        text: String,
+        importLine: String,
+    ): String {
         val lines = text.lines().toMutableList()
         val pkgIdx = lines.indexOfFirst { it.startsWith("package ") }
         if (pkgIdx < 0) return "$importLine\n\n$text"

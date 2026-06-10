@@ -14,9 +14,10 @@ internal fun ModuleTemplate.toModuleTemplateModel(): ModuleTemplateModel {
     val camel = pascal.replaceFirstChar { it.lowercase() }
     val layoutSnakeName = pascal.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
     val bcp = baseClassPackages
-    val uiContractPackage = bcp.baseViewModel?.substringBeforeLast(".")
-        ?: basePackage?.let { "$it.feature.base.presentation.viewmodel" }
-        ?: "com.example.feature.base.presentation.viewmodel"
+    val uiContractPackage =
+        bcp.baseViewModel?.substringBeforeLast(".")
+            ?: basePackage?.let { "$it.feature.base.presentation.viewmodel" }
+            ?: "com.example.feature.base.presentation.viewmodel"
 
     val repositoryReturnType: String
     val repositoryImports: List<String>
@@ -37,13 +38,14 @@ internal fun ModuleTemplate.toModuleTemplateModel(): ModuleTemplateModel {
     val baseVmFqcn = bcp.baseViewModel
     val baseVmSimple = baseVmFqcn?.substringAfterLast(".")
 
-    val repositoryImplImports = buildList {
-        add("${packageName}.domain.repository.${pascal}Repository")
-        repositoryImports.forEach { add(it) }
-        if (hasRetrofit && retrofitFqcn != null) {
-            add(retrofitFqcn)
+    val repositoryImplImports =
+        buildList {
+            add("$packageName.domain.repository.${pascal}Repository")
+            repositoryImports.forEach { add(it) }
+            if (hasRetrofit && retrofitFqcn != null) {
+                add(retrofitFqcn)
+            }
         }
-    }
 
     return ModuleTemplateModel(
         pascal = pascal,
@@ -52,7 +54,8 @@ internal fun ModuleTemplate.toModuleTemplateModel(): ModuleTemplateModel {
         packageName = packageName,
         android = isAndroid,
         basePackage = basePackage,
-        baseClasses = BaseClassPackagesModel(
+        baseClasses =
+        BaseClassPackagesModel(
             baseViewModel = bcp.baseViewModel,
             baseFragment = bcp.baseFragment,
             resultClass = bcp.resultClass,
@@ -73,7 +76,6 @@ internal fun ModuleTemplate.toModuleTemplateModel(): ModuleTemplateModel {
     )
 }
 
-private fun String.toPascalCase(): String =
-    split("-", "_").joinToString("") { part ->
-        part.replaceFirstChar { it.uppercase() }
-    }
+private fun String.toPascalCase(): String = split("-", "_").joinToString("") { part ->
+    part.replaceFirstChar { it.uppercase() }
+}

@@ -16,9 +16,10 @@ class CommandExecutor {
         try {
             logger.debug("Executing: ${command.joinToString(" ")}")
 
-            val processBuilder = ProcessBuilder(command)
-                .directory(workDir)
-                .redirectErrorStream(false)
+            val processBuilder =
+                ProcessBuilder(command)
+                    .directory(workDir)
+                    .redirectErrorStream(false)
 
             environment.forEach { (key, value) ->
                 processBuilder.environment()[key] = value

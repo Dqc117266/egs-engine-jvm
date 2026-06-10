@@ -10,8 +10,9 @@ import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class AnalyzeCommand : CliktCommand(name = "analyze"), KoinComponent {
-
+class AnalyzeCommand :
+    CliktCommand(name = "analyze"),
+    KoinComponent {
     private val analyzer: ProjectAnalyzer by inject()
 
     private val projectPath by argument().default(".")

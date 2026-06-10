@@ -13,11 +13,10 @@ import org.junit.jupiter.api.Test
 
 /**
  * Regression tests for [ViewModelMemberMerger.insertIntoRegisterIntents]:
- * - Newly appended `registerIntent<¡­> { ¡­ }` blocks must not contain blank lines.
+ * - Newly appended `registerIntent<Â¡Â­> { Â¡Â­ }` blocks must not contain blank lines.
  * - Trailing whitespace left by prior merges is stripped so blank lines do not accumulate.
  */
 class ViewModelMemberMergerRegisterIntentFormatTest {
-
     private val useCase =
         UseCaseInfo(
             name = "FooUseCase",
@@ -27,16 +26,18 @@ class ViewModelMemberMergerRegisterIntentFormatTest {
             parameters = emptyList(),
         )
 
-    private fun snippet(block: String, importLine: String = "import x.FooUseCase"): ViewModelMergeSnippet =
-        ViewModelMergeSnippet(
-            useCase = useCase,
-            intentMemberText = "",
-            stateFieldText = null,
-            viewModelImportLines = listOf(importLine),
-            ctorParamLine = "    private val foo: FooUseCase,\n",
-            registerIntentBlock = block,
-            handlerFunction = null,
-        )
+    private fun snippet(
+        block: String,
+        importLine: String = "import x.FooUseCase",
+    ): ViewModelMergeSnippet = ViewModelMergeSnippet(
+        useCase = useCase,
+        intentMemberText = "",
+        stateFieldText = null,
+        viewModelImportLines = listOf(importLine),
+        ctorParamLine = "    private val foo: FooUseCase,\n",
+        registerIntentBlock = block,
+        handlerFunction = null,
+    )
 
     @Test
     fun `block with stray blank lines inside is compacted on insert`() {
@@ -53,13 +54,14 @@ class ViewModelMemberMergerRegisterIntentFormatTest {
             }
             """.trimIndent()
 
-        val messyBlock = """
-        registerIntent<PContract.Intent.Foo> {
+        val messyBlock =
+            """
+            registerIntent<PContract.Intent.Foo> {
 
-            handleFoo()
+                handleFoo()
 
-        }
-        """.trimIndent()
+            }
+            """.trimIndent()
 
         val result =
             ViewModelMemberMerger.mergeViewModel(
@@ -101,40 +103,44 @@ class ViewModelMemberMergerRegisterIntentFormatTest {
             }
             """.trimIndent()
 
-        val block = """
-        registerIntent<PContract.Intent.Foo> {
-            handleFoo()
-        }
-        """.trimIndent()
+        val block =
+            """
+            registerIntent<PContract.Intent.Foo> {
+                handleFoo()
+            }
+            """.trimIndent()
 
         var text =
-            ViewModelMemberMerger.mergeViewModel(
-                vmText = vm,
-                pascalName = "P",
-                snippets = listOf(snippet(block)),
-                existingCtorTypes = emptySet(),
-                existingRegisterBranches = emptySet(),
-                existingHandlerNames = emptySet(),
-            ).text
+            ViewModelMemberMerger
+                .mergeViewModel(
+                    vmText = vm,
+                    pascalName = "P",
+                    snippets = listOf(snippet(block)),
+                    existingCtorTypes = emptySet(),
+                    existingRegisterBranches = emptySet(),
+                    existingHandlerNames = emptySet(),
+                ).text
 
-        val snd = snippet(
-            """
-            registerIntent<PContract.Intent.Bar> {
-                handleBar()
-            }
-            """.trimIndent(),
-        ).copy(
-            useCase = useCase.copy(name = "BarUseCase"),
-        )
+        val snd =
+            snippet(
+                """
+                registerIntent<PContract.Intent.Bar> {
+                    handleBar()
+                }
+                """.trimIndent(),
+            ).copy(
+                useCase = useCase.copy(name = "BarUseCase"),
+            )
         text =
-            ViewModelMemberMerger.mergeViewModel(
-                vmText = text,
-                pascalName = "P",
-                snippets = listOf(snd),
-                existingCtorTypes = setOf("FooUseCase"),
-                existingRegisterBranches = setOf("PContract.Intent.Foo"),
-                existingHandlerNames = emptySet(),
-            ).text
+            ViewModelMemberMerger
+                .mergeViewModel(
+                    vmText = text,
+                    pascalName = "P",
+                    snippets = listOf(snd),
+                    existingCtorTypes = setOf("FooUseCase"),
+                    existingRegisterBranches = setOf("PContract.Intent.Foo"),
+                    existingHandlerNames = emptySet(),
+                ).text
 
         // There should be at most one blank line between sibling blocks and no blank line before the
         // closing brace of `registerIntents`.

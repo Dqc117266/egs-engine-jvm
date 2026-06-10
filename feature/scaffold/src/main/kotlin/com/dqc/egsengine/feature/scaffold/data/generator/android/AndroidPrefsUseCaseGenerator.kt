@@ -47,22 +47,23 @@ class AndroidPrefsUseCaseGenerator(
             extraImports: Set<String> = emptySet(),
         ) {
             useCaseNames += useCaseName
-            val content = templateEngine.render(
-                "kmp/preferences/PrefsUseCase.kt.ftl",
-                mapOf(
-                    "useCasePackage" to useCasePkg,
-                    "domainRepositoryImport" to domainRepoImport,
-                    "combinedRepositoryName" to ctx.repositoryName,
-                    "useCaseName" to useCaseName,
-                    "invokeParams" to invokeParams,
-                    "returnType" to returnType,
-                    "repositoryCall" to repositoryCall,
-                    "suspendInvoke" to suspendInvoke,
-                    "needsFlowImport" to needsFlowImport,
-                    "extraImports" to extraImports.sorted(),
-                ),
-                projectRoot,
-            )
+            val content =
+                templateEngine.render(
+                    "kmp/preferences/PrefsUseCase.kt.ftl",
+                    mapOf(
+                        "useCasePackage" to useCasePkg,
+                        "domainRepositoryImport" to domainRepoImport,
+                        "combinedRepositoryName" to ctx.repositoryName,
+                        "useCaseName" to useCaseName,
+                        "invokeParams" to invokeParams,
+                        "returnType" to returnType,
+                        "repositoryCall" to repositoryCall,
+                        "suspendInvoke" to suspendInvoke,
+                        "needsFlowImport" to needsFlowImport,
+                        "extraImports" to extraImports.sorted(),
+                    ),
+                    projectRoot,
+                )
             files.add(GeneratedFile("$moduleDir/src/main/kotlin/$pkgPath/$useCaseName.kt", content))
         }
 
@@ -130,13 +131,14 @@ class AndroidPrefsUseCaseGenerator(
         }
 
         val domainModulePath = "$moduleDir/src/main/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDomainModule.kt"
-        val domainModule = resolveGeneratedDomainModuleContent(
-            ctx = ctx,
-            useCaseNames = useCaseNames,
-            projectRoot = projectRoot,
-            subProjectRoot = subProjectRoot,
-            template = template,
-        )
+        val domainModule =
+            resolveGeneratedDomainModuleContent(
+                ctx = ctx,
+                useCaseNames = useCaseNames,
+                projectRoot = projectRoot,
+                subProjectRoot = subProjectRoot,
+                template = template,
+            )
         files.add(GeneratedFile(domainModulePath, domainModule))
 
         logger.info("Generated {} Android prefs use case file(s) for module {}", files.size, template.name)
@@ -151,9 +153,10 @@ class AndroidPrefsUseCaseGenerator(
         template: ModuleTemplate,
     ): String {
         val pkgPath = template.packageName.replace('.', '/')
-        val existing = subProjectRoot?.resolve(
-            "feature/${template.name}/src/main/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
-        )
+        val existing =
+            subProjectRoot?.resolve(
+                "feature/${template.name}/src/main/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+            )
         if (existing != null && existing.exists()) {
             var text = existing.readText()
             if (text.contains("egs-gen:swagger-usecases-begin")) {
@@ -186,7 +189,10 @@ class AndroidPrefsUseCaseGenerator(
         projectRoot,
     )
 
-    private fun insertImportAfterPackage(text: String, importLine: String): String {
+    private fun insertImportAfterPackage(
+        text: String,
+        importLine: String,
+    ): String {
         val lines = text.lines().toMutableList()
         val pkgIdx = lines.indexOfFirst { it.startsWith("package ") }
         if (pkgIdx < 0) return "$importLine\n\n$text"

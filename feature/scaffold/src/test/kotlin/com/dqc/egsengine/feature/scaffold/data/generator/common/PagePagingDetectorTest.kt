@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PagePagingDetectorTest {
-
     @Test
     fun generic_page_result_auto() {
         val rt = "com.example.Result<PageResult<Foo>>"
@@ -30,14 +29,18 @@ class PagePagingDetectorTest {
     @Test
     fun concrete_page_result_with_page_and_size() {
         val rt = "Result<PageResultAppAiChatSessionRespVO>"
-        val params = listOf(
-            UseCaseParam("topicId", "Long?"),
-            UseCaseParam("pageNo", "Int"),
-            UseCaseParam("pageSize", "Int"),
-        )
+        val params =
+            listOf(
+                UseCaseParam("topicId", "Long?"),
+                UseCaseParam("pageNo", "Int"),
+                UseCaseParam("pageSize", "Int"),
+            )
         assertTrue(PagePagingDetector.isOffsetPageResultUseCase(rt, "auto", params))
         assertTrue(PagePagingDetector.isConcretePageResultInner("PageResultAppAiChatSessionRespVO"))
-        assertEquals("AppAiChatSessionRespVO", PagePagingDetector.extractConcretePageResultItemSimpleName("PageResultAppAiChatSessionRespVO"))
+        assertEquals(
+            "AppAiChatSessionRespVO",
+            PagePagingDetector.extractConcretePageResultItemSimpleName("PageResultAppAiChatSessionRespVO"),
+        )
     }
 
     @Test

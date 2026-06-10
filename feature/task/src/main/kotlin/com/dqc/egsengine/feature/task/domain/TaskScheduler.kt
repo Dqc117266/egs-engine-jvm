@@ -25,9 +25,7 @@ class TaskScheduler(
         return true
     }
 
-    fun getPendingTasks(): List<AutomationTask> =
-        taskRepository.getAllTasks().filter { it.status == TaskStatus.PENDING }
+    fun getPendingTasks(): List<AutomationTask> = taskRepository.getAllTasks().filter { it.status == TaskStatus.PENDING }
 
-    fun getTaskStatus(taskId: String): TaskStatus? =
-        taskRepository.getTask(taskId)?.status
+    fun getTaskStatus(taskId: String): TaskStatus? = taskRepository.getTask(taskId)?.status
 }

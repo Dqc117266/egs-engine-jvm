@@ -5,8 +5,9 @@ import com.dqc.egsengine.feature.analyzer.data.GradleProjectScanner
 import com.dqc.egsengine.feature.analyzer.domain.ProjectAnalyzer
 import org.koin.dsl.module
 
-val featureAnalyzerModule = module {
-    single { BuildFileParser() }
-    single { GradleProjectScanner(get()) }
-    single { ProjectAnalyzer(get()) }
-}
+val featureAnalyzerModule =
+    module {
+        single { BuildFileParser() }
+        single { GradleProjectScanner(get()) }
+        single { ProjectAnalyzer(get()) }
+    }

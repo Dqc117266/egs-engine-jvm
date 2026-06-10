@@ -11,31 +11,38 @@ import java.net.URI
 class SwaggerParser {
     private val logger = LoggerFactory.getLogger(SwaggerParser::class.java)
 
-    fun parse(swaggerLocation: String, excludePathPrefixes: List<String> = emptyList()): SwaggerSpec {
+    fun parse(
+        swaggerLocation: String,
+        excludePathPrefixes: List<String> = emptyList(),
+    ): SwaggerSpec {
         val content = readContent(swaggerLocation)
         val root = JsonParser.parseString(content).asJsonObject
 
         val schemas = parseSchemas(root)
         val allOperations = parseOperations(root)
 
-        val operations = if (excludePathPrefixes.isEmpty()) {
-            allOperations
-        } else {
-            allOperations.filter { op ->
-                val path = op.path
-                excludePathPrefixes.none { prefix -> path.startsWith(prefix) }
-            }.also {
-                val excluded = allOperations.size - it.size
-                if (excluded > 0) {
-                    logger.info("Filtered out $excluded operations matching exclude prefixes: $excludePathPrefixes")
-                }
+        val operations =
+            if (excludePathPrefixes.isEmpty()) {
+                allOperations
+            } else {
+                allOperations
+                    .filter { op ->
+                        val path = op.path
+                        excludePathPrefixes.none { prefix -> path.startsWith(prefix) }
+                    }.also {
+                        val excluded = allOperations.size - it.size
+                        if (excluded > 0) {
+                            logger.info("Filtered out $excluded operations matching exclude prefixes: $excludePathPrefixes")
+                        }
+                    }
             }
-        }
 
         // Only keep schemas referenced by the filtered operations
         val usedSchemas = filterUsedSchemas(schemas, operations)
 
-        logger.info("Parsed swagger: ${usedSchemas.size} schemas, ${operations.size} operations (filtered from ${schemas.size} schemas, ${allOperations.size} operations)")
+        logger.info(
+            "Parsed swagger: ${usedSchemas.size} schemas, ${operations.size} operations (filtered from ${schemas.size} schemas, ${allOperations.size} operations)",
+        )
         return SwaggerSpec(schemas = usedSchemas, operations = operations)
     }
 
@@ -81,36 +88,39 @@ class SwaggerParser {
         return allSchemas.filter { it.name in used }
     }
 
-    private fun readContent(swaggerLocation: String): String {
-        return when {
-            swaggerLocation.startsWith("http://") || swaggerLocation.startsWith("https://") ->
-                URI(swaggerLocation).toURL().readText()
-            else -> File(swaggerLocation).readText()
-        }
+    private fun readContent(swaggerLocation: String): String = when {
+        swaggerLocation.startsWith("http://") || swaggerLocation.startsWith("https://") ->
+            URI(swaggerLocation).toURL().readText()
+        else -> File(swaggerLocation).readText()
     }
 
     private fun parseSchemas(root: JsonObject): List<SwaggerSchema> {
-        val schemasObj = root.getAsJsonObject("components")
-            ?.getAsJsonObject("schemas")
-            ?: return emptyList()
+        val schemasObj =
+            root
+                .getAsJsonObject("components")
+                ?.getAsJsonObject("schemas")
+                ?: return emptyList()
 
         return schemasObj.entrySet().mapNotNull { (name, schemaEl) ->
             val schema = schemaEl.asJsonObject
             val propertiesObj = schema.getAsJsonObject("properties") ?: JsonObject()
-            val requiredSet = schema.getAsJsonArray("required")
-                ?.map { it.asString }
-                ?.toSet()
-                ?: emptySet()
+            val requiredSet =
+                schema
+                    .getAsJsonArray("required")
+                    ?.map { it.asString }
+                    ?.toSet()
+                    ?: emptySet()
 
-            val properties = propertiesObj.entrySet().map { (propName, propSchemaEl) ->
-                val safeName = toSafePropertyName(propName)
-                SwaggerProperty(
-                    name = safeName,
-                    originalName = propName,
-                    type = resolveType(propSchemaEl),
-                    required = requiredSet.contains(propName),
-                )
-            }
+            val properties =
+                propertiesObj.entrySet().map { (propName, propSchemaEl) ->
+                    val safeName = toSafePropertyName(propName)
+                    SwaggerProperty(
+                        name = safeName,
+                        originalName = propName,
+                        type = resolveType(propSchemaEl),
+                        required = requiredSet.contains(propName),
+                    )
+                }
             SwaggerSchema(name = name, properties = properties)
         }
     }
@@ -129,13 +139,14 @@ class SwaggerParser {
                 val allParams = (pathLevelParams + opLevelParams).distinctBy { "${it.location}:${it.name}" }
                 val requestBody = parseRequestBody(opObj.getAsJsonObject("requestBody"))
                 val responseBody = parseResponseBody(opObj.getAsJsonObject("responses"))
-                val operationId = resolveOperationId(
-                    method = method,
-                    path = path,
-                    rawOperationId = opObj.get("operationId")?.asString,
-                    params = allParams,
-                    responseBody = responseBody,
-                )
+                val operationId =
+                    resolveOperationId(
+                        method = method,
+                        path = path,
+                        rawOperationId = opObj.get("operationId")?.asString,
+                        params = allParams,
+                        responseBody = responseBody,
+                    )
 
                 ops.add(
                     SwaggerOperation(
@@ -172,23 +183,35 @@ class SwaggerParser {
 
     private fun parseRequestBody(requestBodyObj: JsonObject?): SwaggerType? {
         val contentObj = requestBodyObj?.getAsJsonObject("content") ?: return null
-        val appJsonObj = contentObj.getAsJsonObject("application/json")
-            ?: contentObj.entrySet().firstOrNull()?.value?.asJsonObject
-            ?: return null
+        val appJsonObj =
+            contentObj.getAsJsonObject("application/json")
+                ?: contentObj
+                    .entrySet()
+                    .firstOrNull()
+                    ?.value
+                    ?.asJsonObject
+                ?: return null
         return resolveType(appJsonObj.get("schema"))
     }
 
     private fun parseResponseBody(responsesObj: JsonObject?): SwaggerType? {
         if (responsesObj == null) return null
-        val successResp = responsesObj.entrySet()
-            .firstOrNull { it.key.startsWith("2") }
-            ?.value
-            ?.asJsonObject
-            ?: return null
+        val successResp =
+            responsesObj
+                .entrySet()
+                .firstOrNull { it.key.startsWith("2") }
+                ?.value
+                ?.asJsonObject
+                ?: return null
         val contentObj = successResp.getAsJsonObject("content") ?: return null
-        val appJsonObj = contentObj.getAsJsonObject("application/json")
-            ?: contentObj.entrySet().firstOrNull()?.value?.asJsonObject
-            ?: return null
+        val appJsonObj =
+            contentObj.getAsJsonObject("application/json")
+                ?: contentObj
+                    .entrySet()
+                    .firstOrNull()
+                    ?.value
+                    ?.asJsonObject
+                ?: return null
         return resolveType(appJsonObj.get("schema"))
     }
 
@@ -283,26 +306,29 @@ class SwaggerParser {
         if (nonParamSegments.isEmpty()) return fallbackOperationId(method, path)
 
         val itemPath = scopedSegments.lastOrNull()?.let(::isPathParameter) == true && nonParamSegments.isNotEmpty()
-        val tailSegment = when {
-            itemPath -> null
-            nonParamSegments.size > 1 -> nonParamSegments.last()
-            else -> null
-        }
-        val resourceSegments = when {
-            itemPath -> nonParamSegments
-            tailSegment != null -> nonParamSegments.dropLast(1)
-            else -> nonParamSegments
-        }.ifEmpty { nonParamSegments.take(1) }
+        val tailSegment =
+            when {
+                itemPath -> null
+                nonParamSegments.size > 1 -> nonParamSegments.last()
+                else -> null
+            }
+        val resourceSegments =
+            when {
+                itemPath -> nonParamSegments
+                tailSegment != null -> nonParamSegments.dropLast(1)
+                else -> nonParamSegments
+            }.ifEmpty { nonParamSegments.take(1) }
         if (resourceSegments.isEmpty()) return fallbackOperationId(method, path)
 
         val targetName = singularizeSegment(resourceSegments.last()).toSafePascal()
-        val prefixName = buildPrefixName(
-            basePrefixSegments = basePrefixSegments,
-            contextSegments = resourceSegments.dropLast(1),
-            targetName = targetName,
-        )
+        val prefixName =
+            buildPrefixName(
+                basePrefixSegments = basePrefixSegments,
+                contextSegments = resourceSegments.dropLast(1),
+                targetName = targetName,
+            )
         val actionName = deriveActionName(method, tailSegment, itemPath, targetName, params, responseBody)
-        return "${prefixName}_${actionName}"
+        return "${prefixName}_$actionName"
     }
 
     private fun stripApiPrefix(pathSegments: List<String>): Pair<List<String>, List<String>> {
@@ -335,36 +361,44 @@ class SwaggerParser {
     ): String {
         val upperMethod = method.uppercase()
         return when {
-            itemPath -> when (upperMethod) {
-                "GET" -> "Get$targetName"
-                "PUT", "PATCH" -> "Update$targetName"
-                "DELETE" -> "Delete$targetName"
-                else -> "${defaultMethodVerb(upperMethod)}$targetName"
-            }
-
-            tailSegment == null -> when (upperMethod) {
-                "GET" -> if (isPagedOperation(params, responseBody)) {
-                    "Get${targetName}Page"
-                } else {
-                    "Get${targetName}List"
+            itemPath ->
+                when (upperMethod) {
+                    "GET" -> "Get$targetName"
+                    "PUT", "PATCH" -> "Update$targetName"
+                    "DELETE" -> "Delete$targetName"
+                    else -> "${defaultMethodVerb(upperMethod)}$targetName"
                 }
-                "POST" -> "Create$targetName"
-                "PUT", "PATCH" -> "Update$targetName"
-                "DELETE" -> "Delete$targetName"
-                else -> "${defaultMethodVerb(upperMethod)}$targetName"
-            }
 
-            else -> when (tailSegment.lowercase()) {
-                "count" -> "Count$targetName"
-                "all" -> "GetAll$targetName"
-                "list" -> "Get${targetName}List"
-                "page" -> "Get${targetName}Page"
-                else -> deriveCustomActionName(upperMethod, tailSegment, targetName)
-            }
+            tailSegment == null ->
+                when (upperMethod) {
+                    "GET" ->
+                        if (isPagedOperation(params, responseBody)) {
+                            "Get${targetName}Page"
+                        } else {
+                            "Get${targetName}List"
+                        }
+                    "POST" -> "Create$targetName"
+                    "PUT", "PATCH" -> "Update$targetName"
+                    "DELETE" -> "Delete$targetName"
+                    else -> "${defaultMethodVerb(upperMethod)}$targetName"
+                }
+
+            else ->
+                when (tailSegment.lowercase()) {
+                    "count" -> "Count$targetName"
+                    "all" -> "GetAll$targetName"
+                    "list" -> "Get${targetName}List"
+                    "page" -> "Get${targetName}Page"
+                    else -> deriveCustomActionName(upperMethod, tailSegment, targetName)
+                }
         }
     }
 
-    private fun deriveCustomActionName(method: String, tailSegment: String, targetName: String): String {
+    private fun deriveCustomActionName(
+        method: String,
+        tailSegment: String,
+        targetName: String,
+    ): String {
         val tailWords = operationTokens(tailSegment)
         if (tailWords.isEmpty()) return "${defaultMethodVerb(method)}$targetName"
 
@@ -382,11 +416,15 @@ class SwaggerParser {
         }
     }
 
-    private fun isPagedOperation(params: List<SwaggerParameter>, responseBody: SwaggerType?): Boolean {
-        val paramNames = params
-            .filter { it.location.lowercase() != "header" }
-            .map { it.originalName.lowercase() }
-            .toSet()
+    private fun isPagedOperation(
+        params: List<SwaggerParameter>,
+        responseBody: SwaggerType?,
+    ): Boolean {
+        val paramNames =
+            params
+                .filter { it.location.lowercase() != "header" }
+                .map { it.originalName.lowercase() }
+                .toSet()
         if (paramNames.any { it in PAGE_PARAM_NAMES }) return true
 
         return when (responseBody) {
@@ -395,36 +433,44 @@ class SwaggerParser {
         }
     }
 
-    private fun operationTokens(value: String): List<String> =
-        value.replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
-            .replace(Regex("[^A-Za-z0-9]+"), " ")
-            .trim()
-            .split(Regex("\\s+"))
-            .filter { it.isNotBlank() }
-            .mapNotNull { token ->
-                token.trimEnd { it.isDigit() }
-                    .lowercase()
-                    .takeIf { it.isNotBlank() }
-            }
+    private fun operationTokens(value: String): List<String> = value
+        .replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
+        .replace(Regex("[^A-Za-z0-9]+"), " ")
+        .trim()
+        .split(Regex("\\s+"))
+        .filter { it.isNotBlank() }
+        .mapNotNull { token ->
+            token
+                .trimEnd { it.isDigit() }
+                .lowercase()
+                .takeIf { it.isNotBlank() }
+        }
 
     private fun singularizeSegment(segment: String): String {
         val lower = segment.lowercase()
         return when {
             lower.endsWith("ies") && lower.length > 3 -> lower.dropLast(3) + "y"
-            lower.endsWith("sses") || lower.endsWith("xes") || lower.endsWith("zes") ||
-                lower.endsWith("ches") || lower.endsWith("shes") -> lower.dropLast(2)
+            lower.endsWith("sses") ||
+                lower.endsWith("xes") ||
+                lower.endsWith("zes") ||
+                lower.endsWith("ches") ||
+                lower.endsWith("shes") -> lower.dropLast(2)
             lower.endsWith("s") && !lower.endsWith("ss") && !lower.endsWith("us") -> lower.dropLast(1)
             else -> lower
         }
     }
 
-    private fun isPathParameter(segment: String): Boolean =
-        segment.startsWith("{") && segment.endsWith("}")
+    private fun isPathParameter(segment: String): Boolean = segment.startsWith("{") && segment.endsWith("}")
 
-    private fun fallbackOperationId(method: String, path: String): String {
-        val clean = path.split("/", "-", "{", "}")
-            .filter { it.isNotBlank() }
-            .joinToString("") { it.replaceFirstChar(Char::uppercase) }
+    private fun fallbackOperationId(
+        method: String,
+        path: String,
+    ): String {
+        val clean =
+            path
+                .split("/", "-", "{", "}")
+                .filter { it.isNotBlank() }
+                .joinToString("") { it.replaceFirstChar(Char::uppercase) }
         return method.lowercase() + clean
     }
 
@@ -438,45 +484,110 @@ class SwaggerParser {
 
     private fun sanitizeMethodName(name: String): String {
         val parts = name.split(Regex("[^A-Za-z0-9]")).filter { it.isNotBlank() }
-        val camel = parts.mapIndexed { i, part ->
-            if (i == 0) part.replaceFirstChar { c -> c.lowercase() }
-            else part.replaceFirstChar { c -> c.uppercase() }
-        }.joinToString("")
+        val camel =
+            parts
+                .mapIndexed { i, part ->
+                    if (i == 0) {
+                        part.replaceFirstChar { c -> c.lowercase() }
+                    } else {
+                        part.replaceFirstChar { c -> c.uppercase() }
+                    }
+                }.joinToString("")
         val safe = camel.ifBlank { "autoGen" }
         return if (safe.firstOrNull()?.isDigit() == true) "_$safe" else safe
     }
 
     private fun toSafePropertyName(name: String): String {
-        val camel = name.split("-", "_", ".")
-            .filter { it.isNotBlank() }
-            .mapIndexed { i, part ->
-                if (i == 0) part.replaceFirstChar { it.lowercase() }
-                else part.replaceFirstChar(Char::uppercase)
-            }
-            .joinToString("")
+        val camel =
+            name
+                .split("-", "_", ".")
+                .filter { it.isNotBlank() }
+                .mapIndexed { i, part ->
+                    if (i == 0) {
+                        part.replaceFirstChar { it.lowercase() }
+                    } else {
+                        part.replaceFirstChar(Char::uppercase)
+                    }
+                }.joinToString("")
         return if (camel in KOTLIN_KEYWORDS) "${camel}Value" else camel
     }
 
     private companion object {
         val HTTP_METHODS = listOf("get", "post", "put", "delete", "patch")
-        val KOTLIN_KEYWORDS = setOf(
-            "class", "object", "when", "is", "in", "val", "var",
-            "fun", "return", "package", "interface", "data",
-        )
-        val ACTION_TOKENS = setOf(
-            "get", "list", "create", "update", "delete", "count", "add", "remove",
-            "cancel", "check", "export", "sync", "refresh", "submit", "approve",
-            "reject", "reset", "send", "verify", "upload", "download", "save",
-            "post", "put", "patch",
-        )
-        val CUSTOM_ACTION_TOKENS = setOf(
-            "cancel", "check", "export", "sync", "refresh", "submit", "approve",
-            "reject", "reset", "send", "verify", "upload", "download",
-        )
-        val WEAK_OPERATION_IDS = setOf(
-            "get", "list", "create", "update", "delete", "count", "all",
-            "getbyid", "updatebyid", "deletebyid", "listpage", "listpath",
-        )
+        val KOTLIN_KEYWORDS =
+            setOf(
+                "class",
+                "object",
+                "when",
+                "is",
+                "in",
+                "val",
+                "var",
+                "fun",
+                "return",
+                "package",
+                "interface",
+                "data",
+            )
+        val ACTION_TOKENS =
+            setOf(
+                "get",
+                "list",
+                "create",
+                "update",
+                "delete",
+                "count",
+                "add",
+                "remove",
+                "cancel",
+                "check",
+                "export",
+                "sync",
+                "refresh",
+                "submit",
+                "approve",
+                "reject",
+                "reset",
+                "send",
+                "verify",
+                "upload",
+                "download",
+                "save",
+                "post",
+                "put",
+                "patch",
+            )
+        val CUSTOM_ACTION_TOKENS =
+            setOf(
+                "cancel",
+                "check",
+                "export",
+                "sync",
+                "refresh",
+                "submit",
+                "approve",
+                "reject",
+                "reset",
+                "send",
+                "verify",
+                "upload",
+                "download",
+            )
+        val WEAK_OPERATION_IDS =
+            setOf(
+                "get",
+                "list",
+                "create",
+                "update",
+                "delete",
+                "count",
+                "all",
+                "getbyid",
+                "updatebyid",
+                "deletebyid",
+                "listpage",
+                "listpath",
+            )
         val WEAK_OPERATION_SUFFIXES = setOf("id", "path", "list", "page", "count", "all")
         val PAGE_PARAM_NAMES = setOf("page", "size", "pageno", "pagesize")
     }

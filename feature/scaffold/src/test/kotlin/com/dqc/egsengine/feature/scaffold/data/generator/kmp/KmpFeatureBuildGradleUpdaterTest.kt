@@ -5,29 +5,30 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class KmpFeatureBuildGradleUpdaterTest {
-
     private val updater = KmpFeatureBuildGradleUpdater()
 
     @Test
     fun `ensureKtorfitPlugins is idempotent`() {
-        val with = """
+        val with =
+            """
 plugins {
     alias(libs.plugins.cmp.feature.convention)
 
     alias(libs.plugins.ktrofit)
     alias(libs.plugins.kmp.ktorfit.ksp.convention)
 }
-""".trimIndent()
+            """.trimIndent()
         assertEquals(with, updater.ensureKtorfitPlugins(with))
     }
 
     @Test
     fun `ensureKtorfitPlugins inserts before closing plugins brace`() {
-        val before = """
+        val before =
+            """
 plugins {
     alias(libs.plugins.cmp.feature.convention)
 }
-""".trimIndent()
+            """.trimIndent()
         val after = updater.ensureKtorfitPlugins(before)
         assertTrue(after.contains("libs.plugins.ktrofit"))
         assertTrue(after.contains("kmp.ktorfit.ksp.convention"))
@@ -36,11 +37,12 @@ plugins {
 
     @Test
     fun `replaceCmpConventionWithNoJsAndRoom`() {
-        val before = """
+        val before =
+            """
 plugins {
     alias(libs.plugins.cmp.feature.convention)
 }
-""".trimIndent()
+            """.trimIndent()
         val after = updater.replaceCmpConventionWithNoJsAndRoom(before)
         assertTrue(after.contains("cmp.feature.no.js.convention"))
         assertTrue(after.contains("mifos.kmp.room"))
@@ -49,22 +51,27 @@ plugins {
 
     @Test
     fun `ensureKotlinBlockWithDependencies adds network`() {
-        val before = """
+        val before =
+            """
 plugins {
     alias(libs.plugins.x)
 }
-""".trimIndent()
-        val after = updater.ensureKotlinBlockWithDependencies(
-            before,
-            gradleProjectRef = "projects.coreBase.network",
-            depLine = "implementation(projects.coreBase.network)",
-        )
+            """.trimIndent()
+        val after =
+            updater.ensureKotlinBlockWithDependencies(
+                before,
+                gradleProjectRef = "projects.coreBase.network",
+                depLine = "implementation(projects.coreBase.network)",
+            )
         assertTrue(after.contains("kotlin {"))
         assertTrue(after.contains("projects.coreBase.network"))
-        assertEquals(after, updater.ensureKotlinBlockWithDependencies(
+        assertEquals(
             after,
-            gradleProjectRef = "projects.coreBase.network",
-            depLine = "implementation(projects.coreBase.network)",
-        ))
+            updater.ensureKotlinBlockWithDependencies(
+                after,
+                gradleProjectRef = "projects.coreBase.network",
+                depLine = "implementation(projects.coreBase.network)",
+            ),
+        )
     }
 }

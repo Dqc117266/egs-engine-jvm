@@ -28,11 +28,12 @@ class CreateCommandsUnitTest {
         val scaffolder = mockk<ModuleScaffolder>()
         every {
             scaffolder.scaffold(any(), any(), any(), any())
-        } returns ModuleScaffolder.ScaffoldResult(
-            moduleName = "task",
-            files = listOf("feature/task/build.gradle.kts"),
-            dryRun = true,
-        )
+        } returns
+            ModuleScaffolder.ScaffoldResult(
+                moduleName = "task",
+                files = listOf("feature/task/build.gradle.kts"),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -70,21 +71,23 @@ class CreateCommandsUnitTest {
         val pageScaffolder = mockk<PageScaffolder>()
         val useCaseScanner = mockk<UseCaseScanner>()
         every { useCaseScanner.listModules(any()) } returns listOf("task")
-        val topicUseCase = UseCaseInfo(
-            name = "TopicUpdateTopicUseCase",
-            packageName = "com.example.feature.task.domain.usecase",
-            path = "feature/task/src/main/kotlin/TopicUpdateTopicUseCase.kt",
-            returnType = "Result<Boolean>",
-        )
+        val topicUseCase =
+            UseCaseInfo(
+                name = "TopicUpdateTopicUseCase",
+                packageName = "com.example.feature.task.domain.usecase",
+                path = "feature/task/src/main/kotlin/TopicUpdateTopicUseCase.kt",
+                returnType = "Result<Boolean>",
+            )
         every { useCaseScanner.scanByModule(any(), "task") } returns listOf(topicUseCase)
         every {
             pageScaffolder.scaffold(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns PageScaffoldResult(
-            pageName = "TaskList",
-            moduleName = "task",
-            files = emptyList(),
-            dryRun = true,
-        )
+        } returns
+            PageScaffoldResult(
+                pageName = "TaskList",
+                moduleName = "task",
+                files = emptyList(),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -132,10 +135,11 @@ class CreateCommandsUnitTest {
         val swaggerScaffolder = mockk<SwaggerApiScaffolder>()
         every {
             swaggerScaffolder.scaffold(any(), any(), any(), any(), any())
-        } returns SwaggerApiScaffolder.Result(
-            files = listOf("feature/task/src/main/kotlin/com/example/task/domain/DomainModule.kt"),
-            dryRun = true,
-        )
+        } returns
+            SwaggerApiScaffolder.Result(
+                files = listOf("feature/task/src/main/kotlin/com/example/task/domain/DomainModule.kt"),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -171,8 +175,7 @@ class CreateCommandsUnitTest {
         }
     }
 
-    private fun createTempProjectDir(): File =
-        kotlin.io.path.createTempDirectory("create-command-unit-test").toFile().also {
-            it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
-        }
+    private fun createTempProjectDir(): File = kotlin.io.path.createTempDirectory("create-command-unit-test").toFile().also {
+        it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
+    }
 }

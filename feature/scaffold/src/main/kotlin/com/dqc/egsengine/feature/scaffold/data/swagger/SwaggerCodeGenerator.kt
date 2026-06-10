@@ -21,8 +21,11 @@ class SwaggerCodeGenerator(
 ) {
     private val logger = LoggerFactory.getLogger(SwaggerCodeGenerator::class.java)
 
-    fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec, projectRoot: File? = null): List<GeneratedFile> =
-        generate(template, spec, projectRoot).map { GeneratedFile(it.path, it.content) }
+    fun generateToCommon(
+        template: ModuleTemplate,
+        spec: SwaggerSpec,
+        projectRoot: File? = null,
+    ): List<GeneratedFile> = generate(template, spec, projectRoot).map { GeneratedFile(it.path, it.content) }
 
     fun generate(
         template: ModuleTemplate,
@@ -34,9 +37,10 @@ class SwaggerCodeGenerator(
         val ctx = AndroidSwaggerGeneratorContext(template)
 
         val (wrapperSchemas, dataSchemas) = spec.schemas.partition { isCommonResultWrapper(it) }
-        val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
-            schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
-        }
+        val wrapperUnwrapMap =
+            wrapperSchemas.associate { schema ->
+                schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
+            }
         val requestSchemaNames = collectRequestSchemaNames(spec)
 
         for (schema in dataSchemas) {
@@ -54,17 +58,24 @@ class SwaggerCodeGenerator(
             )
         }
 
-        val adjustedSpec = spec.copy(
-            operations = spec.operations.map { op ->
-                op.copy(
-                    params = op.params.filter { it.location.lowercase() != "header" },
-                    responseBody = unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
-                )
-            },
-        )
+        val adjustedSpec =
+            spec.copy(
+                operations =
+                spec.operations.map { op ->
+                    op.copy(
+                        params = op.params.filter { it.location.lowercase() != "header" },
+                        responseBody = unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
+                    )
+                },
+            )
 
         files.addSwagger(moduleDir, ctx.servicePackage, ctx.serviceName, renderer.renderServiceInterface(adjustedSpec, ctx))
-        files.addSwagger(moduleDir, ctx.domainRepositoryPackage, ctx.apiRepositoryName, renderer.renderRepositoryInterface(adjustedSpec, ctx))
+        files.addSwagger(
+            moduleDir,
+            ctx.domainRepositoryPackage,
+            ctx.apiRepositoryName,
+            renderer.renderRepositoryInterface(adjustedSpec, ctx),
+        )
         files.addSwagger(
             moduleDir,
             ctx.dataRepositoryPackage,
@@ -72,20 +83,26 @@ class SwaggerCodeGenerator(
             renderer.renderGeneratedRepositorySupport(adjustedSpec, ctx),
         )
         val renderedDataModule = renderer.renderGeneratedDataModule(ctx)
-        val mergedDataModule = projectRoot?.let { root ->
-            val existingPath = root.resolve(
-                "$moduleDir/src/main/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDataModule.kt",
-            )
-            val existing = if (existingPath.exists()) existingPath.readText() else null
-            KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, renderedDataModule)
-        } ?: renderedDataModule
+        val mergedDataModule =
+            projectRoot?.let { root ->
+                val existingPath =
+                    root.resolve(
+                        "$moduleDir/src/main/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDataModule.kt",
+                    )
+                val existing = if (existingPath.exists()) existingPath.readText() else null
+                KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, renderedDataModule)
+            } ?: renderedDataModule
         files.addSwagger(moduleDir, ctx.generateDiPackage, "GeneratedDataModule", mergedDataModule)
-        val preservedDb = projectRoot?.let { root ->
-            KmpGeneratedDomainModuleIo.extractDbUseCaseClassNames(root, template.name, template, kotlinSourceSet = "main")
-        }.orEmpty()
-        val preservedPrefs = projectRoot?.let { root ->
-            KmpGeneratedDomainModuleIo.extractPrefsUseCaseClassNames(root, template.name, template, kotlinSourceSet = "main")
-        }.orEmpty()
+        val preservedDb =
+            projectRoot
+                ?.let { root ->
+                    KmpGeneratedDomainModuleIo.extractDbUseCaseClassNames(root, template.name, template, kotlinSourceSet = "main")
+                }.orEmpty()
+        val preservedPrefs =
+            projectRoot
+                ?.let { root ->
+                    KmpGeneratedDomainModuleIo.extractPrefsUseCaseClassNames(root, template.name, template, kotlinSourceSet = "main")
+                }.orEmpty()
         files.addSwagger(
             moduleDir,
             ctx.generateDiPackage,
@@ -109,29 +126,32 @@ class SwaggerCodeGenerator(
             )
         }
 
-        val slices = projectRoot?.let { root ->
-            androidCombinedRepositoryGenerator.detectSlices(root, template.name, template)
-        }
+        val slices =
+            projectRoot?.let { root ->
+                androidCombinedRepositoryGenerator.detectSlices(root, template.name, template)
+            }
         val includeDb = slices?.hasDb ?: false
         val includePrefs = slices?.hasPrefs ?: false
-        androidCombinedRepositoryGenerator.generate(
-            template = template,
-            subProjectRoot = projectRoot,
-            includeApi = true,
-            includeDb = includeDb,
-            includePrefs = includePrefs,
-        )?.let { combined ->
-            files.add(ModuleGenerator.GeneratedFile(combined.path, combined.content))
-        }
-        androidDbOnlyRepositoryImplGenerator.generateOrMerge(
-            template = template,
-            subProjectRoot = projectRoot,
-            includeApi = true,
-            includeDb = includeDb,
-            includePrefs = includePrefs,
-        )?.let { impl ->
-            files.add(ModuleGenerator.GeneratedFile(impl.path, impl.content))
-        }
+        androidCombinedRepositoryGenerator
+            .generate(
+                template = template,
+                subProjectRoot = projectRoot,
+                includeApi = true,
+                includeDb = includeDb,
+                includePrefs = includePrefs,
+            )?.let { combined ->
+                files.add(ModuleGenerator.GeneratedFile(combined.path, combined.content))
+            }
+        androidDbOnlyRepositoryImplGenerator
+            .generateOrMerge(
+                template = template,
+                subProjectRoot = projectRoot,
+                includeApi = true,
+                includeDb = includeDb,
+                includePrefs = includePrefs,
+            )?.let { impl ->
+                files.add(ModuleGenerator.GeneratedFile(impl.path, impl.content))
+            }
 
         logger.info("Generated ${files.size} swagger scaffold files for module ${template.name}")
         return files
@@ -144,6 +164,7 @@ class SwaggerCodeGenerator(
 
     private fun collectRequestSchemaNames(spec: SwaggerSpec): Set<String> {
         val names = mutableSetOf<String>()
+
         fun collectFromType(type: SwaggerType?) {
             when (type) {
                 is SwaggerType.ModelRef -> names.add(type.name)

@@ -14,29 +14,31 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class KmpDatabaseRepositoryGeneratorTest {
-
     @Test
     fun `generates DB-only repository slice interface and support`() {
-        val url = javaClass.classLoader.getResource("ddl/user.sql")
-            ?: error("ddl/user.sql not on test classpath")
+        val url =
+            javaClass.classLoader.getResource("ddl/user.sql")
+                ?: error("ddl/user.sql not on test classpath")
         val tables = DdlParser().parseFile(java.io.File(url.toURI()))
 
         val engine = TemplateEngine(TemplateRegistry())
         val gen = KmpDatabaseRepositoryGenerator(engine)
 
-        val template = ModuleTemplate(
-            name = "storage",
-            packageName = "org.example.feature.storage",
-            conventionPluginId = null,
-            layers = listOf("data", "domain", "presentation"),
-            hasRes = false,
-            namespace = null,
-            projectType = "KMP",
-            basePackage = "org.example",
-            baseClassPackages = BaseClassPackages(
-                resultClass = "org.example.feature.base.domain.result.Result",
-            ),
-        )
+        val template =
+            ModuleTemplate(
+                name = "storage",
+                packageName = "org.example.feature.storage",
+                conventionPluginId = null,
+                layers = listOf("data", "domain", "presentation"),
+                hasRes = false,
+                namespace = null,
+                projectType = "KMP",
+                basePackage = "org.example",
+                baseClassPackages =
+                BaseClassPackages(
+                    resultClass = "org.example.feature.base.domain.result.Result",
+                ),
+            )
 
         val files = gen.generateDbOnlyRepository(template, tables, projectRoot = null)
         val paths = files.map { it.path }
@@ -55,38 +57,43 @@ class KmpDatabaseRepositoryGeneratorTest {
 
     @Test
     fun `with Swagger spec maps user table to UserRespVO in repository API`() {
-        val url = javaClass.classLoader.getResource("ddl/user.sql")
-            ?: error("ddl/user.sql not on test classpath")
+        val url =
+            javaClass.classLoader.getResource("ddl/user.sql")
+                ?: error("ddl/user.sql not on test classpath")
         val tables = DdlParser().parseFile(java.io.File(url.toURI()))
 
-        val userVo = SwaggerSchema(
-            name = "UserRespVO",
-            properties = listOf(
-                SwaggerProperty("id", "id", SwaggerType.Primitive(PrimitiveKind.LONG), true),
-                SwaggerProperty("username", "username", SwaggerType.Primitive(PrimitiveKind.STRING), true),
-                SwaggerProperty("email", "email", SwaggerType.Primitive(PrimitiveKind.STRING), true),
-                SwaggerProperty("avatarUrl", "avatarUrl", SwaggerType.Primitive(PrimitiveKind.STRING), false),
-                SwaggerProperty("createdAt", "createdAt", SwaggerType.Primitive(PrimitiveKind.LONG), true),
-            ),
-        )
+        val userVo =
+            SwaggerSchema(
+                name = "UserRespVO",
+                properties =
+                listOf(
+                    SwaggerProperty("id", "id", SwaggerType.Primitive(PrimitiveKind.LONG), true),
+                    SwaggerProperty("username", "username", SwaggerType.Primitive(PrimitiveKind.STRING), true),
+                    SwaggerProperty("email", "email", SwaggerType.Primitive(PrimitiveKind.STRING), true),
+                    SwaggerProperty("avatarUrl", "avatarUrl", SwaggerType.Primitive(PrimitiveKind.STRING), false),
+                    SwaggerProperty("createdAt", "createdAt", SwaggerType.Primitive(PrimitiveKind.LONG), true),
+                ),
+            )
         val spec = SwaggerSpec(schemas = listOf(userVo), operations = emptyList())
 
         val engine = TemplateEngine(TemplateRegistry())
         val gen = KmpDatabaseRepositoryGenerator(engine)
 
-        val template = ModuleTemplate(
-            name = "storage",
-            packageName = "org.example.feature.storage",
-            conventionPluginId = null,
-            layers = listOf("data", "domain", "presentation"),
-            hasRes = false,
-            namespace = null,
-            projectType = "KMP",
-            basePackage = "org.example",
-            baseClassPackages = BaseClassPackages(
-                resultClass = "org.example.feature.base.domain.result.Result",
-            ),
-        )
+        val template =
+            ModuleTemplate(
+                name = "storage",
+                packageName = "org.example.feature.storage",
+                conventionPluginId = null,
+                layers = listOf("data", "domain", "presentation"),
+                hasRes = false,
+                namespace = null,
+                projectType = "KMP",
+                basePackage = "org.example",
+                baseClassPackages =
+                BaseClassPackages(
+                    resultClass = "org.example.feature.base.domain.result.Result",
+                ),
+            )
 
         val files = gen.generateDbOnlyRepository(template, tables, projectRoot = null, spec = spec)
         val repo = files.first { it.path.endsWith("/StorageDbRepository.kt") }.content!!

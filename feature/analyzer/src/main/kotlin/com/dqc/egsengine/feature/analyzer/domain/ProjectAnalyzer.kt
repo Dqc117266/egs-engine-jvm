@@ -12,9 +12,10 @@ class ProjectAnalyzer(
     private val logger = LoggerFactory.getLogger(ProjectAnalyzer::class.java)
 
     fun analyze(projectPath: String): ProjectInfo {
-        val dir = File(projectPath).let {
-            if (it.isAbsolute) it else it.absoluteFile
-        }
+        val dir =
+            File(projectPath).let {
+                if (it.isAbsolute) it else it.absoluteFile
+            }
 
         require(dir.isDirectory) { "Path is not a directory: $dir" }
         logger.info("Analyzing project at: ${dir.absolutePath}")
@@ -24,7 +25,7 @@ class ProjectAnalyzer(
 
     fun generateSummary(info: ProjectInfo): String = buildString {
         appendLine()
-        appendLine("=" .repeat(60))
+        appendLine("=".repeat(60))
         appendLine("  Project Analysis: ${info.name}")
         appendLine("=".repeat(60))
         appendLine()
@@ -48,9 +49,10 @@ class ProjectAnalyzer(
             appendLine("  --- KMP Targets ---")
             val kmpModules = info.modules.filter { it.type == ProjectType.KOTLIN_MULTIPLATFORM }
             for (mod in kmpModules) {
-                val targets = mod.sourceSetDirs.filter {
-                    it.endsWith("Main") || it.endsWith("Test")
-                }
+                val targets =
+                    mod.sourceSetDirs.filter {
+                        it.endsWith("Main") || it.endsWith("Test")
+                    }
                 if (targets.isNotEmpty()) {
                     appendLine("  ${mod.name}: ${targets.joinToString(", ")}")
                 }

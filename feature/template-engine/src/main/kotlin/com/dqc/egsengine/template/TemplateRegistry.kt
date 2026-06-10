@@ -21,16 +21,16 @@ import java.io.File
  * 4. Classpath `templates/` (bundled in JAR)
  */
 class TemplateRegistry {
+    fun configuration(projectRoot: File? = null): Configuration = Configuration(Configuration.VERSION_2_3_32).apply {
+        defaultEncoding = "UTF-8"
+        locale = java.util.Locale.ROOT
+        setTemplateLoader(buildLoader(projectRoot))
+    }
 
-    fun configuration(projectRoot: File? = null): Configuration =
-        Configuration(Configuration.VERSION_2_3_32).apply {
-            defaultEncoding = "UTF-8"
-            locale = java.util.Locale.ROOT
-            setTemplateLoader(buildLoader(projectRoot))
-        }
-
-    fun getTemplate(name: String, projectRoot: File? = null): Template =
-        configuration(projectRoot).getTemplate(name)
+    fun getTemplate(
+        name: String,
+        projectRoot: File? = null,
+    ): Template = configuration(projectRoot).getTemplate(name)
 
     internal fun buildLoader(projectRoot: File?): TemplateLoader {
         val loaders = mutableListOf<TemplateLoader>()
@@ -49,11 +49,11 @@ class TemplateRegistry {
     companion object {
         const val ENV_TEMPLATE_ROOT = "EGS_TEMPLATE_ROOT"
 
-        fun resolveEnvTemplateRoot(): File? =
-            System.getenv(ENV_TEMPLATE_ROOT)
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { File(it) }
-                ?.takeIf { it.isDirectory }
+        fun resolveEnvTemplateRoot(): File? = System
+            .getenv(ENV_TEMPLATE_ROOT)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { File(it) }
+            ?.takeIf { it.isDirectory }
     }
 }

@@ -17,7 +17,6 @@ import java.io.File
  * 2. create page generates Compose screen, not fragment/XML layout
  */
 class ComposeMigrationIntegrationTest {
-
     @AfterEach
     fun tearDown() {
         stopKoin()
@@ -38,9 +37,10 @@ class ComposeMigrationIntegrationTest {
         )
 
         // Expect NavigationRoute
-        val navRoutePath = projectRoot.resolve(
-            "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/TestModuleNavigationRoute.kt"
-        )
+        val navRoutePath =
+            projectRoot.resolve(
+                "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/TestModuleNavigationRoute.kt",
+            )
         assertTrue(navRoutePath.exists(), "expected NavigationRoute file")
         val navRouteContent = navRoutePath.readText()
         assertTrue(navRouteContent.contains("sealed interface TestModuleNavigationRoute"), "NavigationRoute should be sealed interface")
@@ -56,18 +56,27 @@ class ComposeMigrationIntegrationTest {
         assertFalse(navGraphPath.exists(), "expected no NavGraph XML file")
 
         // Expect no Fragment
-        val fragmentPath = projectRoot.resolve(
-            "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleFragment.kt"
-        )
+        val fragmentPath =
+            projectRoot.resolve(
+                "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleFragment.kt",
+            )
         assertFalse(fragmentPath.exists(), "expected no Fragment file")
 
         // Expect other required files
-        assertTrue(projectRoot.resolve(
-            "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleContract.kt"
-        ).exists(), "expected Contract")
-        assertTrue(projectRoot.resolve(
-            "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleViewModel.kt"
-        ).exists(), "expected ViewModel")
+        assertTrue(
+            projectRoot
+                .resolve(
+                    "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleContract.kt",
+                ).exists(),
+            "expected Contract",
+        )
+        assertTrue(
+            projectRoot
+                .resolve(
+                    "feature/testModule/src/main/kotlin/com/example/feature/testModule/presentation/screen/TestModuleViewModel.kt",
+                ).exists(),
+            "expected ViewModel",
+        )
     }
 
     @Test
@@ -99,9 +108,10 @@ class ComposeMigrationIntegrationTest {
         )
 
         // Expect Compose Screen
-        val screenPath = projectRoot.resolve(
-            "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeScreen.kt"
-        )
+        val screenPath =
+            projectRoot.resolve(
+                "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeScreen.kt",
+            )
         assertTrue(screenPath.exists(), "expected Compose Screen file")
         val screenContent = screenPath.readText()
         assertTrue(screenContent.contains("@Composable"), "Screen should have @Composable")
@@ -113,9 +123,10 @@ class ComposeMigrationIntegrationTest {
         assertTrue(screenContent.contains("when {"), "should use when for loading/error/content")
 
         // Expect no Fragment
-        val fragmentPath = projectRoot.resolve(
-            "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeFragment.kt"
-        )
+        val fragmentPath =
+            projectRoot.resolve(
+                "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeFragment.kt",
+            )
         assertFalse(fragmentPath.exists(), "expected no Fragment file")
 
         // Expect no XML layout
@@ -123,12 +134,20 @@ class ComposeMigrationIntegrationTest {
         assertFalse(layoutPath.exists(), "expected no XML layout file")
 
         // Expect Contract and ViewModel
-        assertTrue(projectRoot.resolve(
-            "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeContract.kt"
-        ).exists(), "expected Contract")
-        assertTrue(projectRoot.resolve(
-            "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeViewModel.kt"
-        ).exists(), "expected ViewModel")
+        assertTrue(
+            projectRoot
+                .resolve(
+                    "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeContract.kt",
+                ).exists(),
+            "expected Contract",
+        )
+        assertTrue(
+            projectRoot
+                .resolve(
+                    "feature/home/src/main/kotlin/com/example/feature/home/presentation/screen/home/HomeViewModel.kt",
+                ).exists(),
+            "expected ViewModel",
+        )
     }
 
     @Test
@@ -160,14 +179,16 @@ class ComposeMigrationIntegrationTest {
             ),
         )
 
-        val screenPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListScreen.kt"
-        )
+        val screenPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListScreen.kt",
+            )
         assertTrue(screenPath.exists(), "expected Compose Screen file")
 
-        val vmPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListViewModel.kt",
-        )
+        val vmPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListViewModel.kt",
+            )
         assertTrue(vmPath.exists())
         val vmContent = vmPath.readText()
         assertTrue(vmContent.contains("handleTopicUpdateTopic("))
@@ -177,14 +198,20 @@ class ComposeMigrationIntegrationTest {
             "expected no placeholder Result TODO",
         )
 
-        assertFalse(projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListFragment.kt"
-        ).exists())
+        assertFalse(
+            projectRoot
+                .resolve(
+                    "feature/task/src/main/kotlin/com/example/feature/task/presentation/screen/tasklist/TaskListFragment.kt",
+                ).exists(),
+        )
         assertFalse(projectRoot.resolve("feature/task/src/main/res/layout/fragment_task_list.xml").exists())
     }
 
     private fun createProjectFixture(): File {
-        val root = kotlin.io.path.createTempDirectory("compose-migration-test").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("compose-migration-test")
+                .toFile()
         root.resolve(".egs").mkdirs()
         root.resolve(".egs/config.json").writeText(
             """
@@ -215,9 +242,10 @@ class ComposeMigrationIntegrationTest {
     }
 
     private fun createUseCaseFixture(projectRoot: File) {
-        val useCaseFile = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/usecase/TopicUpdateTopicUseCase.kt",
-        )
+        val useCaseFile =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/usecase/TopicUpdateTopicUseCase.kt",
+            )
         useCaseFile.parentFile.mkdirs()
         useCaseFile.writeText(
             """

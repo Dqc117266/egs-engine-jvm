@@ -5,17 +5,21 @@ import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-class KmpDatabaseGeneratedDataModuleUpdaterTest {
 
+class KmpDatabaseGeneratedDataModuleUpdaterTest {
     @Test
     fun `fills database markers in existing GeneratedDataModule`() {
-        val root = kotlin.io.path.createTempDirectory("kmp-gdm").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("kmp-gdm")
+                .toFile()
         val moduleName = "storage"
         val pkg = "org.example.feature.storage"
         val pkgPath = pkg.replace('.', '/')
-        val file = root.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDataModule.kt",
-        )
+        val file =
+            root.resolve(
+                "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDataModule.kt",
+            )
         file.parentFile.mkdirs()
         file.writeText(
             """
@@ -34,24 +38,26 @@ class KmpDatabaseGeneratedDataModuleUpdaterTest {
             """.trimIndent() + "\n",
         )
 
-        val sql = """
+        val sql =
+            """
             CREATE TABLE t1 (
                 id BIGINT NOT NULL AUTO_INCREMENT,
                 PRIMARY KEY (id)
             );
-        """.trimIndent()
+            """.trimIndent()
         val tables = DdlParser().parse(sql)
-        val template = ModuleTemplate(
-            name = moduleName,
-            packageName = pkg,
-            conventionPluginId = null,
-            layers = listOf("data"),
-            hasRes = false,
-            namespace = null,
-            projectType = "KMP",
-            basePackage = "org.example",
-            baseClassPackages = BaseClassPackages(),
-        )
+        val template =
+            ModuleTemplate(
+                name = moduleName,
+                packageName = pkg,
+                conventionPluginId = null,
+                layers = listOf("data"),
+                hasRes = false,
+                namespace = null,
+                projectType = "KMP",
+                basePackage = "org.example",
+                baseClassPackages = BaseClassPackages(),
+            )
 
         KmpDatabaseGeneratedDataModuleUpdater().apply(
             root,
@@ -71,13 +77,17 @@ class KmpDatabaseGeneratedDataModuleUpdaterTest {
 
     @Test
     fun `omits DbRepositorySupport binding when includeDbRepositorySupport is false`() {
-        val root = kotlin.io.path.createTempDirectory("kmp-gdm-no-repo").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("kmp-gdm-no-repo")
+                .toFile()
         val moduleName = "storage"
         val pkg = "org.example.feature.storage"
         val pkgPath = pkg.replace('.', '/')
-        val file = root.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDataModule.kt",
-        )
+        val file =
+            root.resolve(
+                "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDataModule.kt",
+            )
         file.parentFile.mkdirs()
         file.writeText(
             """
@@ -96,24 +106,26 @@ class KmpDatabaseGeneratedDataModuleUpdaterTest {
             """.trimIndent() + "\n",
         )
 
-        val sql = """
+        val sql =
+            """
             CREATE TABLE t1 (
                 id BIGINT NOT NULL AUTO_INCREMENT,
                 PRIMARY KEY (id)
             );
-        """.trimIndent()
+            """.trimIndent()
         val tables = DdlParser().parse(sql)
-        val template = ModuleTemplate(
-            name = moduleName,
-            packageName = pkg,
-            conventionPluginId = null,
-            layers = listOf("data"),
-            hasRes = false,
-            namespace = null,
-            projectType = "KMP",
-            basePackage = "org.example",
-            baseClassPackages = BaseClassPackages(),
-        )
+        val template =
+            ModuleTemplate(
+                name = moduleName,
+                packageName = pkg,
+                conventionPluginId = null,
+                layers = listOf("data"),
+                hasRes = false,
+                namespace = null,
+                projectType = "KMP",
+                basePackage = "org.example",
+                baseClassPackages = BaseClassPackages(),
+            )
 
         KmpDatabaseGeneratedDataModuleUpdater().apply(
             root,

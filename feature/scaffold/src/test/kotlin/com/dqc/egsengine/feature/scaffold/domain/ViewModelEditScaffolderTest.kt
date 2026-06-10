@@ -13,7 +13,6 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 class ViewModelEditScaffolderTest {
-
     @field:TempDir
     lateinit var projectRoot: File
 
@@ -29,7 +28,9 @@ class ViewModelEditScaffolderTest {
                 useCaseScanner = UseCaseScanner(),
                 diUpdater = FeatureDiUpdater(),
                 templateEngine = TemplateEngine(TemplateRegistry()),
-                clientAppNavigationWiring = com.dqc.egsengine.feature.scaffold.data.ClientAppNavigationWiring(),
+                clientAppNavigationWiring =
+                com.dqc.egsengine.feature.scaffold.data
+                    .ClientAppNavigationWiring(),
             )
 
         val first =
@@ -37,7 +38,7 @@ class ViewModelEditScaffolderTest {
                 name = "FirstPingUseCase",
                 packageName = "com.dqc.example.feature.wmtest.domain.usecase",
                 path =
-                    "feature/wmtest/src/commonMain/kotlin/com/dqc/example/feature/wmtest/domain/usecase/FirstPingUseCase.kt",
+                "feature/wmtest/src/commonMain/kotlin/com/dqc/example/feature/wmtest/domain/usecase/FirstPingUseCase.kt",
                 returnType = "template.core.base.network.domain.Result<String>",
             )
 
@@ -112,7 +113,9 @@ class ViewModelEditScaffolderTest {
                 useCaseScanner = UseCaseScanner(),
                 diUpdater = FeatureDiUpdater(),
                 templateEngine = TemplateEngine(TemplateRegistry()),
-                clientAppNavigationWiring = com.dqc.egsengine.feature.scaffold.data.ClientAppNavigationWiring(),
+                clientAppNavigationWiring =
+                com.dqc.egsengine.feature.scaffold.data
+                    .ClientAppNavigationWiring(),
             )
 
         val first =
@@ -120,7 +123,7 @@ class ViewModelEditScaffolderTest {
                 name = "FirstPingUseCase",
                 packageName = "com.dqc.example.feature.wmtest2.domain.usecase",
                 path =
-                    "feature/wmtest2/src/commonMain/kotlin/com/dqc/example/feature/wmtest2/domain/usecase/FirstPingUseCase.kt",
+                "feature/wmtest2/src/commonMain/kotlin/com/dqc/example/feature/wmtest2/domain/usecase/FirstPingUseCase.kt",
                 returnType = "template.core.base.network.domain.Result<String>",
             )
 
@@ -142,7 +145,9 @@ class ViewModelEditScaffolderTest {
             )
         val original = vmPath.readText()
         val withCompanion =
-            original.trimEnd().removeSuffix("}")
+            original
+                .trimEnd()
+                .removeSuffix("}")
                 .trimEnd() +
                 "\n\n    companion object {\n        const val X = 1\n    }\n}\n"
         vmPath.writeText(withCompanion)
@@ -197,10 +202,14 @@ class ViewModelEditScaffolderTest {
         return root
     }
 
-    private fun writeUseCaseFiles(clientRoot: File, moduleName: String) {
+    private fun writeUseCaseFiles(
+        clientRoot: File,
+        moduleName: String,
+    ) {
         val pkg = "com.dqc.example.feature.$moduleName.domain.usecase"
         val base = "feature/$moduleName/src/commonMain/kotlin/${pkg.replace(".", "/")}"
         val rt = "template.core.base.network.domain.Result<String>"
+
         fun write(name: String) {
             val f = clientRoot.resolve("$base/$name.kt")
             f.parentFile.mkdirs()

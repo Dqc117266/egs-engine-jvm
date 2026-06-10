@@ -23,7 +23,6 @@ sealed class PrefsGenerationMode {
 }
 
 object PrefsGenerationModeResolver {
-
     fun resolve(
         keyArg: String?,
         fields: List<PrefsParsedField>,
@@ -31,15 +30,17 @@ object PrefsGenerationModeResolver {
         require(fields.isNotEmpty()) { "At least one field is required" }
         return when {
             fields.size == 1 -> {
-                val logical = keyArg?.trim()?.takeIf { it.isNotEmpty() }
-                    ?: camelToSnake(fields[0].name)
+                val logical =
+                    keyArg?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: camelToSnake(fields[0].name)
                 PrefsGenerationMode.Scalar(logicalKey = logical, field = fields[0])
             }
             else -> {
-                val logical = keyArg?.trim()?.takeIf { it.isNotEmpty() }
-                    ?: throw IllegalArgumentException(
-                        "Snapshot mode (${fields.size} fields) requires --key <name> (e.g. --key config).",
-                    )
+                val logical =
+                    keyArg?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: throw IllegalArgumentException(
+                            "Snapshot mode (${fields.size} fields) requires --key <name> (e.g. --key config).",
+                        )
                 PrefsGenerationMode.Snapshot(
                     logicalKey = logical,
                     snapshotClassName = snakeOrKebabToPascal(logical),
@@ -64,11 +65,10 @@ object PrefsGenerationModeResolver {
         return out.toString()
     }
 
-    private fun snakeOrKebabToPascal(key: String): String =
-        key.split('-', '_')
-            .filter { it.isNotBlank() }
-            .joinToString("") { part ->
-                part.replaceFirstChar { ch -> ch.uppercaseChar() }
-            }
-            .ifEmpty { "PrefsSnapshot" }
+    private fun snakeOrKebabToPascal(key: String): String = key
+        .split('-', '_')
+        .filter { it.isNotBlank() }
+        .joinToString("") { part ->
+            part.replaceFirstChar { ch -> ch.uppercaseChar() }
+        }.ifEmpty { "PrefsSnapshot" }
 }

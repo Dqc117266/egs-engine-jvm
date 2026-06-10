@@ -2,10 +2,10 @@ package com.dqc.egsengine.feature.scaffold.domain
 
 import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformApiGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
@@ -41,20 +41,22 @@ class ApiSyncScaffolder(
         // Exclude admin-only API paths - client should only sync app-facing endpoints
         val spec = swaggerParser.parse(url, excludePathPrefixes = listOf("api/admin/"))
 
-        val gen = platformApiGenerators[clientConfig.platform]
-            ?: throw IllegalArgumentException("No API generator for platform: ${clientConfig.platform}")
+        val gen =
+            platformApiGenerators[clientConfig.platform]
+                ?: throw IllegalArgumentException("No API generator for platform: ${clientConfig.platform}")
 
         val subProjectRoot = projectRoot.resolve(clientConfig.path)
-        val scaffoldFiles = if (!dryRun) {
-            ensureFeatureModuleScaffold(
-                projectRoot = projectRoot,
-                subProjectRoot = subProjectRoot,
-                clientModuleName = clientModuleName,
-                clientConfig = clientConfig,
-            )
-        } else {
-            emptyList()
-        }
+        val scaffoldFiles =
+            if (!dryRun) {
+                ensureFeatureModuleScaffold(
+                    projectRoot = projectRoot,
+                    subProjectRoot = subProjectRoot,
+                    clientModuleName = clientModuleName,
+                    clientConfig = clientConfig,
+                )
+            } else {
+                emptyList()
+            }
 
         val generated = gen.generate(subProjectRoot, clientModuleName, spec, clientConfig)
 
@@ -85,8 +87,13 @@ class ApiSyncScaffolder(
             config = clientConfig,
         )
 
-        logger.info("Synced API from backend module '{}' to client module '{}' ({} files, scaffold={})",
-            backendModuleName, clientModuleName, generated.size, scaffoldFiles.size)
+        logger.info(
+            "Synced API from backend module '{}' to client module '{}' ({} files, scaffold={})",
+            backendModuleName,
+            clientModuleName,
+            generated.size,
+            scaffoldFiles.size,
+        )
 
         return ApiSyncResult(
             clientModule = clientModuleName,
@@ -116,14 +123,15 @@ class ApiSyncScaffolder(
         val featureBuildFile = subProjectRoot.resolve("feature/$clientModuleName/build.gradle.kts")
         if (featureBuildFile.exists()) return emptyList()
 
-        val moduleGen = platformModuleGenerators[clientConfig.platform] ?: run {
-            logger.debug(
-                "No module generator registered for platform {} - skipping scaffold auto-create for feature/{}",
-                clientConfig.platform,
-                clientModuleName,
-            )
-            return emptyList()
-        }
+        val moduleGen =
+            platformModuleGenerators[clientConfig.platform] ?: run {
+                logger.debug(
+                    "No module generator registered for platform {} - skipping scaffold auto-create for feature/{}",
+                    clientConfig.platform,
+                    clientModuleName,
+                )
+                return emptyList()
+            }
 
         logger.info(
             "feature/{} build file missing; auto-scaffolding module skeleton before API sync",

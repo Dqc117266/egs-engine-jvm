@@ -11,7 +11,6 @@ import java.io.File
  * 2. A directory containing **`settings.gradle.kts`** or **`settings.gradle`** (single Gradle project or subfolder inside one).
  */
 object ProjectRootResolver {
-
     fun resolve(path: String): File {
         val start = File(path).let { if (it.isAbsolute) it else it.absoluteFile }
         return findProjectRoot(start)
@@ -37,11 +36,12 @@ object ProjectRootResolver {
         val absoluteStart = start.absoluteFile
         findProjectRootWalkingUp(absoluteStart)?.let { return it }
 
-        val canonicalStart = try {
-            absoluteStart.canonicalFile
-        } catch (_: Exception) {
-            null
-        }
+        val canonicalStart =
+            try {
+                absoluteStart.canonicalFile
+            } catch (_: Exception) {
+                null
+            }
         if (canonicalStart != null && canonicalStart != absoluteStart) {
             findProjectRootWalkingUp(canonicalStart)?.let { return it }
         }
@@ -62,12 +62,10 @@ object ProjectRootResolver {
         return null
     }
 
-    private fun isWorkspaceRoot(dir: File): Boolean =
-        dir.resolve(".egs/workspace.json").exists()
+    private fun isWorkspaceRoot(dir: File): Boolean = dir.resolve(".egs/workspace.json").exists()
 
-    private fun isGradleProjectRoot(dir: File): Boolean =
-        dir.resolve("settings.gradle.kts").exists() ||
-            dir.resolve("settings.gradle").exists()
+    private fun isGradleProjectRoot(dir: File): Boolean = dir.resolve("settings.gradle.kts").exists() ||
+        dir.resolve("settings.gradle").exists()
 
     /**
      * Resolves the Gradle subproject root that contains `feature/<name>` modules.

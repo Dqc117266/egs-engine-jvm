@@ -23,21 +23,15 @@ internal class KmpPageTemplateRenderer(
     private val camelPage: String = template.pageName.replaceFirstChar { it.lowercase() }
     private val pascalPage: String = template.pageName
 
-    fun renderContract(projectRoot: File? = null): String =
-        engine.render("kmp/page/PageContract.kt.ftl", m, projectRoot)
+    fun renderContract(projectRoot: File? = null): String = engine.render("kmp/page/PageContract.kt.ftl", m, projectRoot)
 
-    fun renderViewModel(projectRoot: File? = null): String =
-        engine.render("kmp/page/PageViewModel.kt.ftl", m, projectRoot)
+    fun renderViewModel(projectRoot: File? = null): String = engine.render("kmp/page/PageViewModel.kt.ftl", m, projectRoot)
 
-    fun renderScreen(projectRoot: File? = null): String =
-        engine.render("kmp/page/PageScreen.kt.ftl", m, projectRoot)
+    fun renderScreen(projectRoot: File? = null): String = engine.render("kmp/page/PageScreen.kt.ftl", m, projectRoot)
 
-    fun pathContract(): String =
-        "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}Contract.kt"
+    fun pathContract(): String = "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}Contract.kt"
 
-    fun pathViewModel(): String =
-        "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}ViewModel.kt"
+    fun pathViewModel(): String = "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}ViewModel.kt"
 
-    fun pathScreen(): String =
-        "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}Screen.kt"
+    fun pathScreen(): String = "$kotlinRootRel/$pkgPath/presentation/screen/$camelPage/${pascalPage}Screen.kt"
 }

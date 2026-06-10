@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class PrefsFieldParserTest {
-
     @Test
     fun `parses comma separated fields with bool alias`() {
         val f = PrefsFieldParser.parseFields(" userId:String , isLogin:bool ")

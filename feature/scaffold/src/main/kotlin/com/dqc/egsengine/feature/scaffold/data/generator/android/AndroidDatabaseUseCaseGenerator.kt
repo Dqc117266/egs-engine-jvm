@@ -65,20 +65,21 @@ class AndroidDatabaseUseCaseGenerator(
                 extraImports: Set<String> = emptySet(),
             ) {
                 useCaseNames += useCaseName
-                val content = templateEngine.render(
-                    "android/database/DbUseCase.kt.ftl",
-                    mapOf(
-                        "useCasePackage" to domainUseCasePackage,
-                        "domainRepositoryImport" to domainRepoImport,
-                        "combinedRepositoryName" to repositoryTypeName,
-                        "useCaseName" to useCaseName,
-                        "invokeParams" to invokeParams,
-                        "returnType" to returnType,
-                        "repositoryCall" to repositoryCall,
-                        "extraImports" to extraImports.sorted(),
-                    ),
-                    projectRoot,
-                )
+                val content =
+                    templateEngine.render(
+                        "android/database/DbUseCase.kt.ftl",
+                        mapOf(
+                            "useCasePackage" to domainUseCasePackage,
+                            "domainRepositoryImport" to domainRepoImport,
+                            "combinedRepositoryName" to repositoryTypeName,
+                            "useCaseName" to useCaseName,
+                            "invokeParams" to invokeParams,
+                            "returnType" to returnType,
+                            "repositoryCall" to repositoryCall,
+                            "extraImports" to extraImports.sorted(),
+                        ),
+                        projectRoot,
+                    )
                 val pkgPath = domainUseCasePackage.replace('.', '/')
                 files.add(
                     GeneratedFile(
@@ -106,35 +107,35 @@ class AndroidDatabaseUseCaseGenerator(
                 "Count${p}UseCase",
                 "",
                 "Long",
-                "count${p}()",
+                "count$p()",
                 emptySet(),
             )
             add(
                 "Insert${p}UseCase",
                 "entity: $e",
                 "Unit",
-                "insert${p}(entity)",
+                "insert$p(entity)",
                 setOf(rowTypeImport),
             )
             add(
                 "InsertAll${p}UseCase",
                 "entities: List<$e>",
                 "Unit",
-                "insertAll${p}(entities)",
+                "insertAll$p(entities)",
                 setOf(rowTypeImport),
             )
             add(
                 "Update${p}UseCase",
                 "entity: $e",
                 "Unit",
-                "update${p}(entity)",
+                "update$p(entity)",
                 setOf(rowTypeImport),
             )
             add(
                 "Delete${p}UseCase",
                 "entity: $e",
                 "Unit",
-                "delete${p}(entity)",
+                "delete$p(entity)",
                 setOf(rowTypeImport),
             )
             add(
@@ -148,20 +149,21 @@ class AndroidDatabaseUseCaseGenerator(
                 "DeleteAll${p}UseCase",
                 "",
                 "Unit",
-                "deleteAll${p}()",
+                "deleteAll$p()",
                 emptySet(),
             )
         }
 
         val domainModulePath = "$moduleDir/src/main/kotlin/${generateDiPackage.replace('.', '/')}/GeneratedDomainModule.kt"
-        val domainModule = resolveGeneratedDomainModuleContent(
-            domainUseCasePackage = domainUseCasePackage,
-            generateDiPackage = generateDiPackage,
-            useCaseNames = useCaseNames,
-            projectRoot = projectRoot,
-            subProjectRoot = subProjectRoot,
-            template = template,
-        )
+        val domainModule =
+            resolveGeneratedDomainModuleContent(
+                domainUseCasePackage = domainUseCasePackage,
+                generateDiPackage = generateDiPackage,
+                useCaseNames = useCaseNames,
+                projectRoot = projectRoot,
+                subProjectRoot = subProjectRoot,
+                template = template,
+            )
         files.add(GeneratedFile(domainModulePath, domainModule))
 
         logger.info("Generated {} Android DB use case file(s) for module {}", files.size, template.name)
@@ -177,9 +179,10 @@ class AndroidDatabaseUseCaseGenerator(
         template: ModuleTemplate,
     ): String {
         val pkgPath = template.packageName.replace('.', '/')
-        val existing = subProjectRoot?.resolve(
-            "feature/${template.name}/src/main/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
-        )
+        val existing =
+            subProjectRoot?.resolve(
+                "feature/${template.name}/src/main/kotlin/$pkgPath/generate/di/GeneratedDomainModule.kt",
+            )
         if (existing != null && existing.exists()) {
             var text = existing.readText()
             if (text.contains("egs-gen:swagger-usecases-begin")) {
@@ -213,7 +216,10 @@ class AndroidDatabaseUseCaseGenerator(
         projectRoot,
     )
 
-    private fun insertImportAfterPackage(text: String, importLine: String): String {
+    private fun insertImportAfterPackage(
+        text: String,
+        importLine: String,
+    ): String {
         val lines = text.lines().toMutableList()
         val pkgIdx = lines.indexOfFirst { it.startsWith("package ") }
         if (pkgIdx < 0) return "$importLine\n\n$text"

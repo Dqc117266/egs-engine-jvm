@@ -16,11 +16,12 @@ class ShellCommandRunner(
     ): CommandResult {
         logger.info("Running shell command: $command")
 
-        val shellCommand = if (isWindows()) {
-            listOf("cmd", "/c", command)
-        } else {
-            listOf("sh", "-c", command)
-        }
+        val shellCommand =
+            if (isWindows()) {
+                listOf("cmd", "/c", command)
+            } else {
+                listOf("sh", "-c", command)
+            }
 
         return commandExecutor.execute(shellCommand, workDir)
     }
@@ -45,6 +46,5 @@ class ShellCommandRunner(
         return results
     }
 
-    private fun isWindows(): Boolean =
-        System.getProperty("os.name").lowercase().contains("win")
+    private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
 }

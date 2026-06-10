@@ -15,7 +15,10 @@ class UseCaseScanner {
     /**
      * 扫描指定模块中的所有 UseCase
      */
-    fun scanByModule(projectRoot: File, moduleName: String): List<UseCaseInfo> {
+    fun scanByModule(
+        projectRoot: File,
+        moduleName: String,
+    ): List<UseCaseInfo> {
         val moduleDir = projectRoot.resolve("feature/$moduleName")
         if (!moduleDir.exists()) {
             logger.warn("Module directory not found: feature/$moduleName")
@@ -59,14 +62,16 @@ class UseCaseScanner {
      * Fills [UseCaseInfo.returnType] by re-parsing the use case source file when it was missing
      * (e.g. older scans or edge-case parse failures). Idempotent when [returnType] is already set.
      */
-    fun enrichReturnTypesIfMissing(projectRoot: File, useCases: List<UseCaseInfo>): List<UseCaseInfo> =
-        useCases.map { uc ->
-            if (!uc.returnType.isNullOrBlank()) return@map uc
-            val f = runCatching { projectRoot.resolve(uc.path) }.getOrNull() ?: return@map uc
-            if (!f.isFile) return@map uc
-            val rt = extractReturnType(f) ?: return@map uc
-            uc.copy(returnType = rt)
-        }
+    fun enrichReturnTypesIfMissing(
+        projectRoot: File,
+        useCases: List<UseCaseInfo>,
+    ): List<UseCaseInfo> = useCases.map { uc ->
+        if (!uc.returnType.isNullOrBlank()) return@map uc
+        val f = runCatching { projectRoot.resolve(uc.path) }.getOrNull() ?: return@map uc
+        if (!f.isFile) return@map uc
+        val rt = extractReturnType(f) ?: return@map uc
+        uc.copy(returnType = rt)
+    }
 
     /**
      * 列出所有可用的模块
@@ -75,17 +80,22 @@ class UseCaseScanner {
         val featureDir = projectRoot.resolve("feature")
         if (!featureDir.exists()) return emptyList()
 
-        return featureDir.listFiles()
+        return featureDir
+            .listFiles()
             ?.filter { it.isDirectory }
             ?.map { it.name }
             ?.sorted()
             ?: emptyList()
     }
 
-    private fun scanDirectory(dir: File, projectRoot: File): List<UseCaseInfo> {
+    private fun scanDirectory(
+        dir: File,
+        projectRoot: File,
+    ): List<UseCaseInfo> {
         val useCases = mutableListOf<UseCaseInfo>()
 
-        dir.walkTopDown()
+        dir
+            .walkTopDown()
             .filter { it.isFile && it.name.endsWith("UseCase.kt") }
             .forEach { file ->
                 try {
@@ -99,7 +109,10 @@ class UseCaseScanner {
         return useCases.sortedBy { it.name }
     }
 
-    private fun extractUseCaseInfo(file: File, projectRoot: File): UseCaseInfo {
+    private fun extractUseCaseInfo(
+        file: File,
+        projectRoot: File,
+    ): UseCaseInfo {
         val packageName = extractPackageName(file)
         val relativePath = file.relativeTo(projectRoot).path
         val returnType = extractReturnType(file)
@@ -125,7 +138,11 @@ class UseCaseScanner {
             paramMatch?.let {
                 UseCaseParam(
                     name = it.groupValues[1].trim(),
-                    type = it.groupValues[2].trim().removeSuffix(",").trim(),
+                    type =
+                    it.groupValues[2]
+                        .trim()
+                        .removeSuffix(",")
+                        .trim(),
                 )
             }
         }
@@ -151,13 +168,19 @@ class UseCaseScanner {
         return if (i < content.length && content[i] == '(') i else null
     }
 
-    private fun extractBalancedParenContent(content: String, openParenIndex: Int): String? {
+    private fun extractBalancedParenContent(
+        content: String,
+        openParenIndex: Int,
+    ): String? {
         val close = findMatchingCloseParen(content, openParenIndex) ?: return null
         return content.substring(openParenIndex + 1, close)
     }
 
     /** Match the `)` that closes [openParenIndex] using only `(` / `)` depth (handles `() -> Unit` in params). */
-    private fun findMatchingCloseParen(content: String, openParenIndex: Int): Int? {
+    private fun findMatchingCloseParen(
+        content: String,
+        openParenIndex: Int,
+    ): Int? {
         if (openParenIndex >= content.length || content[openParenIndex] != '(') return null
         var depth = 1
         var i = openParenIndex + 1
@@ -175,7 +198,10 @@ class UseCaseScanner {
      * Return type text after `:` until `=` (expression body) or `{` (block body) at the top level
      * (not inside `<>`), allowing nested generics.
      */
-    private fun extractTypeBeforeAssignment(content: String, startIndex: Int): String? {
+    private fun extractTypeBeforeAssignment(
+        content: String,
+        startIndex: Int,
+    ): String? {
         var i = startIndex
         var depthAngle = 0
         val typeStart = i

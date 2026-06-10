@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import java.io.File
 
 class BaseClassScannerKmpIntegrationTest {
-
     @Test
     fun `scans BaseViewModel from commonMain in sibling egs-kmp-template`() {
         val templateRoot = resolveEgsKmpTemplate()
@@ -21,14 +20,17 @@ class BaseClassScannerKmpIntegrationTest {
     }
 
     private fun resolveEgsKmpTemplate(): File? {
-        System.getenv("EGS_KMP_TEMPLATE_ROOT")?.let { File(it) }?.takeIf { it.isDirectory }?.let { return it }
+        System
+            .getenv("EGS_KMP_TEMPLATE_ROOT")
+            ?.let { File(it) }
+            ?.takeIf { it.isDirectory }
+            ?.let { return it }
         val cwd = File(System.getProperty("user.dir"))
         return listOf(
             cwd.resolve("../egs-kmp-template"),
             cwd.resolve("../../egs-kmp-template"),
             cwd.resolve("egs-kmp-template"),
-        )
-            .map { it.normalize() }
+        ).map { it.normalize() }
             .firstOrNull { it.isDirectory }
     }
 }

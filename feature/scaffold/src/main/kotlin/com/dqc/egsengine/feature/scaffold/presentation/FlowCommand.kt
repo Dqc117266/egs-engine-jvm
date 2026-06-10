@@ -17,16 +17,16 @@ class FlowCommand : CliktCommand(name = "flow") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): FlowCommand =
-            FlowCommand().subcommands(FlowAddFeatureCommand())
+        fun withSubcommands(): FlowCommand = FlowCommand().subcommands(FlowAddFeatureCommand())
     }
 }
 
 /**
- * `egs flow add-feature <module>` ¡ª client module scaffold + `client api sync` for the same module name.
+ * `egs flow add-feature <module>` Â¡Âª client module scaffold + `client api sync` for the same module name.
  */
-class FlowAddFeatureCommand : CliktCommand(name = "add-feature"), KoinComponent {
-
+class FlowAddFeatureCommand :
+    CliktCommand(name = "add-feature"),
+    KoinComponent {
     private val moduleScaffolder: ModuleScaffolder by inject()
     private val apiSync: ApiSyncScaffolder by inject()
 
@@ -42,22 +42,24 @@ class FlowAddFeatureCommand : CliktCommand(name = "add-feature"), KoinComponent 
         try {
             val workspaceRoot = ProjectRootResolver.resolve(projectPath)
             echo(CliFormatter.formatInfo("1/2 client module create: $moduleName"))
-            val mod = moduleScaffolder.scaffoldForProject(
-                projectRoot = workspaceRoot,
-                moduleName = moduleName,
-                projectKey = "client",
-                dryRun = dryRun,
-            )
+            val mod =
+                moduleScaffolder.scaffoldForProject(
+                    projectRoot = workspaceRoot,
+                    moduleName = moduleName,
+                    projectKey = "client",
+                    dryRun = dryRun,
+                )
             echo("   files: ${mod.files.size}")
             if (!skipApiSync) {
                 echo(CliFormatter.formatInfo("2/2 client api sync: $moduleName"))
-                val api = apiSync.syncClientApi(
-                    projectRoot = workspaceRoot,
-                    clientModuleName = moduleName,
-                    backendModuleName = moduleName,
-                    swaggerUrl = null,
-                    dryRun = dryRun,
-                )
+                val api =
+                    apiSync.syncClientApi(
+                        projectRoot = workspaceRoot,
+                        clientModuleName = moduleName,
+                        backendModuleName = moduleName,
+                        swaggerUrl = null,
+                        dryRun = dryRun,
+                    )
                 echo("   generated: ${api.files.size} files")
             }
             echo(CliFormatter.formatSuccess("flow add-feature completed"))

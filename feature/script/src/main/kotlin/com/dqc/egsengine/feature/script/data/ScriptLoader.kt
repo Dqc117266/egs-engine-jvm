@@ -28,15 +28,20 @@ class ScriptLoader {
             return emptyList()
         }
 
-        return directory.listFiles { _, name -> name.endsWith(".egs") }
+        return directory
+            .listFiles { _, name -> name.endsWith(".egs") }
             ?.mapNotNull { loadFromFile(it) }
             ?: emptyList()
     }
 
-    private fun parseScript(name: String, lines: List<String>): Script {
-        val commands = lines
-            .map { it.trim() }
-            .filter { it.isNotBlank() && !it.startsWith("#") }
+    private fun parseScript(
+        name: String,
+        lines: List<String>,
+    ): Script {
+        val commands =
+            lines
+                .map { it.trim() }
+                .filter { it.isNotBlank() && !it.startsWith("#") }
 
         return Script(
             name = name,

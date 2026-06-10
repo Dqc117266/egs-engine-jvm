@@ -14,6 +14,10 @@ class SpotlessConventionPlugin : Plugin<Project> {
             extensions.configure<SpotlessExtension> {
                 kotlin {
                     target("**/*.kt", "**/*.kts")
+                    targetExclude(
+                        "**/build/**",
+                        "**/golden/**",
+                    )
 
                     val customRuleSets =
                         listOf(
@@ -24,6 +28,13 @@ class SpotlessConventionPlugin : Plugin<Project> {
 
                     ktlint()
                         .customRuleSets(customRuleSets)
+                        .editorConfigOverride(
+                            mapOf(
+                                "ktlint_standard_filename" to "disabled",
+                                "ktlint_standard_function-naming" to "disabled",
+                                "max_line_length" to "off",
+                            ),
+                        )
 
                     endWithNewline()
                 }

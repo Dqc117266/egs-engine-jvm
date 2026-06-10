@@ -9,7 +9,6 @@ package com.dqc.egsengine.feature.scaffold.data.generator.common
  * Idempotent patches when merging a screen to offset-paged [PagingListState] (incremental `add use case`).
  */
 internal object ContractPagingMergePatcher {
-
     fun patchIfNeeded(
         contractText: String,
         pascalName: String,
@@ -20,17 +19,21 @@ internal object ContractPagingMergePatcher {
         return insertCopyPagingIfMissing(withHeader, pascalName, pagedItemContractRef)
     }
 
-    private fun patchStateHeader(contractText: String, itemRef: String): String {
+    private fun patchStateHeader(
+        contractText: String,
+        itemRef: String,
+    ): String {
         val key = "data class State("
         val ds = contractText.indexOf(key)
         if (ds < 0) return contractText
         val head = contractText.substring(0, ds)
         var tail = contractText.substring(ds)
         if (tail.contains("PagingListState<")) return contractText
-        tail = tail.replaceFirst(
-            Regex("""\)\s*:\s*UiState(?!\s*,\s*PagingListState)"""),
-            ") : UiState, PagingListState<$itemRef>",
-        )
+        tail =
+            tail.replaceFirst(
+                Regex("""\)\s*:\s*UiState(?!\s*,\s*PagingListState)"""),
+                ") : UiState, PagingListState<$itemRef>",
+            )
         return head + tail
     }
 
@@ -53,7 +56,10 @@ internal object ContractPagingMergePatcher {
         return contractText.substring(0, insertAt) + "\n" + body + contractText.substring(insertAt)
     }
 
-    private fun copyPagingBody(pascalName: String, itemRef: String): String =
+    private fun copyPagingBody(
+        pascalName: String,
+        itemRef: String,
+    ): String =
         """
         |
         |        override fun copyPaging(

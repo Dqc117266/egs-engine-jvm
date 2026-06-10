@@ -27,25 +27,28 @@ class ClientDatabaseScaffolder(
     ): KmpDatabaseScaffolder.KmpDatabaseScaffoldResult {
         val platform = workspaceConfigResolver.resolveClient(projectRoot).platform
         return when (platform) {
-            Platform.ANDROID -> androidDatabaseScaffolder.scaffoldDatabase(
-                projectRoot = projectRoot,
-                sqlFile = sqlFile,
-                moduleName = moduleName,
-                dryRun = dryRun,
-                repo = repo,
-                cached = cached,
-            )
-            Platform.KMP, Platform.KMP_ANDROID -> kmpDatabaseScaffolder.scaffoldDatabase(
-                projectRoot = projectRoot,
-                sqlFile = sqlFile,
-                moduleName = moduleName,
-                dryRun = dryRun,
-                repo = repo,
-                cached = cached,
-            )
-            else -> error(
-                "client gen database requires workspace project 'client' with platform kmp, kmp_android, or android; got $platform",
-            )
+            Platform.ANDROID ->
+                androidDatabaseScaffolder.scaffoldDatabase(
+                    projectRoot = projectRoot,
+                    sqlFile = sqlFile,
+                    moduleName = moduleName,
+                    dryRun = dryRun,
+                    repo = repo,
+                    cached = cached,
+                )
+            Platform.KMP, Platform.KMP_ANDROID ->
+                kmpDatabaseScaffolder.scaffoldDatabase(
+                    projectRoot = projectRoot,
+                    sqlFile = sqlFile,
+                    moduleName = moduleName,
+                    dryRun = dryRun,
+                    repo = repo,
+                    cached = cached,
+                )
+            else ->
+                error(
+                    "client gen database requires workspace project 'client' with platform kmp, kmp_android, or android; got $platform",
+                )
         }
     }
 }

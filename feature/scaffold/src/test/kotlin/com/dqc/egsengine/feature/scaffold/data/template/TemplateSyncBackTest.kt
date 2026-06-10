@@ -7,7 +7,6 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
 class TemplateSyncBackTest {
-
     @TempDir
     lateinit var tempDir: Path
 
@@ -22,17 +21,18 @@ class TemplateSyncBackTest {
         coreBase.mkdirs()
         coreBase.resolve("README.md").writeText("demo-app core for demo-app-client")
 
-        val result = TemplateSyncBack().sync(
-            fromDir = from,
-            toDir = to,
-            recipe = TemplateRenameRecipes.KMP,
-            fromProjectName = "demo-app-client",
-            fromPackage = null,
-            toProjectName = "egs-kmp-template",
-            toPackage = null,
-            pathFilters = listOf("core-base"),
-            dryRun = false,
-        )
+        val result =
+            TemplateSyncBack().sync(
+                fromDir = from,
+                toDir = to,
+                recipe = TemplateRenameRecipes.KMP,
+                fromProjectName = "demo-app-client",
+                fromPackage = null,
+                toProjectName = "egs-kmp-template",
+                toPackage = null,
+                pathFilters = listOf("core-base"),
+                dryRun = false,
+            )
 
         assertTrue(result.copiedFiles.any { it.contains("core-base") })
         val synced = to.resolve("core-base/ui/README.md").readText()
@@ -47,17 +47,18 @@ class TemplateSyncBackTest {
         to.mkdirs()
         from.resolve("note.txt").writeText("keep")
 
-        val result = TemplateSyncBack().sync(
-            fromDir = from,
-            toDir = to,
-            recipe = TemplateRenameRecipes.KMP,
-            fromProjectName = "demo",
-            fromPackage = null,
-            toProjectName = "egs-kmp-template",
-            toPackage = null,
-            pathFilters = listOf("note.txt"),
-            dryRun = true,
-        )
+        val result =
+            TemplateSyncBack().sync(
+                fromDir = from,
+                toDir = to,
+                recipe = TemplateRenameRecipes.KMP,
+                fromProjectName = "demo",
+                fromPackage = null,
+                toProjectName = "egs-kmp-template",
+                toPackage = null,
+                pathFilters = listOf("note.txt"),
+                dryRun = true,
+            )
 
         assertEquals(listOf("note.txt"), result.copiedFiles)
         assertTrue(!to.resolve("note.txt").exists())

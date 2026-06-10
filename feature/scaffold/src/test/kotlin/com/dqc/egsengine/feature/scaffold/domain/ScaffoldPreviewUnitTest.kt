@@ -1,17 +1,17 @@
 package com.dqc.egsengine.feature.scaffold.domain
 
 import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
-import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.ClientAppNavigationWiring
+import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.ModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.SettingsGradleUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.TemplateRegistry
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
+import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
+import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.template.TemplateRegistry
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

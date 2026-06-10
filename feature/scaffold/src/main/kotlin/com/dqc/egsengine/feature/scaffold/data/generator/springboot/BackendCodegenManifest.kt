@@ -59,24 +59,35 @@ enum class FormControl {
          * - Boolean type → SWITCH
          * - Otherwise → INPUT
          */
-        fun infer(kotlinName: String, kotlinType: String, tsType: String): FormControl {
+        fun infer(
+            kotlinName: String,
+            kotlinType: String,
+            tsType: String,
+        ): FormControl {
             val name = kotlinName.lowercase()
             return when {
                 // Image fields
-                name.endsWith("imageurl") || name.endsWith("image") ||
-                name.endsWith("avatar") || name.endsWith("icon") ||
-                name.endsWith("photourl") || name.endsWith("picurl") ||
-                name.endsWith("coverurl") || name.endsWith("cover") ||
-                (name.contains("image") && name.endsWith("url")) ||
-                (name.contains("photo") && name.endsWith("url")) ||
-                (name.contains("pic") && name.endsWith("url"))
-                    -> IMAGE_UPLOAD
+                name.endsWith("imageurl") ||
+                    name.endsWith("image") ||
+                    name.endsWith("avatar") ||
+                    name.endsWith("icon") ||
+                    name.endsWith("photourl") ||
+                    name.endsWith("picurl") ||
+                    name.endsWith("coverurl") ||
+                    name.endsWith("cover") ||
+                    (name.contains("image") && name.endsWith("url")) ||
+                    (name.contains("photo") && name.endsWith("url")) ||
+                    (name.contains("pic") && name.endsWith("url"))
+                -> IMAGE_UPLOAD
 
                 // Textarea fields
-                name.contains("description") || name.contains("instruction") ||
-                name.contains("remark") || name.contains("content") ||
-                name.contains("note") || name.contains("comment")
-                    -> TEXTAREA
+                name.contains("description") ||
+                    name.contains("instruction") ||
+                    name.contains("remark") ||
+                    name.contains("content") ||
+                    name.contains("note") ||
+                    name.contains("comment")
+                -> TEXTAREA
 
                 // Number fields
                 tsType == "number" && kotlinType == "Int" -> NUMBER
@@ -91,13 +102,12 @@ enum class FormControl {
 }
 
 object KotlinToTsTypeMapper {
-    fun toTsType(kotlinType: String): String =
-        when (kotlinType) {
-            "Long", "Int" -> "number"
-            "String" -> "string"
-            "Boolean" -> "boolean"
-            "Double", "Float" -> "number"
-            "Instant" -> "string"
-            else -> "unknown"
-        }
+    fun toTsType(kotlinType: String): String = when (kotlinType) {
+        "Long", "Int" -> "number"
+        "String" -> "string"
+        "Boolean" -> "boolean"
+        "Double", "Float" -> "number"
+        "Instant" -> "string"
+        else -> "unknown"
+    }
 }

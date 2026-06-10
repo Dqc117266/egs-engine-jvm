@@ -55,6 +55,5 @@ class SpringBootCrudGenerator(
         moduleName: String,
         config: SubProjectConfig,
         options: SpringBootOpinionatedOptions,
-    ): com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest =
-        builder.buildBackendCodegenManifest(table, moduleName, config, options)
+    ): com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest = builder.buildBackendCodegenManifest(table, moduleName, config, options)
 }

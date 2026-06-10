@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 import kotlin.io.path.createTempDirectory
 
 class SpringBootAppDependencyUpdaterTest {
-
     private val updater = SpringBootAppDependencyUpdater()
 
     @Test

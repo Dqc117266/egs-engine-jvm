@@ -24,10 +24,9 @@ internal data class MergeResult(
 )
 
 /**
- * Idempotent string splice for KMP Contract / ViewModel ¡ª inserts only missing symbols.
+ * Idempotent string splice for KMP Contract / ViewModel Â¡Âª inserts only missing symbols.
  */
 internal object ViewModelMemberMerger {
-
     fun mergeContract(
         contractText: String,
         snippets: List<ViewModelMergeSnippet>,
@@ -88,7 +87,11 @@ internal object ViewModelMemberMerger {
         // Imports (batch)
         val existingImportSet = parseImportLines(text).toMutableSet()
         val vmImportsToAdd =
-            snippets.flatMap { it.viewModelImportLines }.filter { it !in existingImportSet }.distinct().sorted()
+            snippets
+                .flatMap { it.viewModelImportLines }
+                .filter { it !in existingImportSet }
+                .distinct()
+                .sorted()
         if (vmImportsToAdd.isNotEmpty()) {
             stats.viewModelImports = vmImportsToAdd.size
             text = insertImportLines(text, vmImportsToAdd)
@@ -128,13 +131,16 @@ internal object ViewModelMemberMerger {
         return MergeResult(text = text, stats = stats)
     }
 
-    private fun parseImportLines(source: String): Set<String> =
-        source.lineSequence()
-            .map { it.trim() }
-            .filter { it.startsWith("import ") }
-            .toSet()
+    private fun parseImportLines(source: String): Set<String> = source
+        .lineSequence()
+        .map { it.trim() }
+        .filter { it.startsWith("import ") }
+        .toSet()
 
-    private fun insertImportLines(source: String, lines: List<String>): String {
+    private fun insertImportLines(
+        source: String,
+        lines: List<String>,
+    ): String {
         if (lines.isEmpty()) return source
         val block = KotlinMemberInspector.importsBlock(source)
         val toInsert = lines.joinToString("\n", postfix = "\n") { it.trim() }
@@ -144,29 +150,42 @@ internal object ViewModelMemberMerger {
             val needsNewline = !before.endsWith("\n")
             before + (if (needsNewline) "\n" else "") + toInsert + after
         } else {
-            val pkg = Regex("""^package\s+[^\s]+\s*""", RegexOption.MULTILINE).find(source)?.value
-                ?: return source
+            val pkg =
+                Regex("""^package\s+[^\s]+\s*""", RegexOption.MULTILINE).find(source)?.value
+                    ?: return source
             val idx = source.indexOf(pkg) + pkg.length
             source.substring(0, idx) + "\n\n" + toInsert + source.substring(idx)
         }
     }
 
-    private fun insertBeforeStateClosing(contract: String, fieldSnippet: String): String {
-        val marker = Regex("""\)\s*:\s*UiState""").find(contract)
-            ?: return contract
+    private fun insertBeforeStateClosing(
+        contract: String,
+        fieldSnippet: String,
+    ): String {
+        val marker =
+            Regex("""\)\s*:\s*UiState""").find(contract)
+                ?: return contract
         val insertAt = marker.range.first
         return contract.substring(0, insertAt) + fieldSnippet + contract.substring(insertAt)
     }
 
-    private fun insertBeforeSealedIntentClose(contract: String, intentSnippet: String): String {
-        val intentStart = Regex("""\bsealed\s+(?:class|interface)\s+Intent\b""").find(contract)?.range?.first
-            ?: return contract
+    private fun insertBeforeSealedIntentClose(
+        contract: String,
+        intentSnippet: String,
+    ): String {
+        val intentStart =
+            Regex("""\bsealed\s+(?:class|interface)\s+Intent\b""").find(contract)?.range?.first
+                ?: return contract
         val open = contract.indexOf('{', intentStart)
         val close = KotlinMemberInspector.findMatchingCloseBrace(contract, open) ?: return contract
         return contract.substring(0, close) + intentSnippet + "\n    " + contract.substring(close)
     }
 
-    private fun insertCtorParam(vm: String, classSimple: String, paramLineWithoutComma: String): String {
+    private fun insertCtorParam(
+        vm: String,
+        classSimple: String,
+        paramLineWithoutComma: String,
+    ): String {
         val classIdx = Regex("""\bclass\s+$classSimple\s*\(""").find(vm)?.range?.first ?: return vm
         val openParen = vm.indexOf('(', classIdx)
         val closeParen = KotlinMemberInspector.findMatchingCloseParen(vm, openParen) ?: return vm
@@ -181,15 +200,19 @@ internal object ViewModelMemberMerger {
         }
     }
 
-    private fun insertIntoRegisterIntents(vm: String, block: String): String {
-        val m = Regex("""override\s+fun\s+registerIntents\s*\(\s*\)\s*\{""").find(vm)
-            ?: return vm
+    private fun insertIntoRegisterIntents(
+        vm: String,
+        block: String,
+    ): String {
+        val m =
+            Regex("""override\s+fun\s+registerIntents\s*\(\s*\)\s*\{""").find(vm)
+                ?: return vm
         val openBrace = m.range.last
         require(vm[openBrace] == '{') { "registerIntents parse" }
         val closeBrace = findRegisterIntentsClosingBrace(vm, openBrace) ?: return vm
         val bodyForIndent = vm.substring(openBrace + 1, closeBrace)
         // [ \t]+ (not \s+) so the leading `\n` of `bodyForIndent` is not captured when the regex
-        // matches at the start-of-input anchor — that would have made `indent` a newline + spaces
+        // matches at the start-of-input anchor Â— that would have made `indent` a newline + spaces
         // and corrupted the re-indent path in [normalizeRegisterIntentBlock].
         val indent =
             Regex("""(?m)^([ \t]+)registerIntent<""").find(bodyForIndent)?.groupValues?.get(1)
@@ -214,25 +237,36 @@ internal object ViewModelMemberMerger {
 
     /**
      * Closing `}` for [registerIntents][openBraceIndex] must not include braces from later
-     * `private fun handle…` bodies. A plain global [findMatchingCloseBrace] scan can pair with
+     * `private fun handle
+` bodies. A plain global [findMatchingCloseBrace] scan can pair with
      * the first `}` inside the first handler when that handler is malformed (column 0) or when
      * nested lambdas confuse depth in edge cases. We bound the scan to the text before the first
      * handler method after [openBraceIndex].
      */
-    private fun findRegisterIntentsClosingBrace(vm: String, openBraceIndex: Int): Int? {
+    private fun findRegisterIntentsClosingBrace(
+        vm: String,
+        openBraceIndex: Int,
+    ): Int? {
         findMatchingCloseBraceInRange(vm, openBraceIndex, endExclusive = findFirstHandlerAfterRegisterIntents(vm, openBraceIndex))
             ?.let { return it }
         return KotlinMemberInspector.findMatchingCloseBrace(vm, openBraceIndex)
     }
 
-    private fun findFirstHandlerAfterRegisterIntents(vm: String, openBraceIndex: Int): Int {
+    private fun findFirstHandlerAfterRegisterIntents(
+        vm: String,
+        openBraceIndex: Int,
+    ): Int {
         val tail = vm.substring(openBraceIndex + 1)
         val re = Regex("""\r?\n(\s*)(?:private|internal)\s+fun\s+handle""")
         val match = re.find(tail) ?: return vm.length
         return openBraceIndex + 1 + match.range.first
     }
 
-    private fun findMatchingCloseBraceInRange(source: String, openBraceIndex: Int, endExclusive: Int): Int? {
+    private fun findMatchingCloseBraceInRange(
+        source: String,
+        openBraceIndex: Int,
+        endExclusive: Int,
+    ): Int? {
         if (openBraceIndex < 0 || openBraceIndex >= source.length) return null
         if (source[openBraceIndex] != '{') return null
         val end = endExclusive.coerceAtMost(source.length)
@@ -252,11 +286,16 @@ internal object ViewModelMemberMerger {
     }
 
     /**
-     * Produce a compact, uniformly-indented `registerIntent<…> { … }` block. Blank lines are dropped
-     * entirely – older builds of the engine sometimes emitted snippets with stray blank lines inside
+     * Produce a compact, uniformly-indented `registerIntent<
+> {
+     }` block. Blank lines are dropped
+     * entirely Â– older builds of the engine sometimes emitted snippets with stray blank lines inside
      * the block, and repeated merges would then carry the extra blank lines forward.
      */
-    private fun normalizeRegisterIntentBlock(block: String, indent: String): String {
+    private fun normalizeRegisterIntentBlock(
+        block: String,
+        indent: String,
+    ): String {
         val nonBlank = block.lines().filter { it.isNotBlank() }
         if (nonBlank.isEmpty()) return ""
         val first = nonBlank.first()
@@ -271,7 +310,11 @@ internal object ViewModelMemberMerger {
         }
     }
 
-    private fun insertBeforeViewModelClassClose(vm: String, pascalName: String, handler: String): String {
+    private fun insertBeforeViewModelClassClose(
+        vm: String,
+        pascalName: String,
+        handler: String,
+    ): String {
         val braceIdx = findViewModelClassBodyOpenBrace(vm, pascalName) ?: return vm
         val classClose = KotlinMemberInspector.findMatchingCloseBrace(vm, braceIdx) ?: return vm
         val insertPos = findInsertionBeforeCompanionOrClassEnd(vm, braceIdx, classClose)
@@ -299,8 +342,10 @@ internal object ViewModelMemberMerger {
         if (nonBlank.isEmpty()) return "$t\n"
         val minLead = nonBlank.minOfOrNull { line -> line.takeWhile { c -> c == ' ' }.length } ?: 0
         val first = nonBlank.first()
-        if (minLead >= 4 && (
-                first.startsWith("    private ") || first.startsWith("    internal ") ||
+        if (minLead >= 4 &&
+            (
+                first.startsWith("    private ") ||
+                    first.startsWith("    internal ") ||
                     first.startsWith("    protected ")
                 )
         ) {
@@ -319,14 +364,21 @@ internal object ViewModelMemberMerger {
     }
 
     /** New handlers go above a trailing [companion object], otherwise before the class closing [brace]. */
-    private fun findInsertionBeforeCompanionOrClassEnd(vm: String, classOpenBrace: Int, classCloseBrace: Int): Int {
+    private fun findInsertionBeforeCompanionOrClassEnd(
+        vm: String,
+        classOpenBrace: Int,
+        classCloseBrace: Int,
+    ): Int {
         val companionIdx = vm.lastIndexOf("companion object", classCloseBrace - 1)
         if (companionIdx <= classOpenBrace) return classCloseBrace
         val lineStart = vm.lastIndexOf('\n', companionIdx - 1).let { if (it < 0) 0 else it + 1 }
         return lineStart.coerceAtLeast(classOpenBrace + 1)
     }
 
-    private fun findViewModelClassBodyOpenBrace(vm: String, pascalName: String): Int? {
+    private fun findViewModelClassBodyOpenBrace(
+        vm: String,
+        pascalName: String,
+    ): Int? {
         val re = Regex("""\)\s*\{\s*(\R\s*)override\s+fun\s+registerIntents""")
         val m = re.find(vm) ?: return null
         val rel = m.value.indexOf('{')
@@ -350,6 +402,5 @@ private fun extractRegisterBranchName(block: String): String? {
     return m.groupValues[1]
 }
 
-private fun extractHandlerName(handler: String): String? =
-    Regex("""\bprivate\s+fun\s+(handle\w+|loadPage)\s*\(""").find(handler)?.groupValues?.get(1)
-        ?: Regex("""\bprivate\s+suspend\s+fun\s+(handle\w+)\s*\(""").find(handler)?.groupValues?.get(1)
+private fun extractHandlerName(handler: String): String? = Regex("""\bprivate\s+fun\s+(handle\w+|loadPage)\s*\(""").find(handler)?.groupValues?.get(1)
+    ?: Regex("""\bprivate\s+suspend\s+fun\s+(handle\w+)\s*\(""").find(handler)?.groupValues?.get(1)

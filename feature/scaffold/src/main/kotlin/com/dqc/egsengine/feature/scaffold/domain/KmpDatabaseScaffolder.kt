@@ -62,15 +62,17 @@ class KmpDatabaseScaffolder(
         val subProjectRoot = projectRoot.resolve(clientConfig.path)
         val modulePascal = SqlNaming.moduleNameToPascal(moduleName)
         val pkgPath = template.packageName.replace('.', '/')
-        val apiSupportFile = subProjectRoot.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}ApiRepositorySupport.kt",
-        )
+        val apiSupportFile =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/data/repository/Generated${modulePascal}ApiRepositorySupport.kt",
+            )
         val hasApi = apiSupportFile.exists()
 
-        val swaggerSpec = runCatching {
-            swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
-        }.onFailure { logger.debug("Swagger not available for DB VO mapping: {}", it.message) }
-            .getOrNull()
+        val swaggerSpec =
+            runCatching {
+                swaggerParser.parse(workspaceConfigResolver.resolveSwaggerUrl(projectRoot))
+            }.onFailure { logger.debug("Swagger not available for DB VO mapping: {}", it.message) }
+                .getOrNull()
 
         if (swaggerSpec != null) {
             generated += kmpDatabaseEntityMapperGenerator.generate(template, tables, swaggerSpec, projectRoot)
@@ -93,72 +95,84 @@ class KmpDatabaseScaffolder(
         if (effectiveRepo) {
             when {
                 !cached && hasApi -> {
-                    generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(
-                        template,
-                        tables,
-                        projectRoot,
-                        swaggerSpec,
-                    )
-                    generated += kmpDatabaseUseCaseGenerator.generate(
-                        template = template,
-                        tables = tables,
-                        projectRoot = projectRoot,
-                        subProjectRoot = subProjectRoot,
-                        spec = swaggerSpec,
-                    )
-                    val prefsSlice = kmpCombinedRepositoryGenerator.detectSlices(
-                        subProjectRoot,
-                        moduleName,
-                        template,
-                    ).hasPrefs
-                    kmpCombinedRepositoryGenerator.generate(
-                        template = template,
-                        subProjectRoot = subProjectRoot,
-                        includeApi = true,
-                        includeDb = true,
-                        includePrefs = prefsSlice,
-                    )?.let { generated += it }
-                    kmpRepositoryImplGenerator.generateOrMerge(
-                        template = template,
-                        subProjectRoot = subProjectRoot,
-                        includeApi = true,
-                        includeDb = true,
-                        includePrefs = prefsSlice,
-                    )?.let { generated += it }
+                    generated +=
+                        kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                            template,
+                            tables,
+                            projectRoot,
+                            swaggerSpec,
+                        )
+                    generated +=
+                        kmpDatabaseUseCaseGenerator.generate(
+                            template = template,
+                            tables = tables,
+                            projectRoot = projectRoot,
+                            subProjectRoot = subProjectRoot,
+                            spec = swaggerSpec,
+                        )
+                    val prefsSlice =
+                        kmpCombinedRepositoryGenerator
+                            .detectSlices(
+                                subProjectRoot,
+                                moduleName,
+                                template,
+                            ).hasPrefs
+                    kmpCombinedRepositoryGenerator
+                        .generate(
+                            template = template,
+                            subProjectRoot = subProjectRoot,
+                            includeApi = true,
+                            includeDb = true,
+                            includePrefs = prefsSlice,
+                        )?.let { generated += it }
+                    kmpRepositoryImplGenerator
+                        .generateOrMerge(
+                            template = template,
+                            subProjectRoot = subProjectRoot,
+                            includeApi = true,
+                            includeDb = true,
+                            includePrefs = prefsSlice,
+                        )?.let { generated += it }
                 }
                 !cached && !hasApi -> {
-                    generated += kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(
-                        template,
-                        tables,
-                        projectRoot,
-                        swaggerSpec,
-                    )
-                    generated += kmpDatabaseUseCaseGenerator.generate(
-                        template = template,
-                        tables = tables,
-                        projectRoot = projectRoot,
-                        subProjectRoot = subProjectRoot,
-                        spec = swaggerSpec,
-                    )
-                    val prefsSlice = kmpCombinedRepositoryGenerator.detectSlices(
-                        subProjectRoot,
-                        moduleName,
-                        template,
-                    ).hasPrefs
-                    kmpCombinedRepositoryGenerator.generate(
-                        template = template,
-                        subProjectRoot = subProjectRoot,
-                        includeApi = false,
-                        includeDb = true,
-                        includePrefs = prefsSlice,
-                    )?.let { generated += it }
-                    kmpRepositoryImplGenerator.generateOrMerge(
-                        template = template,
-                        subProjectRoot = subProjectRoot,
-                        includeApi = false,
-                        includeDb = true,
-                        includePrefs = prefsSlice,
-                    )?.let { generated += it }
+                    generated +=
+                        kmpDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                            template,
+                            tables,
+                            projectRoot,
+                            swaggerSpec,
+                        )
+                    generated +=
+                        kmpDatabaseUseCaseGenerator.generate(
+                            template = template,
+                            tables = tables,
+                            projectRoot = projectRoot,
+                            subProjectRoot = subProjectRoot,
+                            spec = swaggerSpec,
+                        )
+                    val prefsSlice =
+                        kmpCombinedRepositoryGenerator
+                            .detectSlices(
+                                subProjectRoot,
+                                moduleName,
+                                template,
+                            ).hasPrefs
+                    kmpCombinedRepositoryGenerator
+                        .generate(
+                            template = template,
+                            subProjectRoot = subProjectRoot,
+                            includeApi = false,
+                            includeDb = true,
+                            includePrefs = prefsSlice,
+                        )?.let { generated += it }
+                    kmpRepositoryImplGenerator
+                        .generateOrMerge(
+                            template = template,
+                            subProjectRoot = subProjectRoot,
+                            includeApi = false,
+                            includeDb = true,
+                            includePrefs = prefsSlice,
+                        )?.let { generated += it }
                 }
             }
         }

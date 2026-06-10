@@ -12,8 +12,9 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 
-class InitCommand : CliktCommand(name = "init"), KoinComponent {
-
+class InitCommand :
+    CliktCommand(name = "init"),
+    KoinComponent {
     private val initializer: ProjectInitializer by inject()
     private val workspaceConfigReader: WorkspaceConfigReader by inject()
 
@@ -65,9 +66,16 @@ class InitCommand : CliktCommand(name = "init"), KoinComponent {
             echo("  Base Classes (${config.baseClasses.size}):")
 
             val headers = listOf("Name", "Module", "Kind")
-            val rows = config.baseClasses.map { bc ->
-                listOf(bc.name, bc.module, bc.kind.name.lowercase().replace('_', ' '))
-            }
+            val rows =
+                config.baseClasses.map { bc ->
+                    listOf(
+                        bc.name,
+                        bc.module,
+                        bc.kind.name
+                            .lowercase()
+                            .replace('_', ' '),
+                    )
+                }
             echo(CliFormatter.formatTable(headers, rows).prependIndent("    "))
         } else {
             echo()

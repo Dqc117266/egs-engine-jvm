@@ -14,15 +14,15 @@ import java.io.File
  * intentional template/engine change, then review the resulting git diff.
  */
 object GoldenSnapshot {
-
     private const val UPDATE_PROPERTY = "egs.golden.update"
     private const val UPDATE_ENV = "UPDATE_GOLDEN"
     private const val DIR_PROPERTY = "egs.golden.dir"
     private const val DEFAULT_DIR = "src/test/resources/golden"
 
     private val updateEnabled: Boolean
-        get() = System.getProperty(UPDATE_PROPERTY)?.toBoolean() == true ||
-            System.getenv(UPDATE_ENV) == "1"
+        get() =
+            System.getProperty(UPDATE_PROPERTY)?.toBoolean() == true ||
+                System.getenv(UPDATE_ENV) == "1"
 
     private val goldenRoot: File
         get() = File(System.getProperty(DIR_PROPERTY) ?: DEFAULT_DIR)
@@ -31,11 +31,15 @@ object GoldenSnapshot {
      * @param caseName stable directory name for this snapshot, e.g. `module-android`.
      * @param files generated `(relativePath, content)` pairs; null content is treated as empty.
      */
-    fun verify(caseName: String, files: List<Pair<String, String?>>) {
+    fun verify(
+        caseName: String,
+        files: List<Pair<String, String?>>,
+    ) {
         require(files.isNotEmpty()) { "Golden case '$caseName' produced no files" }
-        val actual = files
-            .associate { (path, content) -> path to normalize(content) }
-            .toSortedMap()
+        val actual =
+            files
+                .associate { (path, content) -> path to normalize(content) }
+                .toSortedMap()
 
         val caseDir = goldenRoot.resolve(caseName)
 
@@ -54,7 +58,10 @@ object GoldenSnapshot {
         check(problems.isEmpty()) { failureMessage(caseName, problems) }
     }
 
-    private fun writeGolden(caseDir: File, actual: Map<String, String>) {
+    private fun writeGolden(
+        caseDir: File,
+        actual: Map<String, String>,
+    ) {
         if (caseDir.exists()) caseDir.deleteRecursively()
         actual.forEach { (path, content) ->
             val target = caseDir.resolve(path)
@@ -65,16 +72,19 @@ object GoldenSnapshot {
 
     private fun readGolden(caseDir: File): Map<String, String> {
         val basePath = caseDir.toPath().normalize()
-        return caseDir.walkTopDown()
+        return caseDir
+            .walkTopDown()
             .filter { it.isFile }
             .associate { file ->
                 val relative = basePath.relativize(file.toPath()).toString().replace(File.separatorChar, '/')
                 relative to normalize(file.readText())
-            }
-            .toSortedMap()
+            }.toSortedMap()
     }
 
-    private fun collectProblems(expected: Map<String, String>, actual: Map<String, String>): List<String> {
+    private fun collectProblems(
+        expected: Map<String, String>,
+        actual: Map<String, String>,
+    ): List<String> {
         val problems = mutableListOf<String>()
         (actual.keys - expected.keys).sorted().forEach {
             problems += "  [new] generated but absent from golden: $it"
@@ -95,7 +105,11 @@ object GoldenSnapshot {
     private fun normalize(content: String?): String = (content ?: "").replace("\r\n", "\n")
 
     /** Minimal common-prefix/suffix diff: shows only the changed region with a little context. */
-    private fun diff(path: String, expected: String, actual: String): String {
+    private fun diff(
+        path: String,
+        expected: String,
+        actual: String,
+    ): String {
         val expectedLines = expected.split("\n")
         val actualLines = actual.split("\n")
         var prefix = 0
@@ -104,7 +118,8 @@ object GoldenSnapshot {
         }
         var suffixExpected = expectedLines.lastIndex
         var suffixActual = actualLines.lastIndex
-        while (suffixExpected >= prefix && suffixActual >= prefix &&
+        while (suffixExpected >= prefix &&
+            suffixActual >= prefix &&
             expectedLines[suffixExpected] == actualLines[suffixActual]
         ) {
             suffixExpected--
@@ -122,10 +137,14 @@ object GoldenSnapshot {
         }.trimEnd()
     }
 
-    private fun failureMessage(caseName: String, problems: List<String>): String = buildString {
-        appendLine("Golden mismatch for '$caseName' (${problems.size} problem(s)):")
-        problems.forEach { appendLine(it) }
-        appendLine()
-        append("If this change is intended, refresh golden with: ./gradlew :feature:scaffold:test -D$UPDATE_PROPERTY=true")
-    }
+    private fun failureMessage(
+        caseName: String,
+        problems: List<String>,
+    ): String =
+        buildString {
+            appendLine("Golden mismatch for '$caseName' (${problems.size} problem(s)):")
+            problems.forEach { appendLine(it) }
+            appendLine()
+            append("If this change is intended, refresh golden with: ./gradlew :feature:scaffold:test -D$UPDATE_PROPERTY=true")
+        }
 }

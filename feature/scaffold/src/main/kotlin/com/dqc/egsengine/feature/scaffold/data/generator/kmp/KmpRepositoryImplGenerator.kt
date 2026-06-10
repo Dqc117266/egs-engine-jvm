@@ -15,7 +15,6 @@ import java.io.File
  * Scaffolds [TodoRepositoryImpl] with Kotlin `by` delegation to each generated support class.
  */
 class KmpRepositoryImplGenerator {
-
     private val logger = LoggerFactory.getLogger(KmpRepositoryImplGenerator::class.java)
 
     companion object {
@@ -66,7 +65,10 @@ class KmpRepositoryImplGenerator {
         return renderContent(ctx, includeApi, includeDb, includePrefs)
     }
 
-    fun shouldPatchForDelegation(existingText: String, pascal: String): Boolean {
+    fun shouldPatchForDelegation(
+        existingText: String,
+        pascal: String,
+    ): Boolean {
         if (existingText.contains(FREEZE_MARKER)) return false
         if (existingText.contains("egs-codegen: scaffold-repository-impl-delegation")) return true
         if (existingText.contains("egs-codegen: scaffold-repository-impl")) return true
@@ -113,20 +115,20 @@ class KmpRepositoryImplGenerator {
         val ctorBlock = ctorParams.joinToString(",\n    ")
         val delegateBlock = delegates.joinToString(",\n    ")
         return """
-        /*
-         * Hand-written repository: delegates to generated API/DB/Prefs support classes.
-         * egs-codegen: scaffold-repository-impl-delegation
-         * Add $FREEZE_MARKER on its own line to prevent overwrites.
-         */
-        package $pkg.data.repository
+            /*
+             * Hand-written repository: delegates to generated API/DB/Prefs support classes.
+             * egs-codegen: scaffold-repository-impl-delegation
+             * Add $FREEZE_MARKER on its own line to prevent overwrites.
+             */
+            package $pkg.data.repository
 
-        $importsBlock
+            $importsBlock
 
-        internal class ${pascal}RepositoryImpl(
-            $ctorBlock,
-        ) : ${ctx.combinedRepositoryName},
-            $delegateBlock {
-        }
+            internal class ${pascal}RepositoryImpl(
+                $ctorBlock,
+            ) : ${ctx.combinedRepositoryName},
+                $delegateBlock {
+            }
         """.trimIndent() + "\n"
     }
 

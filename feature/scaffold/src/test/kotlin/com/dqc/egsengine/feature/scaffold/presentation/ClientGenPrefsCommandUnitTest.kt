@@ -15,7 +15,6 @@ import org.koin.dsl.module
 import java.io.File
 
 class ClientGenPrefsCommandUnitTest {
-
     @AfterEach
     fun tearDown() {
         stopKoin()
@@ -26,11 +25,12 @@ class ClientGenPrefsCommandUnitTest {
         val scaffolder = mockk<ClientPrefsScaffolder>()
         every {
             scaffolder.scaffoldPrefs(any(), any(), any(), any(), any(), any())
-        } returns KmpPreferencesScaffolder.KmpPreferencesScaffoldResult(
-            moduleName = "todo",
-            files = listOf(GeneratedFile("feature/todo/x.kt", "")),
-            dryRun = true,
-        )
+        } returns
+            KmpPreferencesScaffolder.KmpPreferencesScaffoldResult(
+                moduleName = "todo",
+                files = listOf(GeneratedFile("feature/todo/x.kt", "")),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -75,11 +75,12 @@ class ClientGenPrefsCommandUnitTest {
         val scaffolder = mockk<ClientPrefsScaffolder>()
         every {
             scaffolder.scaffoldPrefs(any(), any(), any(), any(), any(), any())
-        } returns KmpPreferencesScaffolder.KmpPreferencesScaffoldResult(
-            moduleName = "m",
-            files = emptyList(),
-            dryRun = false,
-        )
+        } returns
+            KmpPreferencesScaffolder.KmpPreferencesScaffoldResult(
+                moduleName = "m",
+                files = emptyList(),
+                dryRun = false,
+            )
 
         startKoin {
             modules(
@@ -109,8 +110,7 @@ class ClientGenPrefsCommandUnitTest {
         }
     }
 
-    private fun createTempProjectDir(): File =
-        kotlin.io.path.createTempDirectory("client-gen-prefs-unit-test").toFile().also {
-            it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
-        }
+    private fun createTempProjectDir(): File = kotlin.io.path.createTempDirectory("client-gen-prefs-unit-test").toFile().also {
+        it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
+    }
 }

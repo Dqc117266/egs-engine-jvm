@@ -16,11 +16,11 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
-import com.github.ajalt.clikt.parameters.options.multiple as optionMultiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import com.github.ajalt.clikt.parameters.options.multiple as optionMultiple
 
 /**
  * `egs client edit viewmodel <page> -m <module> [-u UseCase ...]`
@@ -28,8 +28,9 @@ import org.koin.core.component.inject
  * Use case names can be space-separated after `-u` (like `git add a b c`), for example:
  * `-m todo -u GetUserIdUseCase DeleteUserSessionUseCase`. Commas still work: `-u A,B,C`.
  */
-class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinComponent {
-
+class ClientEditViewModelCommand :
+    CliktCommand(name = "viewmodel"),
+    KoinComponent {
     private val scaffolder: ViewModelEditScaffolder by inject()
     private val useCaseScanner: UseCaseScanner by inject()
 
@@ -53,8 +54,8 @@ class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinCompone
         "-u",
         "--usecase",
         help =
-            "Use case class name(s). Prefer spaces: `-u FooUseCase BarUseCase` (same idea as `git add`). " +
-                "Also: `-u A,B`, repeat `-u`, or one quoted `-u \"A B\"`.",
+        "Use case class name(s). Prefer spaces: `-u FooUseCase BarUseCase` (same idea as `git add`). " +
+            "Also: `-u A,B`, repeat `-u`, or one quoted `-u \"A B\"`.",
     ).optionMultiple()
 
     private val projectPath by option("--project", help = "Workspace / Gradle project root")
@@ -120,7 +121,7 @@ class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinCompone
                 if (result.diffs.isEmpty()) {
                     echo(CliFormatter.formatInfo("Nothing to change (all selected use cases already wired)."))
                 } else {
-                    echo(CliFormatter.formatInfo("Dry run ¡ª unified diff:"))
+                    echo(CliFormatter.formatInfo("Dry run Â¡Âª unified diff:"))
                     echo()
                     result.diffs.forEach { (path, diff) ->
                         echo(CliFormatter.formatInfo("--- $path ---"))
@@ -157,9 +158,10 @@ class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinCompone
     }
 
     private fun collectedUseCaseNames(): List<String> {
-        val fromOptions = useCaseOptions.flatMap { part ->
-            part.split(Regex("[,\\s]+")).map { it.trim() }.filter { it.isNotBlank() }
-        }
+        val fromOptions =
+            useCaseOptions.flatMap { part ->
+                part.split(Regex("[,\\s]+")).map { it.trim() }.filter { it.isNotBlank() }
+            }
         val fromTrailing = trailingUseCaseNames.map { it.trim() }.filter { it.isNotBlank() }
         return fromOptions + fromTrailing
     }
@@ -168,11 +170,10 @@ class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinCompone
         names: List<String>,
         allUseCases: List<UseCaseInfo>,
         moduleName: String,
-    ): List<UseCaseInfo> =
-        names.map { name ->
-            allUseCases.find { it.name == name || it.name == "${name}UseCase" }
-                ?: throw IllegalArgumentException("UseCase '$name' not found in module '$moduleName'")
-        }
+    ): List<UseCaseInfo> = names.map { name ->
+        allUseCases.find { it.name == name || it.name == "${name}UseCase" }
+            ?: throw IllegalArgumentException("UseCase '$name' not found in module '$moduleName'")
+    }
 
     private fun selectUseCasesInteractively(useCases: List<UseCaseInfo>): List<UseCaseInfo> {
         echo("Select UseCases (comma-separated indices, or 'a' for all):")
@@ -191,7 +192,8 @@ class ClientEditViewModelCommand : CliktCommand(name = "viewmodel"), KoinCompone
             input == "a" || input == "all" -> useCases
             else -> {
                 val indices =
-                    input.split(",", " ")
+                    input
+                        .split(",", " ")
                         .mapNotNull { it.trim().toIntOrNull() }
                         .filter { it in useCases.indices }
                 indices.map { useCases[it] }
@@ -204,9 +206,8 @@ class ClientEditCommand : CliktCommand(name = "edit") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): ClientEditCommand =
-            ClientEditCommand().subcommands(
-                ClientEditViewModelCommand(),
-            )
+        fun withSubcommands(): ClientEditCommand = ClientEditCommand().subcommands(
+            ClientEditViewModelCommand(),
+        )
     }
 }

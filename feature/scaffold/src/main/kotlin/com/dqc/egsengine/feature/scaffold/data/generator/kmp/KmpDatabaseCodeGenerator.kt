@@ -42,17 +42,18 @@ class KmpDatabaseCodeGenerator(
         val tableModels = KmpDatabaseTemplateModels.buildRows(tables)
 
         for (t in tableModels) {
-            val entityContent = templateEngine.render(
-                "kmp/database/Entity.kt.ftl",
-                mapOf(
-                    "entityPackageName" to entityPackageName,
-                    "entityClassName" to t.entityClassName,
-                    "table" to mapOf("tableName" to t.table.tableName),
-                    "columns" to t.entityColumns,
-                    "entityImports" to t.entityImports,
-                ),
-                projectRoot,
-            )
+            val entityContent =
+                templateEngine.render(
+                    "kmp/database/Entity.kt.ftl",
+                    mapOf(
+                        "entityPackageName" to entityPackageName,
+                        "entityClassName" to t.entityClassName,
+                        "table" to mapOf("tableName" to t.table.tableName),
+                        "columns" to t.entityColumns,
+                        "entityImports" to t.entityImports,
+                    ),
+                    projectRoot,
+                )
             files.add(
                 generatedCommonMain(
                     moduleDir,
@@ -62,21 +63,22 @@ class KmpDatabaseCodeGenerator(
                 ),
             )
 
-            val daoContent = templateEngine.render(
-                "kmp/database/Dao.kt.ftl",
-                mapOf(
-                    "daoPackageName" to daoPackageName,
-                    "entityPackageName" to entityPackageName,
-                    "entityClassName" to t.entityClassName,
-                    "daoClassName" to t.daoClassName,
-                    "table" to mapOf("tableName" to t.table.tableName),
-                    "orderByColumn" to t.orderByColumnName,
-                    "pkColumnName" to t.pkColumnName,
-                    "pkPropertyName" to t.pkPropertyName,
-                    "pkKotlinType" to t.pkKotlinType,
-                ),
-                projectRoot,
-            )
+            val daoContent =
+                templateEngine.render(
+                    "kmp/database/Dao.kt.ftl",
+                    mapOf(
+                        "daoPackageName" to daoPackageName,
+                        "entityPackageName" to entityPackageName,
+                        "entityClassName" to t.entityClassName,
+                        "daoClassName" to t.daoClassName,
+                        "table" to mapOf("tableName" to t.table.tableName),
+                        "orderByColumn" to t.orderByColumnName,
+                        "pkColumnName" to t.pkColumnName,
+                        "pkPropertyName" to t.pkPropertyName,
+                        "pkKotlinType" to t.pkKotlinType,
+                    ),
+                    projectRoot,
+                )
             files.add(
                 generatedCommonMain(
                     moduleDir,
@@ -87,23 +89,25 @@ class KmpDatabaseCodeGenerator(
             )
         }
 
-        val dbContent = templateEngine.render(
-            "kmp/database/Database.kt.ftl",
-            mapOf(
-                "databasePackageName" to databasePackageName,
-                "moduleDatabaseName" to moduleDatabaseName,
-                "tables" to tableModels.map { tm ->
-                    mapOf(
-                        "entityPackageName" to entityPackageName,
-                        "daoPackageName" to daoPackageName,
-                        "entityClassName" to tm.entityClassName,
-                        "daoClassName" to tm.daoClassName,
-                        "daoPropertyName" to tm.daoPropertyName,
-                    )
-                },
-            ),
-            projectRoot,
-        )
+        val dbContent =
+            templateEngine.render(
+                "kmp/database/Database.kt.ftl",
+                mapOf(
+                    "databasePackageName" to databasePackageName,
+                    "moduleDatabaseName" to moduleDatabaseName,
+                    "tables" to
+                        tableModels.map { tm ->
+                            mapOf(
+                                "entityPackageName" to entityPackageName,
+                                "daoPackageName" to daoPackageName,
+                                "entityClassName" to tm.entityClassName,
+                                "daoClassName" to tm.daoClassName,
+                                "daoPropertyName" to tm.daoPropertyName,
+                            )
+                        },
+                ),
+                projectRoot,
+            )
         files.add(
             generatedCommonMain(
                 moduleDir,
@@ -113,26 +117,28 @@ class KmpDatabaseCodeGenerator(
             ),
         )
 
-        val dsContent = templateEngine.render(
+        val dsContent =
+            templateEngine.render(
                 "kmp/database/DatabaseDataSource.kt.ftl",
-            mapOf(
-                "databasePackageName" to databasePackageName,
-                "moduleDatabaseName" to moduleDatabaseName,
-                "tables" to tableModels.map { tm ->
-                    mapOf(
-                        "entityPackageName" to entityPackageName,
-                        "entityClassName" to tm.entityClassName,
-                        "daoPackageName" to daoPackageName,
-                        "daoClassName" to tm.daoClassName,
-                        "daoPropertyName" to tm.daoPropertyName,
-                        "prefixPascal" to tm.prefixPascal,
-                        "pkPropertyName" to tm.pkPropertyName,
-                        "pkKotlinType" to tm.pkKotlinType,
-                    )
-                },
-            ),
-            projectRoot,
-        )
+                mapOf(
+                    "databasePackageName" to databasePackageName,
+                    "moduleDatabaseName" to moduleDatabaseName,
+                    "tables" to
+                        tableModels.map { tm ->
+                            mapOf(
+                                "entityPackageName" to entityPackageName,
+                                "entityClassName" to tm.entityClassName,
+                                "daoPackageName" to daoPackageName,
+                                "daoClassName" to tm.daoClassName,
+                                "daoPropertyName" to tm.daoPropertyName,
+                                "prefixPascal" to tm.prefixPascal,
+                                "pkPropertyName" to tm.pkPropertyName,
+                                "pkKotlinType" to tm.pkKotlinType,
+                            )
+                        },
+                ),
+                projectRoot,
+            )
         files.add(
             generatedCommonMain(
                 moduleDir,

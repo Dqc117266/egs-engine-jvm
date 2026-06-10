@@ -15,7 +15,6 @@ import java.io.File
  * [XRepositoryImpl] with Kotlin `by` delegation (Android `main`), same structure as KMP generator.
  */
 class AndroidDbOnlyRepositoryImplGenerator {
-
     private val logger = LoggerFactory.getLogger(AndroidDbOnlyRepositoryImplGenerator::class.java)
 
     fun generateOrMerge(
@@ -83,20 +82,20 @@ class AndroidDbOnlyRepositoryImplGenerator {
         val ctorBlock = ctorParams.joinToString(",\n    ")
         val delegateBlock = delegates.joinToString(",\n    ")
         return """
-        /*
-         * Hand-written repository: delegates to generated API/DB/Prefs support classes.
-         * egs-codegen: scaffold-repository-impl-delegation
-         * Add ${AndroidRepositoryCodegen.FREEZE_MARKER} on its own line to prevent overwrites.
-         */
-        package $pkg.data.repository
+            /*
+             * Hand-written repository: delegates to generated API/DB/Prefs support classes.
+             * egs-codegen: scaffold-repository-impl-delegation
+             * Add ${AndroidRepositoryCodegen.FREEZE_MARKER} on its own line to prevent overwrites.
+             */
+            package $pkg.data.repository
 
-        $importsBlock
+            $importsBlock
 
-        internal class ${pascal}RepositoryImpl(
-            $ctorBlock,
-        ) : ${ctx.combinedRepositoryName},
-            $delegateBlock {
-        }
+            internal class ${pascal}RepositoryImpl(
+                $ctorBlock,
+            ) : ${ctx.combinedRepositoryName},
+                $delegateBlock {
+            }
         """.trimIndent() + "\n"
     }
 

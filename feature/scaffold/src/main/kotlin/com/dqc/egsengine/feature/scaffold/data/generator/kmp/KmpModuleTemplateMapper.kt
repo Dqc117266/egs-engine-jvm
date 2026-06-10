@@ -15,7 +15,7 @@ internal fun SubProjectConfig.toKmpModuleTemplateModel(moduleName: String): KmpM
     val pascal = moduleName.toPascalCase()
     val camel = pascal.replaceFirstChar { it.lowercase() }
     val normalized = moduleName.replace("-", "").replace("_", "")
-    val packageName = "${basePackage}.feature.$normalized"
+    val packageName = "$basePackage.feature.$normalized"
     val pkgPath = packageName.replace('.', '/')
     val presentationPkg = "$packageName.presentation.$camel"
     val coreBase = "$basePackage.core.base"
@@ -35,15 +35,13 @@ internal fun SubProjectConfig.toKmpModuleTemplateModel(moduleName: String): KmpM
     )
 }
 
-private fun SubProjectConfig.conventionPluginAliasFromConfig(): String =
-    when (conventionPluginId) {
-        null, "org.convention.cmp.feature" -> "cmp.feature.convention"
-        "org.convention.cmp.feature.ui" -> "cmp.feature.ui.convention"
-        "org.convention.cmp.feature.no.js" -> "cmp.feature.no.js.convention"
-        else -> "cmp.feature.convention"
-    }
+private fun SubProjectConfig.conventionPluginAliasFromConfig(): String = when (conventionPluginId) {
+    null, "org.convention.cmp.feature" -> "cmp.feature.convention"
+    "org.convention.cmp.feature.ui" -> "cmp.feature.ui.convention"
+    "org.convention.cmp.feature.no.js" -> "cmp.feature.no.js.convention"
+    else -> "cmp.feature.convention"
+}
 
-private fun String.toPascalCase(): String =
-    split("-", "_").joinToString("") { part ->
-        part.replaceFirstChar { it.uppercase() }
-    }
+private fun String.toPascalCase(): String = split("-", "_").joinToString("") { part ->
+    part.replaceFirstChar { it.uppercase() }
+}

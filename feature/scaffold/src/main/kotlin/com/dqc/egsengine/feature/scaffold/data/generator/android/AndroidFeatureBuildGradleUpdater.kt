@@ -14,10 +14,12 @@ import java.io.File
  * (matches [com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater]).
  */
 class AndroidFeatureBuildGradleUpdater {
-
     private val logger = LoggerFactory.getLogger(AndroidFeatureBuildGradleUpdater::class.java)
 
-    fun applyAfterDatabaseGen(subProjectRoot: File, moduleName: String) {
+    fun applyAfterDatabaseGen(
+        subProjectRoot: File,
+        moduleName: String,
+    ) {
         val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
         var text = file.readText()
         val original = text
@@ -34,7 +36,10 @@ class AndroidFeatureBuildGradleUpdater {
         }
     }
 
-    fun applyAfterPrefsGen(subProjectRoot: File, moduleName: String) {
+    fun applyAfterPrefsGen(
+        subProjectRoot: File,
+        moduleName: String,
+    ) {
         val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
         var text = file.readText()
         val original = text
@@ -51,7 +56,10 @@ class AndroidFeatureBuildGradleUpdater {
         }
     }
 
-    private fun moduleBuildFile(subProjectRoot: File, moduleName: String): File? {
+    private fun moduleBuildFile(
+        subProjectRoot: File,
+        moduleName: String,
+    ): File? {
         val f = subProjectRoot.resolve("feature/$moduleName/build.gradle.kts")
         if (!f.isFile) {
             logger.debug("No feature build file at {}", f.path)
@@ -60,7 +68,11 @@ class AndroidFeatureBuildGradleUpdater {
         return f
     }
 
-    private fun insertIntoDependenciesBlock(text: String, gradleProjectRef: String, depLine: String): String? {
+    private fun insertIntoDependenciesBlock(
+        text: String,
+        gradleProjectRef: String,
+        depLine: String,
+    ): String? {
         if (text.contains(gradleProjectRef)) return text
         val marker = "dependencies {"
         val idx = text.indexOf(marker)
@@ -86,8 +98,10 @@ class AndroidFeatureBuildGradleUpdater {
         return null
     }
 
-    private fun appendDependenciesBlock(text: String, depLine: String): String =
-        text.trimEnd() + """
+    private fun appendDependenciesBlock(
+        text: String,
+        depLine: String,
+    ): String = text.trimEnd() + """
 
 dependencies {
     $depLine

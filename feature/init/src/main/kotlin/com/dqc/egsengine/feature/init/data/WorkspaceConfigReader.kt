@@ -32,30 +32,30 @@ class WorkspaceConfigReader {
         )
     }
 
-    fun hasWorkspaceConfig(projectRoot: File): Boolean =
-        projectRoot.resolve(".egs/workspace.json").exists()
+    fun hasWorkspaceConfig(projectRoot: File): Boolean = projectRoot.resolve(".egs/workspace.json").exists()
 
-    fun hasLegacyConfig(projectRoot: File): Boolean =
-        projectRoot.resolve(".egs/config.json").exists()
+    fun hasLegacyConfig(projectRoot: File): Boolean = projectRoot.resolve(".egs/config.json").exists()
 
     private fun wrapLegacy(legacy: EgsConfig): WorkspaceConfig {
-        val platform = when (legacy.projectType.uppercase()) {
-            "ANDROID" -> Platform.ANDROID
-            "KMP" -> Platform.KMP
-            "KMP_ANDROID" -> Platform.KMP_ANDROID
-            "KOTLIN_JVM" -> Platform.KOTLIN_JVM
-            else -> Platform.KOTLIN_JVM
-        }
+        val platform =
+            when (legacy.projectType.uppercase()) {
+                "ANDROID" -> Platform.ANDROID
+                "KMP" -> Platform.KMP
+                "KMP_ANDROID" -> Platform.KMP_ANDROID
+                "KOTLIN_JVM" -> Platform.KOTLIN_JVM
+                else -> Platform.KOTLIN_JVM
+            }
 
-        val subProject = SubProjectConfig(
-            platform = platform,
-            path = ".",
-            basePackage = legacy.basePackage ?: "com.example",
-            conventionPluginId = legacy.conventionPluginId,
-            moduleStructure = legacy.moduleStructure,
-            baseClasses = legacy.baseClasses,
-            scaffoldOverrides = legacy.scaffoldOverrides,
-        )
+        val subProject =
+            SubProjectConfig(
+                platform = platform,
+                path = ".",
+                basePackage = legacy.basePackage ?: "com.example",
+                conventionPluginId = legacy.conventionPluginId,
+                moduleStructure = legacy.moduleStructure,
+                baseClasses = legacy.baseClasses,
+                scaffoldOverrides = legacy.scaffoldOverrides,
+            )
 
         return WorkspaceConfig(
             name = legacy.projectName,

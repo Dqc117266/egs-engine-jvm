@@ -2,10 +2,10 @@ package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
+import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ClientDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ClientPrefsScaffolder
-import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
@@ -23,14 +23,13 @@ class ClientCommand : CliktCommand(name = "client") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): ClientCommand =
-            ClientCommand().subcommands(
-                ClientModuleCommand.withSubcommands(),
-                ClientListCommand.withSubcommands(),
-                ClientApiCommand.withSubcommands(),
-                ClientGenCommand.withSubcommands(),
-                ClientEditCommand.withSubcommands(),
-            )
+        fun withSubcommands(): ClientCommand = ClientCommand().subcommands(
+            ClientModuleCommand.withSubcommands(),
+            ClientListCommand.withSubcommands(),
+            ClientApiCommand.withSubcommands(),
+            ClientGenCommand.withSubcommands(),
+            ClientEditCommand.withSubcommands(),
+        )
     }
 }
 
@@ -40,15 +39,15 @@ class ClientModuleCommand : CliktCommand(name = "module") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): ClientModuleCommand =
-            ClientModuleCommand().subcommands(
-                ClientModuleCreateCommand(),
-            )
+        fun withSubcommands(): ClientModuleCommand = ClientModuleCommand().subcommands(
+            ClientModuleCreateCommand(),
+        )
     }
 }
 
-class ClientModuleCreateCommand : CliktCommand(name = "create"), KoinComponent {
-
+class ClientModuleCreateCommand :
+    CliktCommand(name = "create"),
+    KoinComponent {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -62,12 +61,13 @@ class ClientModuleCreateCommand : CliktCommand(name = "create"), KoinComponent {
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
 
-            val result = scaffolder.scaffoldForProject(
-                projectRoot = dir,
-                moduleName = name,
-                projectKey = "client",
-                dryRun = dryRun,
-            )
+            val result =
+                scaffolder.scaffoldForProject(
+                    projectRoot = dir,
+                    moduleName = name,
+                    projectKey = "client",
+                    dryRun = dryRun,
+                )
 
             val clientRoot = ProjectRootResolver.resolveGradleClientRoot(dir)
             val moduleRoot = clientRoot.resolve("feature/$name")
@@ -101,10 +101,9 @@ class ClientListCommand : CliktCommand(name = "list") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): ClientListCommand =
-            ClientListCommand().subcommands(
-                ClientListUsecasesCommand(),
-            )
+        fun withSubcommands(): ClientListCommand = ClientListCommand().subcommands(
+            ClientListUsecasesCommand(),
+        )
     }
 }
 
@@ -114,8 +113,9 @@ class ClientListCommand : CliktCommand(name = "list") {
  * Lists use case **class names** only (e.g. `DeleteUserSessionUseCase`), one per line.
  * Without `-m`, groups under `feature/<module>` headers. With `-m`, only that module is listed.
  */
-class ClientListUsecasesCommand : CliktCommand(name = "usecases"), KoinComponent {
-
+class ClientListUsecasesCommand :
+    CliktCommand(name = "usecases"),
+    KoinComponent {
     private val scanner: UseCaseScanner by inject()
 
     private val module by option(
@@ -185,20 +185,20 @@ class ClientGenCommand : CliktCommand(name = "gen") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): ClientGenCommand =
-            ClientGenCommand().subcommands(
-                ClientGenDatabaseCommand(),
-                ClientGenPrefsCommand(),
-                ClientGenStringsCommand(),
-            )
+        fun withSubcommands(): ClientGenCommand = ClientGenCommand().subcommands(
+            ClientGenDatabaseCommand(),
+            ClientGenPrefsCommand(),
+            ClientGenStringsCommand(),
+        )
     }
 }
 
 /**
  * `egs client gen database <sql-file> --module=X`
  */
-class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent {
-
+class ClientGenDatabaseCommand :
+    CliktCommand(name = "database"),
+    KoinComponent {
     private val scaffolder: ClientDatabaseScaffolder by inject()
 
     private val sqlFile by argument(help = "Path to SQL DDL file (CREATE TABLE)")
@@ -231,14 +231,15 @@ class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent 
             val resolvedSql = if (sqlPath.isAbsolute) sqlPath else File(System.getProperty("user.dir")).resolve(sqlPath).normalize()
 
             val effectiveRepo = repo || cached
-            val result = scaffolder.scaffoldDatabase(
-                projectRoot = dir,
-                sqlFile = resolvedSql,
-                moduleName = moduleName,
-                dryRun = dryRun,
-                repo = effectiveRepo,
-                cached = cached,
-            )
+            val result =
+                scaffolder.scaffoldDatabase(
+                    projectRoot = dir,
+                    sqlFile = resolvedSql,
+                    moduleName = moduleName,
+                    dryRun = dryRun,
+                    repo = effectiveRepo,
+                    cached = cached,
+                )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - database codegen preview:"))
@@ -261,8 +262,9 @@ class ClientGenDatabaseCommand : CliktCommand(name = "database"), KoinComponent 
 /**
  * `egs client gen prefs --module=X --fields=... [--key=Y]`
  */
-class ClientGenPrefsCommand : CliktCommand(name = "prefs"), KoinComponent {
-
+class ClientGenPrefsCommand :
+    CliktCommand(name = "prefs"),
+    KoinComponent {
     private val scaffolder: ClientPrefsScaffolder by inject()
 
     private val moduleName by option(
@@ -296,14 +298,15 @@ class ClientGenPrefsCommand : CliktCommand(name = "prefs"), KoinComponent {
     override fun run() {
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
-            val result = scaffolder.scaffoldPrefs(
-                projectRoot = dir,
-                moduleName = moduleName,
-                fieldsArg = fields,
-                keyArg = key,
-                dryRun = dryRun,
-                force = force,
-            )
+            val result =
+                scaffolder.scaffoldPrefs(
+                    projectRoot = dir,
+                    moduleName = moduleName,
+                    fieldsArg = fields,
+                    keyArg = key,
+                    dryRun = dryRun,
+                    force = force,
+                )
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - preferences codegen preview:"))
                 echo("  Module: ${result.moduleName}")
@@ -330,10 +333,9 @@ class ClientApiCommand : CliktCommand(name = "api") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): ClientApiCommand =
-            ClientApiCommand().subcommands(
-                ClientApiSyncCommand(),
-            )
+        fun withSubcommands(): ClientApiCommand = ClientApiCommand().subcommands(
+            ClientApiSyncCommand(),
+        )
     }
 }
 
@@ -341,8 +343,9 @@ class ClientApiCommand : CliktCommand(name = "api") {
  * `egs client api sync <module>` or
  * `egs client api sync --client-module=X --backend-module=Y`
  */
-class ClientApiSyncCommand : CliktCommand(name = "sync"), KoinComponent {
-
+class ClientApiSyncCommand :
+    CliktCommand(name = "sync"),
+    KoinComponent {
     private val apiSyncScaffolder: ApiSyncScaffolder by inject()
 
     private val moduleArg by argument(help = "Module name (shortcut for same-name sync)").optional()
@@ -365,7 +368,8 @@ class ClientApiSyncCommand : CliktCommand(name = "sync"), KoinComponent {
     )
 
     private val swaggerUrl by option(
-        "--swagger", "-s",
+        "--swagger",
+        "-s",
         help = "Override Swagger JSON URL",
     )
 
@@ -379,22 +383,25 @@ class ClientApiSyncCommand : CliktCommand(name = "sync"), KoinComponent {
             val dir = ProjectRootResolver.resolve(projectPath)
 
             // Priority: explicit --client-module / --backend-module > --module > positional argument
-            val clientModule = clientModuleOption ?: moduleOption ?: moduleArg
-                ?: throw IllegalArgumentException(
-                    "Module name required. Usage: egs client api sync <module> or --module=X or --client-module=X [--backend-module=Y]",
-                )
-            val backendModule = backendModuleOption ?: moduleOption ?: moduleArg
-                ?: throw IllegalArgumentException(
-                    "Backend module name required. Use --backend-module=Y, --module=X, or positional <module>",
-                )
+            val clientModule =
+                clientModuleOption ?: moduleOption ?: moduleArg
+                    ?: throw IllegalArgumentException(
+                        "Module name required. Usage: egs client api sync <module> or --module=X or --client-module=X [--backend-module=Y]",
+                    )
+            val backendModule =
+                backendModuleOption ?: moduleOption ?: moduleArg
+                    ?: throw IllegalArgumentException(
+                        "Backend module name required. Use --backend-module=Y, --module=X, or positional <module>",
+                    )
 
-            val result = apiSyncScaffolder.syncClientApi(
-                projectRoot = dir,
-                clientModuleName = clientModule,
-                backendModuleName = backendModule,
-                swaggerUrl = swaggerUrl,
-                dryRun = dryRun,
-            )
+            val result =
+                apiSyncScaffolder.syncClientApi(
+                    projectRoot = dir,
+                    clientModuleName = clientModule,
+                    backendModuleName = backendModule,
+                    swaggerUrl = swaggerUrl,
+                    dryRun = dryRun,
+                )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - API sync preview:"))

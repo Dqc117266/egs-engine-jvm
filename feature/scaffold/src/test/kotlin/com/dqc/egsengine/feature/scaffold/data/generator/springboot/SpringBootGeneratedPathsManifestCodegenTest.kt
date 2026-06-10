@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Files
 
 class SpringBootGeneratedPathsManifestCodegenTest {
-
     @Test
     fun writeThenRead_roundTripsCodegen() {
         val root = Files.createTempDirectory("egs-manifest-codegen").toFile()

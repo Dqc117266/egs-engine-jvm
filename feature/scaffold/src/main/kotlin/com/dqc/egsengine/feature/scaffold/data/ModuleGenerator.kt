@@ -14,14 +14,22 @@ class ModuleGenerator(
 ) {
     private val logger = LoggerFactory.getLogger(ModuleGenerator::class.java)
 
-    data class GeneratedFile(val path: String, val content: String?)
+    data class GeneratedFile(
+        val path: String,
+        val content: String?,
+    )
 
-    fun preview(projectRoot: File, template: ModuleTemplate): List<GeneratedFile> =
-        androidModuleGenerator.previewFromTemplate(template, projectRoot).map {
-            GeneratedFile(it.path, it.content)
-        }
+    fun preview(
+        projectRoot: File,
+        template: ModuleTemplate,
+    ): List<GeneratedFile> = androidModuleGenerator.previewFromTemplate(template, projectRoot).map {
+        GeneratedFile(it.path, it.content)
+    }
 
-    fun generate(projectRoot: File, template: ModuleTemplate): List<File> {
+    fun generate(
+        projectRoot: File,
+        template: ModuleTemplate,
+    ): List<File> {
         val created = mutableListOf<File>()
 
         for (entry in preview(projectRoot, template)) {

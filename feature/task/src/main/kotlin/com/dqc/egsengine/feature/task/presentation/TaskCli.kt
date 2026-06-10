@@ -19,7 +19,9 @@ class TaskCommand : CliktCommand(name = "task") {
     override fun run() = Unit
 }
 
-private class TaskList : CliktCommand(name = "list"), KoinComponent {
+private class TaskList :
+    CliktCommand(name = "list"),
+    KoinComponent {
 
     private val taskScheduler: TaskScheduler by inject()
 
@@ -38,7 +40,9 @@ private class TaskList : CliktCommand(name = "list"), KoinComponent {
     }
 }
 
-private class TaskAdd : CliktCommand(name = "add"), KoinComponent {
+private class TaskAdd :
+    CliktCommand(name = "add"),
+    KoinComponent {
 
     private val taskScheduler: TaskScheduler by inject()
     private val taskName by argument()
@@ -56,7 +60,9 @@ private class TaskAdd : CliktCommand(name = "add"), KoinComponent {
     }
 }
 
-private class TaskCancel : CliktCommand(name = "cancel"), KoinComponent {
+private class TaskCancel :
+    CliktCommand(name = "cancel"),
+    KoinComponent {
 
     private val taskScheduler: TaskScheduler by inject()
     private val taskId by argument()

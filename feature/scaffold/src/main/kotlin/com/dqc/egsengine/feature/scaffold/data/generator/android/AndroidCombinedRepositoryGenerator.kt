@@ -16,7 +16,6 @@ import java.io.File
  * Combined `XRepository : XApiRepository, XDbRepository, ...` under `src/main/kotlin` (Android client).
  */
 class AndroidCombinedRepositoryGenerator {
-
     fun generate(
         template: ModuleTemplate,
         subProjectRoot: File?,
@@ -31,28 +30,36 @@ class AndroidCombinedRepositoryGenerator {
         val moduleDir = "feature/${template.name}"
         val pkgPath = domainPkg.replace('.', '/')
 
-        val hasApi = includeApi || (
-            subProjectRoot != null && apiRepositoryFile(subProjectRoot, template, pascal).exists()
-            )
-        val hasDb = includeDb || (
-            subProjectRoot != null && dbRepositoryFile(subProjectRoot, template, pascal).exists()
-            )
-        val hasPrefs = includePrefs || (
-            subProjectRoot != null && prefsRepositoryFile(subProjectRoot, template, pascal).exists()
-            )
+        val hasApi =
+            includeApi ||
+                (
+                    subProjectRoot != null && apiRepositoryFile(subProjectRoot, template, pascal).exists()
+                    )
+        val hasDb =
+            includeDb ||
+                (
+                    subProjectRoot != null && dbRepositoryFile(subProjectRoot, template, pascal).exists()
+                    )
+        val hasPrefs =
+            includePrefs ||
+                (
+                    subProjectRoot != null && prefsRepositoryFile(subProjectRoot, template, pascal).exists()
+                    )
         if (!hasApi && !hasDb && !hasPrefs) return null
 
-        val extends = buildList {
-            if (hasApi) add(ctx.apiRepositoryName)
-            if (hasDb) add(dbRepositoryName(pascal))
-            if (hasPrefs) add(prefsRepositoryName(pascal))
-        }
-        val content = buildString {
-            appendLine("package $domainPkg")
-            appendLine()
-            appendLine("internal interface ${ctx.combinedRepositoryName} : ${extends.joinToString(", ")}")
-            appendLine()
-        }
+        val extends =
+            buildList {
+                if (hasApi) add(ctx.apiRepositoryName)
+                if (hasDb) add(dbRepositoryName(pascal))
+                if (hasPrefs) add(prefsRepositoryName(pascal))
+            }
+        val content =
+            buildString {
+                appendLine("package $domainPkg")
+                appendLine()
+                appendLine("internal interface ${ctx.combinedRepositoryName} : ${extends.joinToString(", ")}")
+                appendLine()
+            }
         return GeneratedFile(
             "$moduleDir/src/main/kotlin/$pkgPath/${ctx.combinedRepositoryName}.kt",
             content,
@@ -63,21 +70,33 @@ class AndroidCombinedRepositoryGenerator {
 
     private fun prefsRepositoryName(pascal: String): String = "${pascal}PrefsRepository"
 
-    fun prefsRepositoryFile(root: File, template: ModuleTemplate, pascal: String): File {
+    fun prefsRepositoryFile(
+        root: File,
+        template: ModuleTemplate,
+        pascal: String,
+    ): File {
         val pkgPath = template.packageName.replace('.', '/')
         return root.resolve(
             "feature/${template.name}/src/main/kotlin/$pkgPath/generate/domain/repository/${pascal}PrefsRepository.kt",
         )
     }
 
-    private fun apiRepositoryFile(root: File, template: ModuleTemplate, pascal: String): File {
+    private fun apiRepositoryFile(
+        root: File,
+        template: ModuleTemplate,
+        pascal: String,
+    ): File {
         val pkgPath = template.packageName.replace('.', '/')
         return root.resolve(
             "feature/${template.name}/src/main/kotlin/$pkgPath/generate/domain/repository/${pascal}ApiRepository.kt",
         )
     }
 
-    private fun dbRepositoryFile(root: File, template: ModuleTemplate, pascal: String): File {
+    private fun dbRepositoryFile(
+        root: File,
+        template: ModuleTemplate,
+        pascal: String,
+    ): File {
         val pkgPath = template.packageName.replace('.', '/')
         return root.resolve(
             "feature/${template.name}/src/main/kotlin/$pkgPath/generate/domain/repository/${pascal}DbRepository.kt",
@@ -98,7 +117,11 @@ class AndroidCombinedRepositoryGenerator {
         return KmpRepositorySlices(hasApi = api, hasDb = db, hasPrefs = prefs)
     }
 
-    private fun androidSwaggerRepositoryFile(root: File, template: ModuleTemplate, pascal: String): File {
+    private fun androidSwaggerRepositoryFile(
+        root: File,
+        template: ModuleTemplate,
+        pascal: String,
+    ): File {
         val pkgPath = template.packageName.replace('.', '/')
         return root.resolve(
             "feature/${template.name}/src/main/kotlin/$pkgPath/generate/domain/repository/${pascal}Repository.kt",

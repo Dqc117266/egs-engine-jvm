@@ -5,6 +5,8 @@
  */
 package com.dqc.egsengine.feature.scaffold.domain
 
+import com.dqc.egsengine.feature.init.domain.model.EgsConfig
+import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.FeatureDiUpdater
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.data.generator.android.template.buildAndroidMergeSnippetForUseCase
@@ -13,17 +15,15 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.template.toPage
 import com.dqc.egsengine.feature.scaffold.data.generator.common.ContractPagingMergePatcher
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PagePagingDetector
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.PageFileLocator
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.ViewModelMemberMerger
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.buildMergeSnippetForUseCase
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.toKmpPageTemplateMap
-import com.dqc.egsengine.feature.scaffold.data.generator.kmp.ViewModelMemberMerger
 import com.dqc.egsengine.feature.scaffold.data.kotlin.KotlinMemberInspector
+import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
 import com.dqc.egsengine.feature.scaffold.domain.model.GeneratedFileInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
-import com.dqc.egsengine.feature.init.domain.model.EgsConfig
-import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
-import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
 import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -117,21 +117,22 @@ class ViewModelEditScaffolder(
         val actuallyToAdd = enriched.filter { it.name !in existingUcNames }
 
         if (actuallyToAdd.isEmpty()) {
-            logger.info("Nothing to add — all selected use cases already in ctor")
+            logger.info("Nothing to add Â— all selected use cases already in ctor")
             return emptyResult(pageName, moduleName, dryRun)
         }
 
         val mergedUseCases = (existingUseCases + actuallyToAdd).distinctBy { it.name }
 
-        val template = PageTemplate(
-            pageName = pascal,
-            moduleName = moduleName,
-            modulePackage = modulePackage,
-            useCases = mergedUseCases,
-            basePackage = basePackage,
-            baseClassPackages = pageBaseClasses,
-            pagingOption = pagingOption,
-        )
+        val template =
+            PageTemplate(
+                pageName = pascal,
+                moduleName = moduleName,
+                modulePackage = modulePackage,
+                useCases = mergedUseCases,
+                basePackage = basePackage,
+                baseClassPackages = pageBaseClasses,
+                pagingOption = pagingOption,
+            )
 
         val existingImports = parseImportLineSet(contractText)
 
@@ -194,11 +195,11 @@ class ViewModelEditScaffolder(
             contractMerge =
                 contractMerge.copy(
                     text =
-                        ContractPagingMergePatcher.patchIfNeeded(
-                            contractMerge.text,
-                            pascal,
-                            pageModelForPaging.pagedStateItemContractRef,
-                        ),
+                    ContractPagingMergePatcher.patchIfNeeded(
+                        contractMerge.text,
+                        pascal,
+                        pageModelForPaging.pagedStateItemContractRef,
+                    ),
                 )
         }
 
@@ -270,30 +271,33 @@ class ViewModelEditScaffolder(
 
         return ViewModelEditResult(
             pageScaffoldResult =
-                PageScaffoldResult(
-                    pageName = pascal,
-                    moduleName = moduleName,
-                    files = filesOut,
-                    dryRun = dryRun,
-                ),
+            PageScaffoldResult(
+                pageName = pascal,
+                moduleName = moduleName,
+                files = filesOut,
+                dryRun = dryRun,
+            ),
             stats = stats,
             diffs = diffs,
         )
     }
 
-    private fun emptyResult(pageName: String, moduleName: String, dryRun: Boolean) =
-        ViewModelEditResult(
-            pageScaffoldResult =
-                PageScaffoldResult(
-                    pageName = pageName.replaceFirstChar { it.uppercase() },
-                    moduleName = moduleName,
-                    files = emptyList(),
-                    dryRun = dryRun,
-                ),
-            stats =
-                EditStats(0, 0, 0, 0, 0, 0, 0),
-            diffs = emptyMap(),
-        )
+    private fun emptyResult(
+        pageName: String,
+        moduleName: String,
+        dryRun: Boolean,
+    ) = ViewModelEditResult(
+        pageScaffoldResult =
+        PageScaffoldResult(
+            pageName = pageName.replaceFirstChar { it.uppercase() },
+            moduleName = moduleName,
+            files = emptyList(),
+            dryRun = dryRun,
+        ),
+        stats =
+        EditStats(0, 0, 0, 0, 0, 0, 0),
+        diffs = emptyMap(),
+    )
 
     private fun validatePagingIfNeeded(
         templateMap: Map<String, Any?>,
@@ -311,22 +315,30 @@ class ViewModelEditScaffolder(
         }
     }
 
-    private fun moduleDir(root: File, moduleName: String) = root.resolve("feature/$moduleName")
+    private fun moduleDir(
+        root: File,
+        moduleName: String,
+    ) = root.resolve("feature/$moduleName")
 
-    private fun kotlinSourceRootRelative(moduleDir: File): String =
-        when {
-            moduleDir.resolve("src/commonMain/kotlin").isDirectory -> "src/commonMain/kotlin"
-            else -> "src/main/kotlin"
-        }
+    private fun kotlinSourceRootRelative(moduleDir: File): String = when {
+        moduleDir.resolve("src/commonMain/kotlin").isDirectory -> "src/commonMain/kotlin"
+        else -> "src/main/kotlin"
+    }
 
-    private fun useKmpPageTemplates(config: EgsConfig, moduleDir: File): Boolean {
+    private fun useKmpPageTemplates(
+        config: EgsConfig,
+        moduleDir: File,
+    ): Boolean {
         val t = config.projectType.uppercase()
         if (t in setOf("KMP", "KMP_ANDROID")) return true
         return moduleDir.resolve("src/commonMain/kotlin").isDirectory
     }
 
-    private fun parseImportLineSet(source: String): Set<String> =
-        source.lineSequence().map { it.trim() }.filter { it.startsWith("import ") }.toSet()
+    private fun parseImportLineSet(source: String): Set<String> = source
+        .lineSequence()
+        .map { it.trim() }
+        .filter { it.startsWith("import ") }
+        .toSet()
 
     private fun locateContractAndViewModel(
         clientRoot: File,
@@ -381,7 +393,11 @@ class ViewModelEditScaffolder(
 }
 
 internal object TextDiffUtil {
-    fun unifiedDiff(old: String, new: String, label: String): String {
+    fun unifiedDiff(
+        old: String,
+        new: String,
+        label: String,
+    ): String {
         val a = old.lines()
         val b = new.lines()
         val sb = StringBuilder()

@@ -27,8 +27,9 @@ class FeatureDiUpdater {
          */
         useScreenPresentationLayout: Boolean = false,
     ): Boolean {
-        val presentationModuleFile = findPresentationModuleFile(projectRoot, moduleName, modulePackage)
-            ?: createPresentationModuleFile(projectRoot, moduleName, modulePackage, kotlinRootRel)
+        val presentationModuleFile =
+            findPresentationModuleFile(projectRoot, moduleName, modulePackage)
+                ?: createPresentationModuleFile(projectRoot, moduleName, modulePackage, kotlinRootRel)
 
         return updateModuleFile(
             presentationModuleFile,
@@ -52,11 +53,12 @@ class FeatureDiUpdater {
         val roots = if (kotlinRoots.isNotEmpty()) kotlinRoots else listOf(moduleDir.resolve("src/main/kotlin"))
 
         for (kotlinRoot in roots) {
-            val possiblePaths = listOf(
-                kotlinRoot.resolve(modulePackage.replace(".", "/") + "/presentation/PresentationModule.kt"),
-                kotlinRoot.resolve(modulePackage.replace(".", "/") + "/di/PresentationModule.kt"),
-                kotlinRoot.resolve("com/dqc/egsengine/feature/$moduleName/presentation/PresentationModule.kt"),
-            )
+            val possiblePaths =
+                listOf(
+                    kotlinRoot.resolve(modulePackage.replace(".", "/") + "/presentation/PresentationModule.kt"),
+                    kotlinRoot.resolve(modulePackage.replace(".", "/") + "/di/PresentationModule.kt"),
+                    kotlinRoot.resolve("com/dqc/egsengine/feature/$moduleName/presentation/PresentationModule.kt"),
+                )
             val found = possiblePaths.firstOrNull { it.exists() }
             if (found != null) return found
         }
@@ -79,16 +81,17 @@ class FeatureDiUpdater {
 
         file.parentFile.mkdirs()
 
-        val content = buildString {
-            appendLine("package $modulePackage.presentation")
-            appendLine()
-            appendLine("import org.koin.core.module.Module")
-            appendLine("import org.koin.dsl.module")
-            appendLine()
-            appendLine("internal val presentationModule: Module = module {")
-            appendLine("    // ViewModels will be registered here")
-            appendLine("}")
-        }
+        val content =
+            buildString {
+                appendLine("package $modulePackage.presentation")
+                appendLine()
+                appendLine("import org.koin.core.module.Module")
+                appendLine("import org.koin.dsl.module")
+                appendLine()
+                appendLine("internal val presentationModule: Module = module {")
+                appendLine("    // ViewModels will be registered here")
+                appendLine("}")
+            }
 
         file.writeText(content)
         logger.info("Created PresentationModule: ${file.path}")
@@ -116,24 +119,27 @@ class FeatureDiUpdater {
         }
 
         // 添加 import
-        val viewModelImport = if (useScreenPresentationLayout) {
-            "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
-        } else {
-            "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
-        }
+        val viewModelImport =
+            if (useScreenPresentationLayout) {
+                "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
+            } else {
+                "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
+            }
         val viewModelOfImport = "import org.koin.core.module.dsl.viewModelOf"
         var updatedContent = content
         if (!updatedContent.contains(viewModelImport)) {
-            updatedContent = updatedContent.replace(
-                "import org.koin.dsl.module",
-                "import org.koin.dsl.module\n$viewModelImport"
-            )
+            updatedContent =
+                updatedContent.replace(
+                    "import org.koin.dsl.module",
+                    "import org.koin.dsl.module\n$viewModelImport",
+                )
         }
         if (!updatedContent.contains("viewModelOf")) {
-            updatedContent = updatedContent.replace(
-                "import org.koin.dsl.module",
-                "import org.koin.dsl.module\n$viewModelOfImport"
-            )
+            updatedContent =
+                updatedContent.replace(
+                    "import org.koin.dsl.module",
+                    "import org.koin.dsl.module\n$viewModelOfImport",
+                )
         }
 
         // 始终使用 viewModelOf（ViewModel 空参或由 Koin 自动注入）
@@ -141,19 +147,20 @@ class FeatureDiUpdater {
 
         // 查找 module 代码块并插入
         val moduleRegex = Regex("""(module\s*\{[^}]*)(\s*\})""")
-        val finalContent = if (moduleRegex.containsMatchIn(updatedContent)) {
-            updatedContent.replace(moduleRegex) { match ->
-                val body = match.groupValues[1]
-                val closing = match.groupValues[2]
-                if (body.contains("// ViewModels will be registered here")) {
-                    body.replace("// ViewModels will be registered here", viewModelBinding) + closing
-                } else {
-                    body + "\n$viewModelBinding" + closing
+        val finalContent =
+            if (moduleRegex.containsMatchIn(updatedContent)) {
+                updatedContent.replace(moduleRegex) { match ->
+                    val body = match.groupValues[1]
+                    val closing = match.groupValues[2]
+                    if (body.contains("// ViewModels will be registered here")) {
+                        body.replace("// ViewModels will be registered here", viewModelBinding) + closing
+                    } else {
+                        body + "\n$viewModelBinding" + closing
+                    }
                 }
+            } else {
+                updatedContent
             }
-        } else {
-            updatedContent
-        }
 
         file.writeText(finalContent)
         logger.info("Updated ${file.name} with ${pascalName}ViewModel binding")
@@ -175,11 +182,12 @@ class FeatureDiUpdater {
         val camelName = pageName.replaceFirstChar { it.lowercase() }
 
         val binding = "viewModelOf(::$pascalName" + "ViewModel)"
-        val importLine = if (useScreenPresentationLayout) {
-            "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
-        } else {
-            "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
-        }
+        val importLine =
+            if (useScreenPresentationLayout) {
+                "import $modulePackage.presentation.screen.$camelName.${pascalName}ViewModel"
+            } else {
+                "import $modulePackage.presentation.fragment.$camelName.${pascalName}ViewModel"
+            }
 
         return """
             // 将添加到 PresentationModule.kt:

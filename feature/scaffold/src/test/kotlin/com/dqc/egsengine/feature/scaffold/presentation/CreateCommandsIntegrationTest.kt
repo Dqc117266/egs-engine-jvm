@@ -33,19 +33,22 @@ class CreateCommandsIntegrationTest {
 
         // Expect NavigationRoute to be generated
         assertTrue(
-            projectRoot.resolve(
-                "feature/uiStructureEngine/src/main/kotlin/com/dqc/example/feature/uiStructureEngine/presentation/UiStructureEngineNavigationRoute.kt"
-            ).exists()
+            projectRoot
+                .resolve(
+                    "feature/uiStructureEngine/src/main/kotlin/com/dqc/example/feature/uiStructureEngine/presentation/UiStructureEngineNavigationRoute.kt",
+                ).exists(),
         )
 
         // Expect no XML files
         assertFalse(
-            projectRoot.resolve("feature/uiStructureEngine/src/main/res/layout/fragment_ui_structure_engine.xml")
-                .exists()
+            projectRoot
+                .resolve("feature/uiStructureEngine/src/main/res/layout/fragment_ui_structure_engine.xml")
+                .exists(),
         )
         assertFalse(
-            projectRoot.resolve("feature/uiStructureEngine/src/main/res/navigation/ui_structure_engine_nav_graph.xml")
-                .exists()
+            projectRoot
+                .resolve("feature/uiStructureEngine/src/main/res/navigation/ui_structure_engine_nav_graph.xml")
+                .exists(),
         )
     }
 
@@ -87,9 +90,10 @@ class CreateCommandsIntegrationTest {
             ),
         )
 
-        val vmPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/tasklist/TaskListViewModel.kt",
-        )
+        val vmPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/tasklist/TaskListViewModel.kt",
+            )
         assertTrue(vmPath.exists())
         val vmContent = vmPath.readText()
         assertTrue(vmContent.contains("handleTopicUpdateTopic("))
@@ -117,9 +121,10 @@ class CreateCommandsIntegrationTest {
         )
 
         assertFalse(
-            projectRoot.resolve(
-                "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/taskdryrun",
-            ).exists(),
+            projectRoot
+                .resolve(
+                    "feature/task/src/main/kotlin/com/dqc/example/feature/task/presentation/screen/taskdryrun",
+                ).exists(),
         )
     }
 
@@ -140,18 +145,22 @@ class CreateCommandsIntegrationTest {
             ),
         )
 
-        val apiRepositoryPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskApiRepository.kt",
-        )
-        val combinedRepositoryPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskRepository.kt",
-        )
-        val repositoryImplPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskApiRepositorySupport.kt",
-        )
-        val useCasePath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/TopicUpdateTopicUseCase.kt",
-        )
+        val apiRepositoryPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskApiRepository.kt",
+            )
+        val combinedRepositoryPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskRepository.kt",
+            )
+        val repositoryImplPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskApiRepositorySupport.kt",
+            )
+        val useCasePath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/TopicUpdateTopicUseCase.kt",
+            )
 
         assertTrue(apiRepositoryPath.exists())
         assertTrue(combinedRepositoryPath.exists())
@@ -169,7 +178,8 @@ class CreateCommandsIntegrationTest {
         assertTrue(combinedText.contains("TaskApiRepository"))
 
         assertTrue(
-            repositoryImplPath.readText()
+            repositoryImplPath
+                .readText()
                 .contains("service.topicUpdateTopic(body.toData()).toResult()"),
         )
 
@@ -197,21 +207,26 @@ class CreateCommandsIntegrationTest {
             ),
         )
 
-        val servicePath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/datasource/api/service/TaskRetrofitService.kt",
-        )
-        val repositoryPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskApiRepository.kt",
-        )
-        val repositorySupportPath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskApiRepositorySupport.kt",
-        )
-        val getUseCasePath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/StepGetStepUseCase.kt",
-        )
-        val pageUseCasePath = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/StepGetStepPageUseCase.kt",
-        )
+        val servicePath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/datasource/api/service/TaskRetrofitService.kt",
+            )
+        val repositoryPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskApiRepository.kt",
+            )
+        val repositorySupportPath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/data/repository/GeneratedTaskApiRepositorySupport.kt",
+            )
+        val getUseCasePath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/StepGetStepUseCase.kt",
+            )
+        val pageUseCasePath =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/usecase/StepGetStepPageUseCase.kt",
+            )
 
         assertTrue(servicePath.exists())
         assertTrue(repositoryPath.exists())
@@ -263,14 +278,18 @@ class CreateCommandsIntegrationTest {
         )
 
         assertFalse(
-            projectRoot.resolve(
-                "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskRepository.kt",
-            ).exists(),
+            projectRoot
+                .resolve(
+                    "feature/task/src/main/kotlin/com/dqc/example/feature/task/generate/domain/repository/TaskRepository.kt",
+                ).exists(),
         )
     }
 
     private fun createProjectFixture(): File {
-        val root = kotlin.io.path.createTempDirectory("create-command-int-test").toFile()
+        val root =
+            kotlin.io.path
+                .createTempDirectory("create-command-int-test")
+                .toFile()
         root.resolve(".egs").mkdirs()
         root.resolve(".egs/config.json").writeText(
             """
@@ -301,9 +320,10 @@ class CreateCommandsIntegrationTest {
     }
 
     private fun createUseCaseFixture(projectRoot: File) {
-        val useCaseFile = projectRoot.resolve(
-            "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/usecase/TopicUpdateTopicUseCase.kt",
-        )
+        val useCaseFile =
+            projectRoot.resolve(
+                "feature/task/src/main/kotlin/com/dqc/example/feature/task/domain/usecase/TopicUpdateTopicUseCase.kt",
+            )
         useCaseFile.parentFile.mkdirs()
         useCaseFile.writeText(
             """

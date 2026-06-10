@@ -18,7 +18,6 @@ class SpringBootModuleGenerator(
     private val settingsUpdater: SettingsGradleUpdater,
     private val appDependencyUpdater: SpringBootAppDependencyUpdater,
 ) : PlatformModuleGenerator {
-
     private val logger = LoggerFactory.getLogger(SpringBootModuleGenerator::class.java)
 
     override val platform: Platform = Platform.SPRING_BOOT

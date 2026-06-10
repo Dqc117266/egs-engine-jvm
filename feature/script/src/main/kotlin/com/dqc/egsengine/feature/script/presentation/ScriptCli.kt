@@ -17,7 +17,9 @@ class ScriptCommand : CliktCommand(name = "script") {
     override fun run() = Unit
 }
 
-private class ScriptRun : CliktCommand(name = "run"), KoinComponent {
+private class ScriptRun :
+    CliktCommand(name = "run"),
+    KoinComponent {
 
     private val scriptEngine: ScriptEngine by inject()
     private val path by argument()
@@ -35,7 +37,9 @@ private class ScriptRun : CliktCommand(name = "run"), KoinComponent {
     }
 }
 
-private class ScriptList : CliktCommand(name = "list"), KoinComponent {
+private class ScriptList :
+    CliktCommand(name = "list"),
+    KoinComponent {
 
     private val scriptEngine: ScriptEngine by inject()
     private val directory by argument().default(".")
@@ -56,7 +60,9 @@ private class ScriptList : CliktCommand(name = "list"), KoinComponent {
     }
 }
 
-private class ScriptValidate : CliktCommand(name = "validate"), KoinComponent {
+private class ScriptValidate :
+    CliktCommand(name = "validate"),
+    KoinComponent {
 
     private val scriptEngine: ScriptEngine by inject()
     private val path by argument()

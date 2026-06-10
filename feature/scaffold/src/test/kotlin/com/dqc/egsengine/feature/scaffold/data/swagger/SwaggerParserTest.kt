@@ -5,43 +5,44 @@ import org.junit.jupiter.api.Test
 import java.io.File
 
 class SwaggerParserTest {
-
     private val parser = SwaggerParser()
 
     @Test
     fun `preserves strong descriptive operation ids`() {
-        val spec = parseSwagger(
-            paths = """
-                "/admin-api/ai/topic/get": {
-                  "get": {
-                    "operationId": "Topic_getTopic",
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "type": "boolean" }
+        val spec =
+            parseSwagger(
+                paths =
+                """
+                    "/admin-api/ai/topic/get": {
+                      "get": {
+                        "operationId": "Topic_getTopic",
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "type": "boolean" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "/app-api/ai/chat/message/list": {
+                      "get": {
+                        "operationId": "AppAiChat_getMessageList",
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "type": "boolean" }
+                              }
+                            }
                           }
                         }
                       }
                     }
-                  }
-                },
-                "/app-api/ai/chat/message/list": {
-                  "get": {
-                    "operationId": "AppAiChat_getMessageList",
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "type": "boolean" }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-            """.trimIndent(),
-        )
+                """.trimIndent(),
+            )
 
         assertEquals(
             listOf("topicGetTopic", "appAiChatGetMessageList"),
@@ -51,142 +52,144 @@ class SwaggerParserTest {
 
     @Test
     fun `derives descriptive operation ids from weak names and paths`() {
-        val spec = parseSwagger(
-            paths = """
-                "/api/steps/{id}": {
-                  "get": {
-                    "operationId": "getById",
-                    "parameters": [
-                      { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
-                    ],
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+        val spec =
+            parseSwagger(
+                paths =
+                """
+                    "/api/steps/{id}": {
+                      "get": {
+                        "operationId": "getById",
+                        "parameters": [
+                          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+                        ],
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                              }
+                            }
                           }
                         }
-                      }
-                    }
-                  },
-                  "put": {
-                    "operationId": "update1",
-                    "parameters": [
-                      { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
-                    ],
-                    "requestBody": {
-                      "content": {
-                        "application/json": {
-                          "schema": { "${'$'}ref": "#/components/schemas/UpdateRecipeStepRequest" }
+                      },
+                      "put": {
+                        "operationId": "update1",
+                        "parameters": [
+                          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+                        ],
+                        "requestBody": {
+                          "content": {
+                            "application/json": {
+                              "schema": { "${'$'}ref": "#/components/schemas/UpdateRecipeStepRequest" }
+                            }
+                          }
+                        },
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                              }
+                            }
+                          }
                         }
                       }
                     },
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                    "/api/categories/{id}": {
+                      "delete": {
+                        "operationId": "delete1",
+                        "parameters": [
+                          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+                        ],
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "type": "boolean" }
+                              }
+                            }
                           }
                         }
                       }
-                    }
-                  }
-                },
-                "/api/categories/{id}": {
-                  "delete": {
-                    "operationId": "delete1",
-                    "parameters": [
-                      { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
-                    ],
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "type": "boolean" }
+                    },
+                    "/api/steps": {
+                      "get": {
+                        "operationId": "list1",
+                        "parameters": [
+                          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+                          { "name": "size", "in": "query", "schema": { "type": "integer" } }
+                        ],
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "${'$'}ref": "#/components/schemas/PageResultRecipeStepResponse" }
+                              }
+                            }
                           }
                         }
                       }
-                    }
-                  }
-                },
-                "/api/steps": {
-                  "get": {
-                    "operationId": "list1",
-                    "parameters": [
-                      { "name": "page", "in": "query", "schema": { "type": "integer" } },
-                      { "name": "size", "in": "query", "schema": { "type": "integer" } }
-                    ],
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "${'$'}ref": "#/components/schemas/PageResultRecipeStepResponse" }
+                    },
+                    "/api/steps/list": {
+                      "get": {
+                        "operationId": "listPath1",
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "${'$'}ref": "#/components/schemas/PageResultRecipeStepResponse" }
+                              }
+                            }
                           }
                         }
                       }
-                    }
-                  }
-                },
-                "/api/steps/list": {
-                  "get": {
-                    "operationId": "listPath1",
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "${'$'}ref": "#/components/schemas/PageResultRecipeStepResponse" }
+                    },
+                    "/api/steps/count": {
+                      "get": {
+                        "operationId": "count1",
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "type": "integer", "format": "int64" }
+                              }
+                            }
                           }
                         }
                       }
-                    }
-                  }
-                },
-                "/api/steps/count": {
-                  "get": {
-                    "operationId": "count1",
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "type": "integer", "format": "int64" }
+                    },
+                    "/api/steps/all": {
+                      "get": {
+                        "operationId": "all1",
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": {
+                                  "type": "array",
+                                  "items": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                                }
+                              }
+                            }
                           }
                         }
                       }
-                    }
-                  }
-                },
-                "/api/steps/all": {
-                  "get": {
-                    "operationId": "all1",
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": {
-                              "type": "array",
-                              "items": { "${'$'}ref": "#/components/schemas/RecipeStepResponse" }
+                    },
+                    "/api/steps/next-step-number": {
+                      "get": {
+                        "responses": {
+                          "200": {
+                            "content": {
+                              "application/json": {
+                                "schema": { "type": "integer" }
+                              }
                             }
                           }
                         }
                       }
                     }
-                  }
-                },
-                "/api/steps/next-step-number": {
-                  "get": {
-                    "responses": {
-                      "200": {
-                        "content": {
-                          "application/json": {
-                            "schema": { "type": "integer" }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-            """.trimIndent(),
-        )
+                """.trimIndent(),
+            )
 
         assertEquals(
             listOf(
@@ -243,10 +246,9 @@ class SwaggerParserTest {
         return file.useAsTempPath { parser.parse(it.absolutePath) }
     }
 
-    private fun <T> File.useAsTempPath(block: (File) -> T): T =
-        try {
-            block(this)
-        } finally {
-            delete()
-        }
+    private fun <T> File.useAsTempPath(block: (File) -> T): T = try {
+        block(this)
+    } finally {
+        delete()
+    }
 }

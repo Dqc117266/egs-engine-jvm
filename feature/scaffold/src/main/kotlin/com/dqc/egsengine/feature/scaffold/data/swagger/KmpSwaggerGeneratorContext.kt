@@ -16,6 +16,7 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
     val pascalModuleName = moduleName.toSafePascal()
     val rootPackage = template.packageName
     val generateRootPackage = "$rootPackage.generate"
+
     /** Koin modules for generated API (`GeneratedDataModule` / `GeneratedDomainModule`). */
     val generateDiPackage = "$generateRootPackage.di"
 
@@ -40,8 +41,7 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
     fun dataModelName(rawName: String): String = "${rawName.toSafePascal()}ApiModel"
     fun domainModelName(rawName: String): String = rawName.toSafePascal()
 
-    fun hasResultWrappers(): Boolean =
-        template.apiResultClass != null && template.commonResultClass != null && template.toResultPackage != null
+    fun hasResultWrappers(): Boolean = template.apiResultClass != null && template.commonResultClass != null && template.toResultPackage != null
 
     /**
      * Ktorfit + template network stack: `NetworkResult<CommonResult<T>, *>`.
@@ -82,8 +82,7 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
         return bodyType
     }
 
-    private fun pageResultShortName(): String =
-        template.baseClassPackages.pageResultClass?.substringAfterLast('.') ?: "PageResult"
+    private fun pageResultShortName(): String = template.baseClassPackages.pageResultClass?.substringAfterLast('.') ?: "PageResult"
 
     /**
      * Short Kotlin type names (imports via [importsForType] / [importsForServiceReturnType]).
@@ -114,22 +113,21 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
      * Import lines (FQNs) required for [resolveType] when used in a file in [currentPackage].
      * Same-package model refs omit imports.
      */
-    fun importsForType(type: SwaggerType, forDomain: Boolean, currentPackage: String? = null): Set<String> =
-        when (type) {
-            is SwaggerType.Primitive -> emptySet()
-            is SwaggerType.ModelRef -> {
-                val pkg = if (forDomain) domainModelPackage else dataModelPackage
-                val simple = if (forDomain) domainModelName(type.name) else dataModelName(type.name)
-                if (currentPackage != null && pkg == currentPackage) {
-                    emptySet()
-                } else {
-                    setOf("$pkg.$simple")
-                }
+    fun importsForType(type: SwaggerType, forDomain: Boolean, currentPackage: String? = null): Set<String> = when (type) {
+        is SwaggerType.Primitive -> emptySet()
+        is SwaggerType.ModelRef -> {
+            val pkg = if (forDomain) domainModelPackage else dataModelPackage
+            val simple = if (forDomain) domainModelName(type.name) else dataModelName(type.name)
+            if (currentPackage != null && pkg == currentPackage) {
+                emptySet()
+            } else {
+                setOf("$pkg.$simple")
             }
-            is SwaggerType.ListType -> importsForType(type.elementType, forDomain, currentPackage)
-            is SwaggerType.MapType -> importsForType(type.valueType, forDomain, currentPackage)
-            SwaggerType.Unknown -> setOf("kotlinx.serialization.json.JsonElement")
         }
+        is SwaggerType.ListType -> importsForType(type.elementType, forDomain, currentPackage)
+        is SwaggerType.MapType -> importsForType(type.valueType, forDomain, currentPackage)
+        SwaggerType.Unknown -> setOf("kotlinx.serialization.json.JsonElement")
+    }
 
     /** Imports for Ktorfit return type (NetworkResult / CommonResult + body). */
     fun importsForServiceReturnType(responseBody: SwaggerType?): Set<String> {
@@ -194,8 +192,7 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
         else -> "GET"
     }
 
-    fun toDomainExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String =
-        mapExpression(type, sourceExpr, nullableContainer, "toDomain")
+    fun toDomainExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String = mapExpression(type, sourceExpr, nullableContainer, "toDomain")
 
     fun repositoryResponseMapExpression(type: SwaggerType?, sourceExpr: String): String? {
         val t = type ?: return null
@@ -223,17 +220,16 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
         }
     }
 
-    fun toDataExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String =
-        mapExpression(type, sourceExpr, nullableContainer, "toData")
+    fun toDataExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String = mapExpression(type, sourceExpr, nullableContainer, "toData")
 
-    private fun mapExpressionNonNull(type: SwaggerType, sourceExpr: String, method: String): String =
-        when (type) {
-            is SwaggerType.Primitive,
-            SwaggerType.Unknown,
-            -> sourceExpr
+    private fun mapExpressionNonNull(type: SwaggerType, sourceExpr: String, method: String): String = when (type) {
+        is SwaggerType.Primitive,
+        SwaggerType.Unknown,
+        -> sourceExpr
 
-            is SwaggerType.ModelRef -> "$sourceExpr.$method()"
-            is SwaggerType.ListType -> "$sourceExpr.map { ${
+        is SwaggerType.ModelRef -> "$sourceExpr.$method()"
+        is SwaggerType.ListType ->
+            "$sourceExpr.map { ${
                 mapExpressionNonNull(
                     type.elementType,
                     "it",
@@ -241,15 +237,15 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
                 )
             } }"
 
-            is SwaggerType.MapType ->
-                "$sourceExpr.mapValues { (_, value) -> ${
-                    mapExpressionNonNull(
-                        type.valueType,
-                        "value",
-                        method,
-                    )
-                } }"
-        }
+        is SwaggerType.MapType ->
+            "$sourceExpr.mapValues { (_, value) -> ${
+                mapExpressionNonNull(
+                    type.valueType,
+                    "value",
+                    method,
+                )
+            } }"
+    }
 
     private fun mapExpression(
         type: SwaggerType,
@@ -265,13 +261,14 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
             -> sourceExpr
 
             is SwaggerType.ModelRef -> "$sourceExpr?.$method()"
-            is SwaggerType.ListType -> "$sourceExpr?.map { ${
-                mapExpressionNonNull(
-                    type.elementType,
-                    "it",
-                    method,
-                )
-            } }"
+            is SwaggerType.ListType ->
+                "$sourceExpr?.map { ${
+                    mapExpressionNonNull(
+                        type.elementType,
+                        "it",
+                        method,
+                    )
+                } }"
 
             is SwaggerType.MapType ->
                 "$sourceExpr?.mapValues { (_, value) -> ${

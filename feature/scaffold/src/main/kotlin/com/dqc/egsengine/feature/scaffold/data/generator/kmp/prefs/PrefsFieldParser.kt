@@ -25,7 +25,6 @@ enum class PrefsStorageKind {
  * `userId:String, isLogin:bool` → list of fields. Whitespace allowed around `:` and `,`.
  */
 object PrefsFieldParser {
-
     fun parseFields(fieldsArg: String): List<PrefsParsedField> {
         val trimmed = fieldsArg.trim()
         require(trimmed.isNotEmpty()) { "--fields must not be empty" }
@@ -44,16 +43,14 @@ object PrefsFieldParser {
         }
     }
 
-    private fun normalizeType(raw: String): PrefsStorageKind {
-        return when (raw.lowercase()) {
-            "string" -> PrefsStorageKind.STRING
-            "boolean", "bool" -> PrefsStorageKind.BOOLEAN
-            "int" -> PrefsStorageKind.INT
-            "long" -> PrefsStorageKind.LONG
-            else -> throw IllegalArgumentException(
-                "Unsupported preference type '$raw'. Use String, Boolean, Int, or Long.",
-            )
-        }
+    private fun normalizeType(raw: String): PrefsStorageKind = when (raw.lowercase()) {
+        "string" -> PrefsStorageKind.STRING
+        "boolean", "bool" -> PrefsStorageKind.BOOLEAN
+        "int" -> PrefsStorageKind.INT
+        "long" -> PrefsStorageKind.LONG
+        else -> throw IllegalArgumentException(
+            "Unsupported preference type '$raw'. Use String, Boolean, Int, or Long.",
+        )
     }
 
     private fun kotlinTypeFor(kind: PrefsStorageKind): String = when (kind) {

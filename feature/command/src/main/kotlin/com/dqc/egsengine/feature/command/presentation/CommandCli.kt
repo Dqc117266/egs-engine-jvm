@@ -10,7 +10,9 @@ import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class ShellCommand : CliktCommand(name = "command"), KoinComponent {
+class ShellCommand :
+    CliktCommand(name = "command"),
+    KoinComponent {
 
     private val commandService: CommandService by inject()
     private val workDir by option("--dir", "-d")

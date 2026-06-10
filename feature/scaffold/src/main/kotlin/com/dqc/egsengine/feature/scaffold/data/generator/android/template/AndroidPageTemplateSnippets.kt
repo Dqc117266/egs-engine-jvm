@@ -122,11 +122,11 @@ internal fun buildAndroidPagingBootstrapSnippets(
                 viewModelImportLines = emptyList(),
                 ctorParamLine = "",
                 registerIntentBlock =
-                    """
+                """
                     registerIntent<${model.pascalName}Contract.Intent.$intent> {
                         $body
                     }
-                    """.trimIndent(),
+                """.trimIndent(),
                 handlerFunction = null,
             )
     }
@@ -136,10 +136,10 @@ internal fun buildAndroidPagingBootstrapSnippets(
             intentMemberText = "",
             stateFieldText = null,
             viewModelImportLines =
-                listOf(
-                    "import ${model.resultPackage}.Result",
-                    "import ${model.pageResultClassFqn}",
-                ).sorted(),
+            listOf(
+                "import ${model.resultPackage}.Result",
+                "import ${model.pageResultClassFqn}",
+            ).sorted(),
             ctorParamLine = "",
             registerIntentBlock = "",
             handlerFunction = renderAndroidLoadPageHandler(model),
@@ -210,7 +210,10 @@ private fun resolveAndroidStateFieldSnippet(
     return "${indent}val ${field.name}: $typeRef? = null,"
 }
 
-private fun renderAndroidRegisterBlock(pascalName: String, uc: PageUseCaseModel): String {
+private fun renderAndroidRegisterBlock(
+    pascalName: String,
+    uc: PageUseCaseModel,
+): String {
     val body =
         if (uc.parameters.isNotEmpty()) {
             val args = uc.parameters.joinToString(", ") { "it.${it.name}" }
@@ -229,8 +232,7 @@ private fun renderAndroidRegisterBlock(pascalName: String, uc: PageUseCaseModel)
  * Raw handler snippets use [trimIndent], which strips the shared margin and often leaves `private fun`
  * at column 0. [prependIndent] restores class-body indentation (4 spaces) while preserving nesting.
  */
-private fun androidHandlerBlock(raw: String): String =
-    raw.trimIndent().prependIndent("    ").trimEnd() + "\n"
+private fun androidHandlerBlock(raw: String): String = raw.trimIndent().prependIndent("    ").trimEnd() + "\n"
 
 private fun renderAndroidHandlerFunction(
     ucRow: PageUseCaseModel,

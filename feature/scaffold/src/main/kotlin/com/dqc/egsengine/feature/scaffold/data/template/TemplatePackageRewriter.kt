@@ -7,7 +7,6 @@ import java.nio.charset.MalformedInputException
  * Renames package directories and rewrites textual references inside a project tree.
  */
 class TemplatePackageRewriter {
-
     fun rewriteForward(
         projectDir: File,
         recipe: TemplateRenameRecipe,
@@ -89,10 +88,14 @@ class TemplatePackageRewriter {
         return replacements.filter { (from, to) -> from.isNotEmpty() && from != to }
     }
 
-    private fun rewriteTextFiles(projectDir: File, replacements: Map<String, String>) {
+    private fun rewriteTextFiles(
+        projectDir: File,
+        replacements: Map<String, String>,
+    ) {
         if (replacements.isEmpty()) return
 
-        projectDir.walkTopDown()
+        projectDir
+            .walkTopDown()
             .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
             .filter { it.isFile && isLikelyTextFile(it) }
             .forEach { file ->
@@ -118,28 +121,30 @@ class TemplatePackageRewriter {
         val newPackagePath = newPackage.replace('.', '/')
         if (oldPackagePath == newPackagePath) return
 
-        val packageDirectories = projectDir.walkTopDown()
-            .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
-            .filter { it.isDirectory }
-            .filter { directory ->
-                val relativePath = directory.relativeTo(projectDir).path.replace(File.separatorChar, '/')
-                relativePath.endsWith(oldPackagePath)
-            }
-            .toList()
-            .sortedByDescending { it.absolutePath.length }
+        val packageDirectories =
+            projectDir
+                .walkTopDown()
+                .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
+                .filter { it.isDirectory }
+                .filter { directory ->
+                    val relativePath = directory.relativeTo(projectDir).path.replace(File.separatorChar, '/')
+                    relativePath.endsWith(oldPackagePath)
+                }.toList()
+                .sortedByDescending { it.absolutePath.length }
 
         packageDirectories.forEach { sourceDir ->
             if (!sourceDir.exists()) return@forEach
 
             val relativePath = sourceDir.relativeTo(projectDir).path.replace(File.separatorChar, '/')
             val prefixPath = relativePath.removeSuffix(oldPackagePath).trimEnd('/')
-            val targetRelativePath = buildString {
-                if (prefixPath.isNotEmpty()) {
-                    append(prefixPath)
-                    append('/')
+            val targetRelativePath =
+                buildString {
+                    if (prefixPath.isNotEmpty()) {
+                        append(prefixPath)
+                        append('/')
+                    }
+                    append(newPackagePath)
                 }
-                append(newPackagePath)
-            }
 
             val targetDir = projectDir.resolve(targetRelativePath)
             if (sourceDir.absolutePath == targetDir.absolutePath) return@forEach
@@ -149,7 +154,10 @@ class TemplatePackageRewriter {
         }
     }
 
-    private fun moveDirectoryWithMerge(source: File, target: File) {
+    private fun moveDirectoryWithMerge(
+        source: File,
+        target: File,
+    ) {
         if (!target.exists()) {
             target.parentFile?.mkdirs()
             if (source.renameTo(target)) return
@@ -177,7 +185,10 @@ class TemplatePackageRewriter {
         }
     }
 
-    private fun cleanupEmptyDirectories(start: File?, stopAt: File) {
+    private fun cleanupEmptyDirectories(
+        start: File?,
+        stopAt: File,
+    ) {
         var current = start
         while (current != null && current.absolutePath != stopAt.absolutePath) {
             if (!current.exists() || !current.isDirectory || !current.listFiles().isNullOrEmpty()) {
@@ -192,35 +203,52 @@ class TemplatePackageRewriter {
     private fun isLikelyTextFile(file: File): Boolean {
         if (file.extension.lowercase() in BINARY_EXTENSIONS) return false
 
-        val bytes = file.inputStream().use { input ->
-            val preview = ByteArray(8192)
-            val readSize = input.read(preview)
-            if (readSize <= 0) return true
-            preview.copyOf(readSize)
-        }
+        val bytes =
+            file.inputStream().use { input ->
+                val preview = ByteArray(8192)
+                val readSize = input.read(preview)
+                if (readSize <= 0) return true
+                preview.copyOf(readSize)
+            }
 
         if (bytes.any { it == 0.toByte() }) return false
 
-        val controlChars = bytes.count {
-            val value = it.toInt() and 0xFF
-            value < 0x09 || (value in 0x0E..0x1F)
-        }
+        val controlChars =
+            bytes.count {
+                val value = it.toInt() and 0xFF
+                value < 0x09 || (value in 0x0E..0x1F)
+            }
         return controlChars < bytes.size / 3
     }
 
-    private fun File.readUtf8TextOrNull(): String? =
-        try {
-            readText()
-        } catch (_: MalformedInputException) {
-            null
-        }
+    private fun File.readUtf8TextOrNull(): String? = try {
+        readText()
+    } catch (_: MalformedInputException) {
+        null
+    }
 
     companion object {
         private val SKIP_DIR_NAMES = setOf(".git", "build", ".gradle", "node_modules", ".idea")
 
-        private val BINARY_EXTENSIONS = setOf(
-            "png", "jpg", "jpeg", "gif", "webp", "jar", "zip", "ico",
-            "keystore", "jks", "ttf", "otf", "so", "pdf", "mp3", "mp4", "wav",
-        )
+        private val BINARY_EXTENSIONS =
+            setOf(
+                "png",
+                "jpg",
+                "jpeg",
+                "gif",
+                "webp",
+                "jar",
+                "zip",
+                "ico",
+                "keystore",
+                "jks",
+                "ttf",
+                "otf",
+                "so",
+                "pdf",
+                "mp3",
+                "mp4",
+                "wav",
+            )
     }
 }

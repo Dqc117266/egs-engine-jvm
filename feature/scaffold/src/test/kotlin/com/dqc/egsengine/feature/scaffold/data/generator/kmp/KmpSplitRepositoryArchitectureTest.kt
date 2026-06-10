@@ -11,72 +11,77 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Files
 
 class KmpSplitRepositoryArchitectureTest {
-
-    private val template = ModuleTemplate(
-        name = "todo",
-        packageName = "org.example.feature.todo",
-        conventionPluginId = null,
-        layers = listOf("data", "domain", "presentation"),
-        hasRes = false,
-        namespace = null,
-        projectType = "KMP",
-        basePackage = "org.example",
-        baseClassPackages = BaseClassPackages(
-            resultClass = "template.core.base.network.domain.Result",
-        ),
-        apiResultClass = "template.core.base.network.NetworkResult",
-        commonResultClass = "template.core.base.network.data.CommonResult",
-        toResultPackage = "template.core.base.network.data",
-    )
-
-    private val userTable = TableSchema(
-        tableName = "user",
-        columns = listOf(
-            ColumnSchema(
-                name = "id",
-                sqlType = "BIGINT",
-                kotlinType = "Long",
-                nullable = false,
-                isPrimaryKey = true,
-                isAutoIncrement = true,
-                defaultValue = null,
-                comment = null,
+    private val template =
+        ModuleTemplate(
+            name = "todo",
+            packageName = "org.example.feature.todo",
+            conventionPluginId = null,
+            layers = listOf("data", "domain", "presentation"),
+            hasRes = false,
+            namespace = null,
+            projectType = "KMP",
+            basePackage = "org.example",
+            baseClassPackages =
+            BaseClassPackages(
+                resultClass = "template.core.base.network.domain.Result",
             ),
-            ColumnSchema(
-                name = "name",
-                sqlType = "VARCHAR",
-                kotlinType = "String",
-                nullable = false,
-                isPrimaryKey = false,
-                isAutoIncrement = false,
-                defaultValue = null,
-                comment = null,
+            apiResultClass = "template.core.base.network.NetworkResult",
+            commonResultClass = "template.core.base.network.data.CommonResult",
+            toResultPackage = "template.core.base.network.data",
+        )
+
+    private val userTable =
+        TableSchema(
+            tableName = "user",
+            columns =
+            listOf(
+                ColumnSchema(
+                    name = "id",
+                    sqlType = "BIGINT",
+                    kotlinType = "Long",
+                    nullable = false,
+                    isPrimaryKey = true,
+                    isAutoIncrement = true,
+                    defaultValue = null,
+                    comment = null,
+                ),
+                ColumnSchema(
+                    name = "name",
+                    sqlType = "VARCHAR",
+                    kotlinType = "String",
+                    nullable = false,
+                    isPrimaryKey = false,
+                    isAutoIncrement = false,
+                    defaultValue = null,
+                    comment = null,
+                ),
             ),
-        ),
-        primaryKey = "id",
-    )
+            primaryKey = "id",
+        )
 
     @Test
     fun `combined repository extends only Db when Api absent on disk`() {
         val gen = KmpCombinedRepositoryGenerator()
-        val combined = gen.generate(
-            template = template,
-            subProjectRoot = null,
-            includeApi = false,
-            includeDb = true,
-        )!!
+        val combined =
+            gen.generate(
+                template = template,
+                subProjectRoot = null,
+                includeApi = false,
+                includeDb = true,
+            )!!
         assertTrue(combined.content!!.contains("interface TodoRepository : TodoDbRepository"))
     }
 
     @Test
     fun `combined repository extends Api and Db when both flags set`() {
         val gen = KmpCombinedRepositoryGenerator()
-        val combined = gen.generate(
-            template = template,
-            subProjectRoot = null,
-            includeApi = true,
-            includeDb = true,
-        )!!
+        val combined =
+            gen.generate(
+                template = template,
+                subProjectRoot = null,
+                includeApi = true,
+                includeDb = true,
+            )!!
         assertTrue(
             combined.content!!.contains(
                 "interface TodoRepository : TodoApiRepository, TodoDbRepository",
@@ -134,12 +139,13 @@ class KmpSplitRepositoryArchitectureTest {
 
     @Test
     fun `repository impl generator emits delegation for api and db`() {
-        val impl = KmpRepositoryImplGenerator().generateOrMerge(
-            template = template,
-            subProjectRoot = null,
-            includeApi = true,
-            includeDb = true,
-        )!!
+        val impl =
+            KmpRepositoryImplGenerator().generateOrMerge(
+                template = template,
+                subProjectRoot = null,
+                includeApi = true,
+                includeDb = true,
+            )!!
         assertTrue(impl.content!!.contains("TodoApiRepository by apiSupport"))
         assertTrue(impl.content!!.contains("TodoDbRepository by dbSupport"))
     }
@@ -147,25 +153,27 @@ class KmpSplitRepositoryArchitectureTest {
     @Test
     fun `combined repository extends Prefs when includePrefs only`() {
         val gen = KmpCombinedRepositoryGenerator()
-        val combined = gen.generate(
-            template = template,
-            subProjectRoot = null,
-            includeApi = false,
-            includeDb = false,
-            includePrefs = true,
-        )!!
+        val combined =
+            gen.generate(
+                template = template,
+                subProjectRoot = null,
+                includeApi = false,
+                includeDb = false,
+                includePrefs = true,
+            )!!
         assertTrue(combined.content!!.contains("interface TodoRepository : TodoPrefsRepository"))
     }
 
     @Test
     fun `repository impl generator emits prefs delegation`() {
-        val impl = KmpRepositoryImplGenerator().generateOrMerge(
-            template = template,
-            subProjectRoot = null,
-            includeApi = false,
-            includeDb = false,
-            includePrefs = true,
-        )!!
+        val impl =
+            KmpRepositoryImplGenerator().generateOrMerge(
+                template = template,
+                subProjectRoot = null,
+                includeApi = false,
+                includeDb = false,
+                includePrefs = true,
+            )!!
         assertTrue(impl.content!!.contains("TodoPrefsRepository by prefsSupport"))
     }
 }

@@ -11,7 +11,6 @@ import java.io.File
  * Locates screen/fragment Contract / ViewModel paths under `presentation/{screen|fragment}/<camel>/`.
  */
 internal object PageFileLocator {
-
     enum class PresentationLayout {
         Screen,
         Fragment,

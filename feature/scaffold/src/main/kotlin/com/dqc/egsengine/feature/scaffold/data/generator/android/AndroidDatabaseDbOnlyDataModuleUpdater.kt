@@ -14,38 +14,46 @@ import java.io.File
  * Idempotently adds Koin binding for DB-only [RepositoryImpl] in Android [DataModule.kt].
  */
 class AndroidDatabaseDbOnlyDataModuleUpdater {
-
     private val logger = LoggerFactory.getLogger(AndroidDatabaseDbOnlyDataModuleUpdater::class.java)
 
-    fun apply(subProjectRoot: File, moduleName: String, template: ModuleTemplate) {
+    fun apply(
+        subProjectRoot: File,
+        moduleName: String,
+        template: ModuleTemplate,
+    ) {
         val pkg = template.packageName
         val pkgPath = pkg.replace('.', '/')
         val pascal = SqlNaming.moduleNameToPascal(moduleName)
         val repositoryName = "${pascal}Repository"
         val implName = "${pascal}RepositoryImpl"
 
-        val diFile = subProjectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/$pkgPath/di/DataModule.kt",
-        )
-        val legacyFile = subProjectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/$pkgPath/data/DataModule.kt",
-        )
-        val file = when {
-            diFile.exists() -> diFile
-            legacyFile.exists() -> legacyFile
-            else -> diFile
-        }
+        val diFile =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/main/kotlin/$pkgPath/di/DataModule.kt",
+            )
+        val legacyFile =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/main/kotlin/$pkgPath/data/DataModule.kt",
+            )
+        val file =
+            when {
+                diFile.exists() -> diFile
+                legacyFile.exists() -> legacyFile
+                else -> diFile
+            }
 
-        val body = """
+        val body =
+            """
     singleOf(::$implName) { bind<$repositoryName>() }
 """.trimEnd()
 
-        val importsToEnsure = listOf(
-            "import org.koin.core.module.dsl.bind",
-            "import org.koin.core.module.dsl.singleOf",
-            "import $pkg.data.repository.$implName",
-            "import $pkg.generate.domain.repository.$repositoryName",
-        )
+        val importsToEnsure =
+            listOf(
+                "import org.koin.core.module.dsl.bind",
+                "import org.koin.core.module.dsl.singleOf",
+                "import $pkg.data.repository.$implName",
+                "import $pkg.generate.domain.repository.$repositoryName",
+            )
 
         if (!file.exists()) {
             file.parentFile.mkdirs()
@@ -113,17 +121,24 @@ class AndroidDatabaseDbOnlyDataModuleUpdater {
         return text
     }
 
-    private fun replaceRepositoryBlock(text: String, body: String): String {
-        val pattern = Regex(
-            """[ \t]*// egs-gen:repository-begin\s*\n([\s\S]*?)\n[ \t]*// egs-gen:repository-end""",
-            RegexOption.MULTILINE,
-        )
+    private fun replaceRepositoryBlock(
+        text: String,
+        body: String,
+    ): String {
+        val pattern =
+            Regex(
+                """[ \t]*// egs-gen:repository-begin\s*\n([\s\S]*?)\n[ \t]*// egs-gen:repository-end""",
+                RegexOption.MULTILINE,
+            )
         return pattern.replace(text) {
             "// egs-gen:repository-begin\n$body\n    // egs-gen:repository-end"
         }
     }
 
-    private fun mergeImports(text: String, importsToEnsure: List<String>): String {
+    private fun mergeImports(
+        text: String,
+        importsToEnsure: List<String>,
+    ): String {
         val existingSet = text.lines().map { it.trim() }.toSet()
         val toAdd = importsToEnsure.filter { it.trim() !in existingSet }
         if (toAdd.isEmpty()) return text

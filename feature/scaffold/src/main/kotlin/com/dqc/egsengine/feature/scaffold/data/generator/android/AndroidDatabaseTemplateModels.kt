@@ -27,9 +27,7 @@ data class AndroidDatabaseTableRow(
 )
 
 object AndroidDatabaseTemplateModels {
-
-    fun buildRows(tables: List<TableSchema>): List<AndroidDatabaseTableRow> =
-        tables.map { buildRow(it) }
+    fun buildRows(tables: List<TableSchema>): List<AndroidDatabaseTableRow> = tables.map { buildRow(it) }
 
     fun buildRow(table: TableSchema): AndroidDatabaseTableRow {
         val base = SqlNaming.snakeToPascal(table.tableName)
@@ -39,21 +37,23 @@ object AndroidDatabaseTemplateModels {
         val sorted = sortColumns(table)
         val pkCol = sorted.firstOrNull { it.isPrimaryKey } ?: sorted.first()
         val pkPropertyName = SqlNaming.snakeToLowerCamel(pkCol.name)
-        val entityColumns = sorted.map { col ->
-            val autoGen = col.isAutoIncrement && col.kotlinType in setOf("Long", "Int")
-            mapOf(
-                "name" to col.name,
-                "kotlinPropertyName" to SqlNaming.snakeToLowerCamel(col.name),
-                "kotlinType" to col.kotlinType,
-                "nullableMark" to if (col.nullable) "?" else "",
-                "isPrimaryKey" to col.isPrimaryKey,
-                "autoGenerate" to autoGen,
-            )
-        }
-        val entityImports = buildList {
-            if (sorted.any { it.kotlinType == "Instant" }) add("kotlinx.datetime.Instant")
-            if (sorted.any { it.kotlinType == "BigDecimal" }) add("java.math.BigDecimal")
-        }
+        val entityColumns =
+            sorted.map { col ->
+                val autoGen = col.isAutoIncrement && col.kotlinType in setOf("Long", "Int")
+                mapOf(
+                    "name" to col.name,
+                    "kotlinPropertyName" to SqlNaming.snakeToLowerCamel(col.name),
+                    "kotlinType" to col.kotlinType,
+                    "nullableMark" to if (col.nullable) "?" else "",
+                    "isPrimaryKey" to col.isPrimaryKey,
+                    "autoGenerate" to autoGen,
+                )
+            }
+        val entityImports =
+            buildList {
+                if (sorted.any { it.kotlinType == "Instant" }) add("kotlinx.datetime.Instant")
+                if (sorted.any { it.kotlinType == "BigDecimal" }) add("java.math.BigDecimal")
+            }
 
         return AndroidDatabaseTableRow(
             table = table,

@@ -1,6 +1,5 @@
 package com.dqc.egsengine.feature.script.domain
 
-import com.dqc.egsengine.feature.base.command.CommandResult
 import com.dqc.egsengine.feature.script.data.ScriptLoader
 import com.dqc.egsengine.feature.script.domain.model.Script
 import org.slf4j.LoggerFactory

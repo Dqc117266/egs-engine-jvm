@@ -17,7 +17,6 @@ import kotlin.io.path.createTempDirectory
  * Catches any unintended change in the wired `android/swagger` and `kmp/swagger` FTL templates.
  */
 class GoldenSwaggerTest {
-
     @Test
     fun `android swagger golden`() {
         val files = FtlSwaggerCodeGenerator().generate(tempRoot(), androidTemplate(), swaggerSpec())
@@ -42,10 +41,11 @@ class GoldenSwaggerTest {
             namespace = "com.dqc.example.feature.task",
             projectType = "ANDROID",
             basePackage = "com.dqc.example",
-            baseClassPackages = BaseClassPackages(
-                resultClass = "com.dqc.example.feature.base.domain.result.Result",
-                retrofitProvider = "com.dqc.example.feature.common.network.DynamicRetrofitProvider",
-            ),
+            baseClassPackages =
+                BaseClassPackages(
+                    resultClass = "com.dqc.example.feature.base.domain.result.Result",
+                    retrofitProvider = "com.dqc.example.feature.common.network.DynamicRetrofitProvider",
+                ),
             apiResultClass = "com.dqc.example.feature.base.data.retrofit.ApiResult",
             commonResultClass = "com.dqc.example.feature.base.data.retrofit.CommonResult",
             toResultPackage = "com.dqc.example.feature.base.data.retrofit",
@@ -61,9 +61,10 @@ class GoldenSwaggerTest {
             namespace = null,
             projectType = "KMP",
             basePackage = "org.mifos",
-            baseClassPackages = BaseClassPackages(
-                resultClass = "template.core.base.network.domain.Result",
-            ),
+            baseClassPackages =
+                BaseClassPackages(
+                    resultClass = "template.core.base.network.domain.Result",
+                ),
             apiResultClass = "template.core.base.network.data.ApiResult",
             commonResultClass = "template.core.base.network.data.CommonResult",
             toResultPackage = "template.core.base.network.data",
@@ -71,42 +72,46 @@ class GoldenSwaggerTest {
 
     private fun swaggerSpec(): SwaggerSpec =
         SwaggerSpec(
-            schemas = listOf(
-                SwaggerSchema(
-                    name = "TopicSaveReqVO",
-                    properties = listOf(
-                        SwaggerProperty(
-                            name = "id",
-                            originalName = "id",
-                            type = SwaggerType.Primitive(PrimitiveKind.LONG),
-                            required = true,
-                        ),
-                        SwaggerProperty(
-                            name = "name",
-                            originalName = "name",
-                            type = SwaggerType.Primitive(PrimitiveKind.STRING),
-                            required = true,
-                        ),
+            schemas =
+                listOf(
+                    SwaggerSchema(
+                        name = "TopicSaveReqVO",
+                        properties =
+                            listOf(
+                                SwaggerProperty(
+                                    name = "id",
+                                    originalName = "id",
+                                    type = SwaggerType.Primitive(PrimitiveKind.LONG),
+                                    required = true,
+                                ),
+                                SwaggerProperty(
+                                    name = "name",
+                                    originalName = "name",
+                                    type = SwaggerType.Primitive(PrimitiveKind.STRING),
+                                    required = true,
+                                ),
+                            ),
+                    ),
+                    SwaggerSchema(
+                        name = "CommonResultBoolean",
+                        properties =
+                            listOf(
+                                SwaggerProperty("code", "code", SwaggerType.Primitive(PrimitiveKind.INT), false),
+                                SwaggerProperty("msg", "msg", SwaggerType.Primitive(PrimitiveKind.STRING), false),
+                                SwaggerProperty("data", "data", SwaggerType.Primitive(PrimitiveKind.BOOLEAN), false),
+                            ),
                     ),
                 ),
-                SwaggerSchema(
-                    name = "CommonResultBoolean",
-                    properties = listOf(
-                        SwaggerProperty("code", "code", SwaggerType.Primitive(PrimitiveKind.INT), false),
-                        SwaggerProperty("msg", "msg", SwaggerType.Primitive(PrimitiveKind.STRING), false),
-                        SwaggerProperty("data", "data", SwaggerType.Primitive(PrimitiveKind.BOOLEAN), false),
+            operations =
+                listOf(
+                    SwaggerOperation(
+                        operationId = "topicUpdateTopic",
+                        method = "put",
+                        path = "/admin-api/ai/topic/update",
+                        params = emptyList(),
+                        requestBody = SwaggerType.ModelRef("TopicSaveReqVO"),
+                        responseBody = SwaggerType.ModelRef("CommonResultBoolean"),
                     ),
                 ),
-            ),
-            operations = listOf(
-                SwaggerOperation(
-                    operationId = "topicUpdateTopic",
-                    method = "put",
-                    path = "/admin-api/ai/topic/update",
-                    params = emptyList(),
-                    requestBody = SwaggerType.ModelRef("TopicSaveReqVO"),
-                    responseBody = SwaggerType.ModelRef("CommonResultBoolean"),
-                ),
-            ),
         )
 }

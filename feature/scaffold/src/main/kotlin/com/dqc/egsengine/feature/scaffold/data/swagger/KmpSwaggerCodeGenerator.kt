@@ -25,19 +25,24 @@ class KmpSwaggerCodeGenerator(
     private val logger = LoggerFactory.getLogger(KmpSwaggerCodeGenerator::class.java)
     private val pagingInferrer = SwaggerPagingInferrer()
 
-    fun generateToCommon(template: ModuleTemplate, spec: SwaggerSpec, projectRoot: File? = null): List<GeneratedFile> =
-        generate(template, spec, projectRoot).map { GeneratedFile(it.path, it.content) }
+    fun generateToCommon(
+        template: ModuleTemplate,
+        spec: SwaggerSpec,
+        projectRoot: File? = null,
+    ): List<GeneratedFile> = generate(template, spec, projectRoot).map { GeneratedFile(it.path, it.content) }
 
     /**
      * Applies the same wrapper unwrap and header filtering as [generate].
      */
     fun adjustSpecForKmp(spec: SwaggerSpec): SwaggerSpec {
         val (wrapperSchemas, _) = spec.schemas.partition { isCommonResultWrapper(it) }
-        val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
-            schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
-        }
+        val wrapperUnwrapMap =
+            wrapperSchemas.associate { schema ->
+                schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
+            }
         return spec.copy(
-            operations = spec.operations.map { op ->
+            operations =
+            spec.operations.map { op ->
                 op.copy(
                     params = op.params.filter { it.location.lowercase() != "header" },
                     responseBody = unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
@@ -58,9 +63,10 @@ class KmpSwaggerCodeGenerator(
         val adjustedSpec = adjustSpecForKmp(spec)
         val specForGen = pagingInferrer.enrich(adjustedSpec)
         val (wrapperSchemas, dataSchemas) = spec.schemas.partition { isCommonResultWrapper(it) }
-        val wrapperUnwrapMap = wrapperSchemas.associate { schema ->
-            schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
-        }
+        val wrapperUnwrapMap =
+            wrapperSchemas.associate { schema ->
+                schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
+            }
         val requestSchemaNames = collectRequestSchemaNames(spec)
 
         for (schema in dataSchemas) {
@@ -97,25 +103,31 @@ class KmpSwaggerCodeGenerator(
             renderer.renderApiRepositorySupport(specForGen, ctx),
         )
         val renderedDataModule = renderer.renderGeneratedDataModule(ctx)
-        val mergedDataModule = projectRoot?.let { root ->
-            val existingPath = root.resolve(
-                "$moduleDir/src/commonMain/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDataModule.kt",
-            )
-            val existing = if (existingPath.exists()) existingPath.readText() else null
-            KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, renderedDataModule)
-        } ?: renderedDataModule
+        val mergedDataModule =
+            projectRoot?.let { root ->
+                val existingPath =
+                    root.resolve(
+                        "$moduleDir/src/commonMain/kotlin/${ctx.generateDiPackage.replace('.', '/')}/GeneratedDataModule.kt",
+                    )
+                val existing = if (existingPath.exists()) existingPath.readText() else null
+                KmpGeneratedDomainModuleIo.mergeGeneratedDataModulePreservingDatabaseBlock(existing, renderedDataModule)
+            } ?: renderedDataModule
         files.addCommonMain(
             moduleDir,
             ctx.generateDiPackage,
             "GeneratedDataModule",
             mergedDataModule,
         )
-        val preservedDb = projectRoot?.let { root ->
-            KmpGeneratedDomainModuleIo.extractDbUseCaseClassNames(root, template.name, template)
-        }.orEmpty()
-        val preservedPrefs = projectRoot?.let { root ->
-            KmpGeneratedDomainModuleIo.extractPrefsUseCaseClassNames(root, template.name, template)
-        }.orEmpty()
+        val preservedDb =
+            projectRoot
+                ?.let { root ->
+                    KmpGeneratedDomainModuleIo.extractDbUseCaseClassNames(root, template.name, template)
+                }.orEmpty()
+        val preservedPrefs =
+            projectRoot
+                ?.let { root ->
+                    KmpGeneratedDomainModuleIo.extractPrefsUseCaseClassNames(root, template.name, template)
+                }.orEmpty()
         files.addCommonMain(
             moduleDir,
             ctx.generateDiPackage,
@@ -133,26 +145,29 @@ class KmpSwaggerCodeGenerator(
             )
         }
 
-        val slices = projectRoot?.let { root ->
-            combinedRepositoryGenerator.detectSlices(root, template.name, template)
-        }
+        val slices =
+            projectRoot?.let { root ->
+                combinedRepositoryGenerator.detectSlices(root, template.name, template)
+            }
         val includeDb = slices?.hasDb ?: false
         val includePrefs = slices?.hasPrefs ?: false
-        combinedRepositoryGenerator.generate(
-            template = template,
-            subProjectRoot = projectRoot,
-            includeApi = true,
-            includeDb = includeDb,
-            includePrefs = includePrefs,
-        )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
+        combinedRepositoryGenerator
+            .generate(
+                template = template,
+                subProjectRoot = projectRoot,
+                includeApi = true,
+                includeDb = includeDb,
+                includePrefs = includePrefs,
+            )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
 
-        repositoryImplGenerator.generateOrMerge(
-            template = template,
-            subProjectRoot = projectRoot,
-            includeApi = true,
-            includeDb = includeDb,
-            includePrefs = includePrefs,
-        )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
+        repositoryImplGenerator
+            .generateOrMerge(
+                template = template,
+                subProjectRoot = projectRoot,
+                includeApi = true,
+                includeDb = includeDb,
+                includePrefs = includePrefs,
+            )?.let { files.add(ModuleGenerator.GeneratedFile(it.path, it.content)) }
 
         logger.info("Generated ${files.size} KMP swagger scaffold files for module ${template.name}")
         return files
@@ -165,6 +180,7 @@ class KmpSwaggerCodeGenerator(
 
     private fun collectRequestSchemaNames(spec: SwaggerSpec): Set<String> {
         val names = mutableSetOf<String>()
+
         fun collectFromType(type: SwaggerType?) {
             when (type) {
                 is SwaggerType.ModelRef -> names.add(type.name)

@@ -18,14 +18,15 @@ data class ProjectInfo(
         get() = modules.any { it.type == ProjectType.KOTLIN_MULTIPLATFORM }
 
     val overallType: String
-        get() = when {
-            isKmpProject && isAndroidProject -> "Kotlin Multiplatform (with Android)"
-            isKmpProject -> "Kotlin Multiplatform"
-            isAndroidProject -> "Android"
-            modules.any { it.type == ProjectType.KOTLIN_JVM } -> "Kotlin JVM"
-            modules.any { it.type == ProjectType.JAVA } -> "Java"
-            else -> "Unknown"
-        }
+        get() =
+            when {
+                isKmpProject && isAndroidProject -> "Kotlin Multiplatform (with Android)"
+                isKmpProject -> "Kotlin Multiplatform"
+                isAndroidProject -> "Android"
+                modules.any { it.type == ProjectType.KOTLIN_JVM } -> "Kotlin JVM"
+                modules.any { it.type == ProjectType.JAVA } -> "Java"
+                else -> "Unknown"
+            }
 
     val moduleCountByType: Map<ProjectType, Int>
         get() = modules.groupBy { it.type }.mapValues { it.value.size }

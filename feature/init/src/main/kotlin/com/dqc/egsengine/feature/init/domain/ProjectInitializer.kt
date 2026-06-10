@@ -16,8 +16,9 @@ class ProjectInitializer(
     fun initialize(projectPath: File): EgsConfig {
         require(projectPath.isDirectory) { "Path is not a directory: $projectPath" }
 
-        val settingsFile = projectPath.resolve("settings.gradle.kts").takeIf { it.exists() }
-            ?: projectPath.resolve("settings.gradle").takeIf { it.exists() }
+        val settingsFile =
+            projectPath.resolve("settings.gradle.kts").takeIf { it.exists() }
+                ?: projectPath.resolve("settings.gradle").takeIf { it.exists() }
 
         requireNotNull(settingsFile) { "Not a Gradle project (no settings.gradle found): $projectPath" }
 
@@ -31,15 +32,16 @@ class ProjectInitializer(
         val moduleStructure = analyzeModuleStructure(projectPath, modules)
         val baseClasses = baseClassScanner.scan(projectPath, modules)
 
-        val config = EgsConfig(
-            projectName = projectName,
-            projectType = projectType,
-            rootPath = projectPath.absolutePath,
-            conventionPluginId = conventionPluginId,
-            basePackage = basePackage,
-            moduleStructure = moduleStructure,
-            baseClasses = baseClasses,
-        )
+        val config =
+            EgsConfig(
+                projectName = projectName,
+                projectType = projectType,
+                rootPath = projectPath.absolutePath,
+                conventionPluginId = conventionPluginId,
+                basePackage = basePackage,
+                moduleStructure = moduleStructure,
+                baseClasses = baseClasses,
+            )
 
         configWriter.write(config, projectPath)
         return config
@@ -52,13 +54,15 @@ class ProjectInitializer(
     }
 
     private fun detectProjectType(projectRoot: File): String {
-        val buildFile = projectRoot.resolve("build.gradle.kts").takeIf { it.exists() }
-            ?: projectRoot.resolve("build.gradle").takeIf { it.exists() }
+        val buildFile =
+            projectRoot.resolve("build.gradle.kts").takeIf { it.exists() }
+                ?: projectRoot.resolve("build.gradle").takeIf { it.exists() }
 
         val content = buildFile?.readText()?.lowercase() ?: ""
 
-        val hasAndroidPlugin = content.contains("com.android") ||
-            projectRoot.resolve("app/src/main/AndroidManifest.xml").exists()
+        val hasAndroidPlugin =
+            content.contains("com.android") ||
+                projectRoot.resolve("app/src/main/AndroidManifest.xml").exists()
 
         val hasKmpPlugin = content.contains("multiplatform")
 
@@ -77,13 +81,15 @@ class ProjectInitializer(
         val featureModules = projectRoot.resolve("feature")
         if (!featureModules.isDirectory) return null
 
-        val sampleBuildFile = featureModules.listFiles()
-            ?.firstOrNull { it.isDirectory }
-            ?.let { dir ->
-                dir.resolve("build.gradle.kts").takeIf { it.exists() }
-                    ?: dir.resolve("build.gradle").takeIf { it.exists() }
-            }
-            ?: return null
+        val sampleBuildFile =
+            featureModules
+                .listFiles()
+                ?.firstOrNull { it.isDirectory }
+                ?.let { dir ->
+                    dir.resolve("build.gradle.kts").takeIf { it.exists() }
+                        ?: dir.resolve("build.gradle").takeIf { it.exists() }
+                }
+                ?: return null
 
         val content = sampleBuildFile.readText()
         val pluginPattern = Regex("""id\s*\(\s*"([^"]+\.convention\.feature[^"]*)"\s*\)""")
@@ -153,14 +159,18 @@ class ProjectInitializer(
         return modules.distinct()
     }
 
-    private fun analyzeModuleStructure(projectRoot: File, modules: List<String>): ModuleStructure {
+    private fun analyzeModuleStructure(
+        projectRoot: File,
+        modules: List<String>,
+    ): ModuleStructure {
         val layerCounts = mutableMapOf<String, Int>()
         var resCount = 0
         var featureModuleCount = 0
 
-        val featureModules = modules.filter {
-            it.startsWith(":feature:") && it != ":feature:base" && it != ":feature:common"
-        }
+        val featureModules =
+            modules.filter {
+                it.startsWith(":feature:") && it != ":feature:base" && it != ":feature:common"
+            }
 
         for (modulePath in featureModules) {
             val relDir = modulePath.removePrefix(":").replace(':', File.separatorChar)
@@ -172,7 +182,8 @@ class ProjectInitializer(
             val kotlinDir = GradleSourceRoots.orderedKotlinRoots(moduleDir).firstOrNull() ?: continue
             val packageDir = findDeepestPackageDir(kotlinDir)
 
-            packageDir.listFiles()
+            packageDir
+                .listFiles()
                 ?.filter { it.isDirectory }
                 ?.forEach { layerDir ->
                     layerCounts[layerDir.name] = (layerCounts[layerDir.name] ?: 0) + 1
@@ -183,10 +194,11 @@ class ProjectInitializer(
             }
         }
 
-        val commonLayers = layerCounts.entries
-            .filter { it.value >= featureModuleCount / 2.0 }
-            .sortedByDescending { it.value }
-            .map { it.key }
+        val commonLayers =
+            layerCounts.entries
+                .filter { it.value >= featureModuleCount / 2.0 }
+                .sortedByDescending { it.value }
+                .map { it.key }
 
         return ModuleStructure(
             layers = commonLayers.ifEmpty { listOf("data", "domain", "presentation") },

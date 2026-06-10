@@ -16,7 +16,6 @@ class AndroidModuleGenerator(
     private val settingsUpdater: SettingsGradleUpdater,
     private val templateEngine: TemplateEngine,
 ) : PlatformModuleGenerator {
-
     private val logger = LoggerFactory.getLogger(AndroidModuleGenerator::class.java)
 
     override val platform: Platform = Platform.ANDROID
@@ -82,7 +81,10 @@ class AndroidModuleGenerator(
         settingsUpdater.update(subProjectRoot, moduleName)
     }
 
-    fun previewFromTemplate(template: ModuleTemplate, projectRoot: File? = null): List<GeneratedFile> {
+    fun previewFromTemplate(
+        template: ModuleTemplate,
+        projectRoot: File? = null,
+    ): List<GeneratedFile> {
         val kotlinGen = KotlinModuleTemplateRenderer(templateEngine, template)
         val files = mutableListOf<GeneratedFile>()
         val moduleDir = "feature/${template.name}"
@@ -122,7 +124,10 @@ class AndroidModuleGenerator(
         return files
     }
 
-    fun generateFromTemplate(projectRoot: File, template: ModuleTemplate): List<File> {
+    fun generateFromTemplate(
+        projectRoot: File,
+        template: ModuleTemplate,
+    ): List<File> {
         val created = mutableListOf<File>()
 
         for (entry in previewFromTemplate(template, projectRoot)) {
@@ -144,7 +149,10 @@ class AndroidModuleGenerator(
     }
 
     companion object {
-        fun toModuleTemplate(moduleName: String, config: SubProjectConfig): ModuleTemplate {
+        fun toModuleTemplate(
+            moduleName: String,
+            config: SubProjectConfig,
+        ): ModuleTemplate {
             val normalizedModule = moduleName.replace("-", "").replace("_", "")
             val featurePackage = "${config.basePackage}.feature.$normalizedModule"
             val isAndroid = config.platform in setOf(Platform.ANDROID, Platform.KMP_ANDROID)
@@ -172,7 +180,10 @@ class AndroidModuleGenerator(
          * `<basePackage>.convention.feature`; this matches that naming so fresh scaffolds compile
          * against the template's `build-logic`.
          */
-        private fun resolveConventionPluginId(config: SubProjectConfig, isAndroid: Boolean): String? {
+        private fun resolveConventionPluginId(
+            config: SubProjectConfig,
+            isAndroid: Boolean,
+        ): String? {
             config.conventionPluginId?.takeIf { it.isNotBlank() }?.let { return it }
             if (!isAndroid) return null
             val base = config.basePackage.takeIf { it.isNotBlank() } ?: return null
@@ -181,10 +192,12 @@ class AndroidModuleGenerator(
 
         private fun resolveBaseClasses(config: SubProjectConfig): BaseClassPackages {
             val overrides = config.scaffoldOverrides
-            val baseViewModel = overrides?.baseViewModelFqn
-                ?: config.baseClasses.find { it.name == "BaseViewModel" }?.let { "${it.packageName}.BaseViewModel" }
-            val baseFragment = overrides?.baseFragmentFqn
-                ?: config.baseClasses.find { it.name == "BaseFragment" }?.let { "${it.packageName}.BaseFragment" }
+            val baseViewModel =
+                overrides?.baseViewModelFqn
+                    ?: config.baseClasses.find { it.name == "BaseViewModel" }?.let { "${it.packageName}.BaseViewModel" }
+            val baseFragment =
+                overrides?.baseFragmentFqn
+                    ?: config.baseClasses.find { it.name == "BaseFragment" }?.let { "${it.packageName}.BaseFragment" }
             val bp = overrides?.basePackage ?: config.basePackage
 
             return BaseClassPackages(

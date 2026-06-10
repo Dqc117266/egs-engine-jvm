@@ -6,7 +6,7 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.springboot.database
 
 /**
- * Defaults for Spring Boot table¡úCRUD codegen (`backend gen database`).
+ * Defaults for Spring Boot tableÂ¡ÃºCRUD codegen (`backend gen database`).
  * Matches the `egs-server-template/feature/demo` stack unless flags disable pieces.
  */
 data class SpringBootOpinionatedOptions(

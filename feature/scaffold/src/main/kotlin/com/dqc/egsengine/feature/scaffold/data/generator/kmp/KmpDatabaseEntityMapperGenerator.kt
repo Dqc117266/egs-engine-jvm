@@ -31,12 +31,18 @@ class KmpDatabaseEntityMapperGenerator(
         projectRoot: File?,
     ): List<GeneratedFile> {
         val rows = KmpDatabaseTemplateModels.buildRows(tables)
-        val pairs = rows.mapNotNull { row ->
-            val schema = DatabaseEntityDomainMapping.matchSchema(row.table, spec) ?: return@mapNotNull null
-            DatabaseEntityDomainMapping.buildMapperBlock(row.table, row.entityClassName, schema) { t ->
-            when (t) { "BigDecimal" -> "Double"; "Instant" -> "Long"; else -> t }
-        }?.let { row to it }
-        }
+        val pairs =
+            rows.mapNotNull { row ->
+                val schema = DatabaseEntityDomainMapping.matchSchema(row.table, spec) ?: return@mapNotNull null
+                DatabaseEntityDomainMapping
+                    .buildMapperBlock(row.table, row.entityClassName, schema) { t ->
+                        when (t) {
+                            "BigDecimal" -> "Double"
+                            "Instant" -> "Long"
+                            else -> t
+                        }
+                    }?.let { row to it }
+            }
         if (pairs.isEmpty()) {
             logger.warn("No Swagger schemas matched DDL tables with overlapping fields; skipping entity mappers.")
             return emptyList()
@@ -53,16 +59,17 @@ class KmpDatabaseEntityMapperGenerator(
         val entityImports = pairs.map { "$entityPackage.${it.first.entityClassName}" }.distinct().sorted()
         val domainImports = pairs.map { "$domainPackage.${it.second["domainClassName"] as String}" }.distinct().sorted()
 
-        val content = templateEngine.render(
-            "kmp/database/EntityMapper.kt.ftl",
-            mapOf(
-                "mapperPackageName" to mapperPackage,
-                "entityImports" to entityImports,
-                "domainImports" to domainImports,
-                "mapperBlocks" to blocks,
-            ),
-            projectRoot,
-        )
+        val content =
+            templateEngine.render(
+                "kmp/database/EntityMapper.kt.ftl",
+                mapOf(
+                    "mapperPackageName" to mapperPackage,
+                    "entityImports" to entityImports,
+                    "domainImports" to domainImports,
+                    "mapperBlocks" to blocks,
+                ),
+                projectRoot,
+            )
 
         val pkgPath = mapperPackage.replace('.', '/')
         return listOf(
@@ -94,10 +101,11 @@ class KmpDatabaseEntityMapperGenerator(
             val listProp = pageSchema.properties.find { it.name == "list" } ?: return null
             val t = listProp.type
             return when (t) {
-                is SwaggerType.ListType -> when (val el = t.elementType) {
-                    is SwaggerType.ModelRef -> el.name
-                    else -> null
-                }
+                is SwaggerType.ListType ->
+                    when (val el = t.elementType) {
+                        is SwaggerType.ModelRef -> el.name
+                        else -> null
+                    }
                 else -> null
             }
         }

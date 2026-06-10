@@ -8,12 +8,16 @@ import java.io.File
 class EgsConfigWriter {
     private val logger = LoggerFactory.getLogger(EgsConfigWriter::class.java)
 
-    private val json = Json {
-        prettyPrint = true
-        encodeDefaults = true
-    }
+    private val json =
+        Json {
+            prettyPrint = true
+            encodeDefaults = true
+        }
 
-    fun write(config: EgsConfig, projectRoot: File) {
+    fun write(
+        config: EgsConfig,
+        projectRoot: File,
+    ) {
         val egsDir = projectRoot.resolve(".egs")
         egsDir.mkdirs()
 

@@ -17,7 +17,6 @@ import java.io.StringWriter
 class TemplateEngine(
     private val registry: TemplateRegistry,
 ) {
-
     fun render(
         templateName: String,
         model: Any,

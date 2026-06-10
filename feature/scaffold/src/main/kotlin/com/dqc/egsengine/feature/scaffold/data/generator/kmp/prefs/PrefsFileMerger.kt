@@ -15,7 +15,11 @@ import java.io.File
 object PrefsFileMerger {
     private val logger = LoggerFactory.getLogger(PrefsFileMerger::class.java)
 
-    fun renderSnapshotModelFile(modelPkg: String, className: String, body: String): String =
+    fun renderSnapshotModelFile(
+        modelPkg: String,
+        className: String,
+        body: String,
+    ): String =
         """
         /*
          * Copyright 2026 Mifos Initiative
@@ -54,13 +58,14 @@ object PrefsFileMerger {
                             return text
                         }
                     } else {
-                        text = KmpPreferencesBlockMerger.appendToMarkedBlock(
-                            text,
-                            KmpPreferencesBlockMerger.SCALAR_KEYS_BEGIN,
-                            KmpPreferencesBlockMerger.SCALAR_KEYS_END,
-                            indentPrefsKeysBlock(chunk),
-                            shouldSkipAppend = { false },
-                        )
+                        text =
+                            KmpPreferencesBlockMerger.appendToMarkedBlock(
+                                text,
+                                KmpPreferencesBlockMerger.SCALAR_KEYS_BEGIN,
+                                KmpPreferencesBlockMerger.SCALAR_KEYS_END,
+                                indentPrefsKeysBlock(chunk),
+                                shouldSkipAppend = { false },
+                            )
                     }
                     text
                 }
@@ -82,13 +87,14 @@ object PrefsFileMerger {
                             )
                         }
                     } else {
-                        text = KmpPreferencesBlockMerger.appendToMarkedBlock(
-                            text,
-                            KmpPreferencesBlockMerger.SNAPSHOT_KEYS_BEGIN,
-                            KmpPreferencesBlockMerger.SNAPSHOT_KEYS_END,
-                            indentPrefsKeysBlock(chunk),
-                            shouldSkipAppend = { false },
-                        )
+                        text =
+                            KmpPreferencesBlockMerger.appendToMarkedBlock(
+                                text,
+                                KmpPreferencesBlockMerger.SNAPSHOT_KEYS_BEGIN,
+                                KmpPreferencesBlockMerger.SNAPSHOT_KEYS_END,
+                                indentPrefsKeysBlock(chunk),
+                                shouldSkipAppend = { false },
+                            )
                     }
                     text
                 }
@@ -96,17 +102,26 @@ object PrefsFileMerger {
         }
     }
 
-    fun replaceScalarKeyConst(text: String, upper: String, newChunk: String): String {
-        val pattern = Regex(
-            """const val $upper = \"[^\"]*\"\s*\n\s*const val ${upper}_DEFAULT = [^\n]+""",
-            RegexOption.MULTILINE,
-        )
+    fun replaceScalarKeyConst(
+        text: String,
+        upper: String,
+        newChunk: String,
+    ): String {
+        val pattern =
+            Regex(
+                """const val $upper = \"[^\"]*\"\s*\n\s*const val ${upper}_DEFAULT = [^\n]+""",
+                RegexOption.MULTILINE,
+            )
         return pattern.replace(text) {
             newChunk.prependIndent("        ")
         }
     }
 
-    fun replaceSnapshotKeyLine(text: String, upper: String, newLine: String): String {
+    fun replaceSnapshotKeyLine(
+        text: String,
+        upper: String,
+        newLine: String,
+    ): String {
         val pattern = Regex("""const val $upper = \"[^\"]*\"""")
         return pattern.replace(text, newLine.prependIndent("        "))
     }
@@ -162,31 +177,34 @@ object PrefsFileMerger {
         val keysImport = "import $prefsKeysFq"
         val flowImport = "import kotlinx.coroutines.flow.Flow"
 
-        val chunk = when (mode) {
-            is PrefsGenerationMode.Scalar ->
-                KmpPreferencesKotlinEmitter.scalarDataSourceMethods(prefsKeysObject, mode.logicalKey, mode.field)
-            is PrefsGenerationMode.Snapshot ->
-                KmpPreferencesKotlinEmitter.snapshotDataSourceMethods(
-                    prefsKeysObject,
-                    mode.snapshotClassName,
-                    mode.logicalKey,
-                )
-        }
+        val chunk =
+            when (mode) {
+                is PrefsGenerationMode.Scalar ->
+                    KmpPreferencesKotlinEmitter.scalarDataSourceMethods(prefsKeysObject, mode.logicalKey, mode.field)
+                is PrefsGenerationMode.Snapshot ->
+                    KmpPreferencesKotlinEmitter.snapshotDataSourceMethods(
+                        prefsKeysObject,
+                        mode.snapshotClassName,
+                        mode.logicalKey,
+                    )
+            }
 
         if (!existingFile.exists()) {
-            val snapImport = if (mode is PrefsGenerationMode.Snapshot) {
-                "import $modelPkg.${mode.snapshotClassName}"
-            } else {
-                ""
-            }
+            val snapImport =
+                if (mode is PrefsGenerationMode.Snapshot) {
+                    "import $modelPkg.${mode.snapshotClassName}"
+                } else {
+                    ""
+                }
             val scalarBody = if (mode is PrefsGenerationMode.Scalar) chunk else ""
             val snapshotBody = if (mode is PrefsGenerationMode.Snapshot) chunk else ""
-            val sortedImports = buildList {
-                add(keysImport)
-                add(flowImport)
-                if (snapImport.isNotBlank()) add(snapImport)
-                add(storeImport)
-            }.sorted()
+            val sortedImports =
+                buildList {
+                    add(keysImport)
+                    add(flowImport)
+                    if (snapImport.isNotBlank()) add(snapImport)
+                    add(storeImport)
+                }.sorted()
             return buildString {
                 appendLine("/*")
                 appendLine(" * Copyright 2026 Mifos Initiative")
@@ -219,19 +237,21 @@ object PrefsFileMerger {
         }
 
         var text = existingFile.readText()
-        val markerPair = when (mode) {
-            is PrefsGenerationMode.Scalar ->
-                KmpPreferencesBlockMerger.SCALAR_DATASOURCE_BEGIN to KmpPreferencesBlockMerger.SCALAR_DATASOURCE_END
-            is PrefsGenerationMode.Snapshot ->
-                KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_BEGIN to KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_END
-        }
-        val methodPrefix = when (mode) {
-            is PrefsGenerationMode.Scalar -> {
-                val p = KmpPreferencesKotlinEmitter.kotlinPropertyToPascal(mode.field.name)
-                "suspend fun get$p"
+        val markerPair =
+            when (mode) {
+                is PrefsGenerationMode.Scalar ->
+                    KmpPreferencesBlockMerger.SCALAR_DATASOURCE_BEGIN to KmpPreferencesBlockMerger.SCALAR_DATASOURCE_END
+                is PrefsGenerationMode.Snapshot ->
+                    KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_BEGIN to KmpPreferencesBlockMerger.SNAPSHOT_DATASOURCE_END
             }
-            is PrefsGenerationMode.Snapshot -> "suspend fun get${mode.snapshotClassName}"
-        }
+        val methodPrefix =
+            when (mode) {
+                is PrefsGenerationMode.Scalar -> {
+                    val p = KmpPreferencesKotlinEmitter.kotlinPropertyToPascal(mode.field.name)
+                    "suspend fun get$p"
+                }
+                is PrefsGenerationMode.Snapshot -> "suspend fun get${mode.snapshotClassName}"
+            }
         if (text.contains(methodPrefix) && !force) {
             logger.info("DataSource already contains {}; skipping datasource merge", methodPrefix)
             return text
@@ -242,13 +262,14 @@ object PrefsFileMerger {
                 text = insertImportAfterPackage(text, snapImportLine)
             }
         }
-        text = KmpPreferencesBlockMerger.appendToMarkedBlock(
-            text,
-            markerPair.first,
-            markerPair.second,
-            indentClassMemberBlock(chunk),
-            shouldSkipAppend = { inner -> inner.contains(methodPrefix) },
-        )
+        text =
+            KmpPreferencesBlockMerger.appendToMarkedBlock(
+                text,
+                markerPair.first,
+                markerPair.second,
+                indentClassMemberBlock(chunk),
+                shouldSkipAppend = { inner -> inner.contains(methodPrefix) },
+            )
         if (!text.contains(keysImport)) {
             text = insertImportAfterPackage(text, keysImport)
         }
@@ -261,7 +282,10 @@ object PrefsFileMerger {
         return text
     }
 
-    fun insertImportAfterPackage(text: String, importLine: String): String {
+    fun insertImportAfterPackage(
+        text: String,
+        importLine: String,
+    ): String {
         val pkg = Regex("^package\\s+\\S+", RegexOption.MULTILINE).find(text) ?: return importLine + "\n" + text
         val insertAt = pkg.range.last + 1
         return text.substring(0, insertAt) + "\n" + importLine + text.substring(insertAt)
@@ -275,11 +299,12 @@ object PrefsFileMerger {
         modelPkg: String = "",
         includeSnapshotImport: Boolean = true,
     ): String {
-        val chunk = when (mode) {
-            is PrefsGenerationMode.Scalar -> KmpPreferencesKotlinEmitter.scalarRepositoryMethods(mode.field)
-            is PrefsGenerationMode.Snapshot ->
-                KmpPreferencesKotlinEmitter.snapshotRepositoryMethods(mode.snapshotClassName)
-        }
+        val chunk =
+            when (mode) {
+                is PrefsGenerationMode.Scalar -> KmpPreferencesKotlinEmitter.scalarRepositoryMethods(mode.field)
+                is PrefsGenerationMode.Snapshot ->
+                    KmpPreferencesKotlinEmitter.snapshotRepositoryMethods(mode.snapshotClassName)
+            }
         if (!file.exists()) {
             return buildString {
                 appendLine("/*")
@@ -305,13 +330,14 @@ object PrefsFileMerger {
             }.trimEnd() + "\n"
         }
         val text = file.readText()
-        val sig = when (mode) {
-            is PrefsGenerationMode.Scalar -> {
-                val p = KmpPreferencesKotlinEmitter.kotlinPropertyToPascal(mode.field.name)
-                "suspend fun get$p"
+        val sig =
+            when (mode) {
+                is PrefsGenerationMode.Scalar -> {
+                    val p = KmpPreferencesKotlinEmitter.kotlinPropertyToPascal(mode.field.name)
+                    "suspend fun get$p"
+                }
+                is PrefsGenerationMode.Snapshot -> "suspend fun get${mode.snapshotClassName}"
             }
-            is PrefsGenerationMode.Snapshot -> "suspend fun get${mode.snapshotClassName}"
-        }
         return KmpPreferencesBlockMerger.appendToMarkedBlock(
             text,
             KmpPreferencesBlockMerger.REPOSITORY_BEGIN,
@@ -333,12 +359,13 @@ object PrefsFileMerger {
         modelPkg: String = "",
         includeSnapshotImport: Boolean = true,
     ): String {
-        val chunk = when (mode) {
-            is PrefsGenerationMode.Scalar ->
-                KmpPreferencesKotlinEmitter.scalarSupportDelegates(mode.field, dataSourceClass)
-            is PrefsGenerationMode.Snapshot ->
-                KmpPreferencesKotlinEmitter.snapshotSupportDelegates(mode.snapshotClassName, dataSourceClass)
-        }
+        val chunk =
+            when (mode) {
+                is PrefsGenerationMode.Scalar ->
+                    KmpPreferencesKotlinEmitter.scalarSupportDelegates(mode.field, dataSourceClass)
+                is PrefsGenerationMode.Snapshot ->
+                    KmpPreferencesKotlinEmitter.snapshotSupportDelegates(mode.snapshotClassName, dataSourceClass)
+            }
         if (!file.exists()) {
             return buildString {
                 appendLine("/*")
@@ -367,13 +394,14 @@ object PrefsFileMerger {
             }.trimEnd() + "\n"
         }
         val text = file.readText()
-        val sig = when (mode) {
-            is PrefsGenerationMode.Scalar -> {
-                val p = KmpPreferencesKotlinEmitter.kotlinPropertyToPascal(mode.field.name)
-                "override suspend fun get$p"
+        val sig =
+            when (mode) {
+                is PrefsGenerationMode.Scalar -> {
+                    val p = KmpPreferencesKotlinEmitter.kotlinPropertyToPascal(mode.field.name)
+                    "override suspend fun get$p"
+                }
+                is PrefsGenerationMode.Snapshot -> "override suspend fun get${mode.snapshotClassName}"
             }
-            is PrefsGenerationMode.Snapshot -> "override suspend fun get${mode.snapshotClassName}"
-        }
         return KmpPreferencesBlockMerger.appendToMarkedBlock(
             text,
             KmpPreferencesBlockMerger.SUPPORT_BEGIN,

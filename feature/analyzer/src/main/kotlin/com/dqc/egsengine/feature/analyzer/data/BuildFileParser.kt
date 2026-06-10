@@ -54,13 +54,11 @@ class BuildFileParser {
         return extractIncludedModules(content)
     }
 
-    private fun findBuildFile(dir: File): File? =
-        dir.resolve("build.gradle.kts").takeIf { it.exists() }
-            ?: dir.resolve("build.gradle").takeIf { it.exists() }
+    private fun findBuildFile(dir: File): File? = dir.resolve("build.gradle.kts").takeIf { it.exists() }
+        ?: dir.resolve("build.gradle").takeIf { it.exists() }
 
-    private fun findSettingsFile(dir: File): File? =
-        dir.resolve("settings.gradle.kts").takeIf { it.exists() }
-            ?: dir.resolve("settings.gradle").takeIf { it.exists() }
+    private fun findSettingsFile(dir: File): File? = dir.resolve("settings.gradle.kts").takeIf { it.exists() }
+        ?: dir.resolve("settings.gradle").takeIf { it.exists() }
 
     private fun extractPlugins(content: String): List<String> {
         val plugins = mutableListOf<String>()
@@ -109,7 +107,11 @@ class BuildFileParser {
         return modules.distinct()
     }
 
-    private fun detectModuleType(content: String, plugins: List<String>, moduleDir: File): ProjectType {
+    private fun detectModuleType(
+        content: String,
+        plugins: List<String>,
+        moduleDir: File,
+    ): ProjectType {
         val allPlugins = plugins.joinToString(" ").lowercase()
         val contentLower = content.lowercase()
 

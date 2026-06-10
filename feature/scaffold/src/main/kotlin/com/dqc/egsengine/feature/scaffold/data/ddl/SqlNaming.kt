@@ -7,7 +7,6 @@ package com.dqc.egsengine.feature.scaffold.data.ddl
 
 /** SQL `snake_case` identifiers to Kotlin names. */
 object SqlNaming {
-
     fun snakeToPascal(name: String): String {
         val parts = name.split('_').filter { it.isNotBlank() }
         if (parts.isEmpty()) return name.replaceFirstChar { it.uppercase() }
@@ -88,13 +87,14 @@ object SqlNaming {
         return pluralTail(lower)
     }
 
-    private fun pluralTail(s: String): String =
-        when {
-            s.endsWith("s") || s.endsWith("x") || s.endsWith("ch") || s.endsWith("sh") -> "${s}es"
-            s.endsWith("y") && s.length > 1 && s[s.length - 2].isLetter() &&
-                s[s.length - 2].lowercaseChar() !in listOf('a', 'e', 'i', 'o', 'u')
-            -> s.dropLast(1) + "ies"
+    private fun pluralTail(s: String): String = when {
+        s.endsWith("s") || s.endsWith("x") || s.endsWith("ch") || s.endsWith("sh") -> "${s}es"
+        s.endsWith("y") &&
+            s.length > 1 &&
+            s[s.length - 2].isLetter() &&
+            s[s.length - 2].lowercaseChar() !in listOf('a', 'e', 'i', 'o', 'u')
+        -> s.dropLast(1) + "ies"
 
-            else -> "${s}s"
-        }
+        else -> "${s}s"
+    }
 }

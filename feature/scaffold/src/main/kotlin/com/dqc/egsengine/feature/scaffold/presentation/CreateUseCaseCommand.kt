@@ -13,10 +13,11 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 /**
- * `egs create usecase <Name> -m <module>` ¡ª generates a UseCase skeleton and repository stubs.
+ * `egs create usecase <Name> -m <module>` Â¡Âª generates a UseCase skeleton and repository stubs.
  */
-class CreateUseCaseCommand : CliktCommand(name = "usecase"), KoinComponent {
-
+class CreateUseCaseCommand :
+    CliktCommand(name = "usecase"),
+    KoinComponent {
     private val scaffolder: CreateUseCaseScaffolder by inject()
 
     private val name by argument(help = "Use case name without suffix, e.g. RefreshTodo")
@@ -33,14 +34,15 @@ class CreateUseCaseCommand : CliktCommand(name = "usecase"), KoinComponent {
         try {
             val workspaceRoot = ProjectRootResolver.resolve(projectPath)
             val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
-            val r = scaffolder.scaffold(
-                clientRoot = clientRoot,
-                workspaceRoot = workspaceRoot,
-                moduleName = module,
-                useCaseSimpleName = name,
-                paged = paged,
-                dryRun = dryRun,
-            )
+            val r =
+                scaffolder.scaffold(
+                    clientRoot = clientRoot,
+                    workspaceRoot = workspaceRoot,
+                    moduleName = module,
+                    useCaseSimpleName = name,
+                    paged = paged,
+                    dryRun = dryRun,
+                )
             if (dryRun) {
                 echo(CliFormatter.formatInfo("Dry run: would create use case in feature/$module"))
             } else {

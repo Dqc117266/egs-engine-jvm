@@ -87,9 +87,10 @@ class SpringBootDatabaseScaffolder(
                             "Could not find table '$mainTable' in ${sqlFile.path}. Found: ${tables.map { it.tableName }}",
                         )
                 tables.size == 1 -> tables.first()
-                else -> error(
-                    "DDL defines ${tables.size} tables; pass --main-table=<name>. Tables: ${tables.map { it.tableName }}",
-                )
+                else ->
+                    error(
+                        "DDL defines ${tables.size} tables; pass --main-table=<name>. Tables: ${tables.map { it.tableName }}",
+                    )
             }
 
         val entityPascal = SqlNaming.tableToEntityPascal(table.tableName)

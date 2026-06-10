@@ -18,45 +18,53 @@ internal fun shortenKotlinStdlibPrimitiveFqns(typeStr: String): String {
     return s
 }
 
-internal fun resolveParamTypeString(typeStr: String, modelPackage: String, modulePackage: String): String {
+internal fun resolveParamTypeString(
+    typeStr: String,
+    modelPackage: String,
+    modulePackage: String,
+): String {
     val normalized = shortenKotlinStdlibPrimitiveFqns(typeStr.trim())
     val nullable = normalized.endsWith("?")
     val base = normalized.removeSuffix("?")
-    val typeName = when {
-        base.startsWith("List<") -> {
-            val inner = extractFirstGenericArgument(base, "List<")
-                ?: Regex("""List<([^>]+)>""").find(base)?.groupValues?.get(1)
-                ?: return "List"
-            val innerType = resolveParamTypeString(inner, modelPackage, modulePackage)
-            "List<$innerType>"
-        }
-        else -> base.split(".").let { parts ->
-            val simple = parts.last()
-            val pkg = if (parts.size > 1) parts.dropLast(1).joinToString(".") else modelPackage
-            when (simple) {
-                "Boolean", "ModelBoolean", "KotlinBoolean" -> "Boolean"
-                "Int", "ModelInt", "KotlinInt" -> "Int"
-                "Long", "ModelLong", "KotlinLong" -> "Long"
-                "String", "ModelString", "KotlinString" -> "String"
-                "Double", "ModelDouble", "KotlinDouble" -> "Double"
-                "Float", "ModelFloat", "KotlinFloat" -> "Float"
-                else ->
-                    if (simple.endsWith("ApiModel")) {
-                        "$modelPackage.${simple.removeSuffix("ApiModel")}"
-                    } else if (simple.endsWith("Entity")) {
-                        val entityPkg = databaseEntityPackage(modulePackage)
-                        val candidate = when {
-                            parts.size == 1 -> "$entityPkg.$simple"
-                            pkg == modelPackage || pkg.endsWith(".generate.domain.model") -> "$entityPkg.$simple"
-                            else -> "$pkg.$simple"
-                        }
-                        fixRoomEntityFqn(normalizeSwaggerModelFqn(candidate, modulePackage), simple, modulePackage)
-                    } else {
-                        normalizeSwaggerModelFqn("$pkg.$simple", modulePackage)
-                    }
+    val typeName =
+        when {
+            base.startsWith("List<") -> {
+                val inner =
+                    extractFirstGenericArgument(base, "List<")
+                        ?: Regex("""List<([^>]+)>""").find(base)?.groupValues?.get(1)
+                        ?: return "List"
+                val innerType = resolveParamTypeString(inner, modelPackage, modulePackage)
+                "List<$innerType>"
             }
+            else ->
+                base.split(".").let { parts ->
+                    val simple = parts.last()
+                    val pkg = if (parts.size > 1) parts.dropLast(1).joinToString(".") else modelPackage
+                    when (simple) {
+                        "Boolean", "ModelBoolean", "KotlinBoolean" -> "Boolean"
+                        "Int", "ModelInt", "KotlinInt" -> "Int"
+                        "Long", "ModelLong", "KotlinLong" -> "Long"
+                        "String", "ModelString", "KotlinString" -> "String"
+                        "Double", "ModelDouble", "KotlinDouble" -> "Double"
+                        "Float", "ModelFloat", "KotlinFloat" -> "Float"
+                        else ->
+                            if (simple.endsWith("ApiModel")) {
+                                "$modelPackage.${simple.removeSuffix("ApiModel")}"
+                            } else if (simple.endsWith("Entity")) {
+                                val entityPkg = databaseEntityPackage(modulePackage)
+                                val candidate =
+                                    when {
+                                        parts.size == 1 -> "$entityPkg.$simple"
+                                        pkg == modelPackage || pkg.endsWith(".generate.domain.model") -> "$entityPkg.$simple"
+                                        else -> "$pkg.$simple"
+                                    }
+                                fixRoomEntityFqn(normalizeSwaggerModelFqn(candidate, modulePackage), simple, modulePackage)
+                            } else {
+                                normalizeSwaggerModelFqn("$pkg.$simple", modulePackage)
+                            }
+                    }
+                }
         }
-    }
     return if (nullable) "$typeName?" else typeName
 }
 
@@ -69,8 +77,9 @@ internal fun resolveBasicTypeString(
 ): String {
     val cleaned = shortenKotlinStdlibPrimitiveFqns(simpleType)
     if (cleaned.startsWith("List<") && cleaned.endsWith(">")) {
-        val innerType = extractFirstGenericArgument(cleaned, "List<")
-            ?: cleaned.substring(5, cleaned.length - 1)
+        val innerType =
+            extractFirstGenericArgument(cleaned, "List<")
+                ?: cleaned.substring(5, cleaned.length - 1)
         val innerSimple = innerType.substringAfterLast(".")
         val innerPkg = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
         val inner = resolveBasicTypeString(innerSimple, innerPkg, modelPackage, modulePackage, fixEntity)
@@ -84,11 +93,12 @@ internal fun resolveBasicTypeString(
         "Double", "ModelDouble", "KotlinDouble" -> "Double"
         "Float", "ModelFloat", "KotlinFloat" -> "Float"
         else -> {
-            val raw = if (cleaned.endsWith("ApiModel")) {
-                "$modelPackage.${cleaned.removeSuffix("ApiModel")}"
-            } else {
-                "$typePackage.$cleaned"
-            }
+            val raw =
+                if (cleaned.endsWith("ApiModel")) {
+                    "$modelPackage.${cleaned.removeSuffix("ApiModel")}"
+                } else {
+                    "$typePackage.$cleaned"
+                }
             if (fixEntity && modulePackage.isNotEmpty()) {
                 fixRoomEntityFqn(normalizeSwaggerModelFqn(raw, modulePackage), cleaned, modulePackage)
             } else {
@@ -98,10 +108,13 @@ internal fun resolveBasicTypeString(
     }
 }
 
-internal fun databaseEntityPackage(modulePackage: String): String =
-    "$modulePackage.generate.data.datasource.database.entity"
+internal fun databaseEntityPackage(modulePackage: String): String = "$modulePackage.generate.data.datasource.database.entity"
 
-internal fun fixRoomEntityFqn(fqn: String, simple: String, modulePackage: String): String {
+internal fun fixRoomEntityFqn(
+    fqn: String,
+    simple: String,
+    modulePackage: String,
+): String {
     if (!simple.endsWith("Entity")) return fqn
     val entityPkg = databaseEntityPackage(modulePackage)
     val wrong = "$modulePackage.generate.domain.model.$simple"
@@ -109,7 +122,10 @@ internal fun fixRoomEntityFqn(fqn: String, simple: String, modulePackage: String
     return fqn
 }
 
-internal fun normalizeSwaggerModelFqn(fqn: String, modulePackage: String): String {
+internal fun normalizeSwaggerModelFqn(
+    fqn: String,
+    modulePackage: String,
+): String {
     val legacy = "$modulePackage.domain.model."
     if (fqn.startsWith(legacy)) {
         return fqn.replaceFirst(legacy, "$modulePackage.generate.domain.model.")
@@ -174,13 +190,21 @@ internal fun looksLikeResultReturn(returnType: String): Boolean {
         returnType.contains("network.domain.Result")
 }
 
-internal fun shouldEmitStateFieldForReturnType(returnType: String, extractResultInner: (String) -> String?): Boolean {
+internal fun shouldEmitStateFieldForReturnType(
+    returnType: String,
+    extractResultInner: (String) -> String?,
+): Boolean {
     if (returnType.isBlank()) return false
     if (looksLikeFlowReturn(returnType)) return false
     val norm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
-    val effective = extractResultInner(norm)
-        ?: Regex("""Result<([^>]+)>""").find(norm)?.groupValues?.get(1)?.trim()
-        ?: norm
+    val effective =
+        extractResultInner(norm)
+            ?: Regex("""Result<([^>]+)>""")
+                .find(norm)
+                ?.groupValues
+                ?.get(1)
+                ?.trim()
+            ?: norm
     val trimmed = effective.trimEnd('?')
     val simple = trimmed.substringAfterLast(".")
     if (simple == "Unit" || trimmed == "kotlin.Unit") return false
@@ -203,7 +227,10 @@ internal fun isUnitParamEchoUseCase(
 private val UNIT_ECHO_PREFIX_REGEX =
     Regex("""^(UpdateAll|InsertAll|DeleteAll|Update|Insert|Delete|Set)(?=[A-Z]|$)""")
 
-internal fun unitEchoStatePropertyNameFor(uc: UseCaseInfo, paramFqn: String): String {
+internal fun unitEchoStatePropertyNameFor(
+    uc: UseCaseInfo,
+    paramFqn: String,
+): String {
     val base = uc.name.removeSuffix("UseCase")
     if (base.startsWith("Update") && !base.startsWith("UpdateAll")) {
         val simple = paramFqn.trimEnd('?').substringAfterLast(".").removeSuffix("Entity")
@@ -235,9 +262,14 @@ internal fun resolveStatePropertyTypeString(
     fixEntity: Boolean = true,
 ): String {
     val returnTypeNorm = shortenKotlinStdlibPrimitiveFqns(returnType.trim())
-    val innerType = extractResultInnerType(returnTypeNorm)
-        ?: Regex("""Result<([^>]+)>""").find(returnTypeNorm)?.groupValues?.get(1)?.trim()
-        ?: returnTypeNorm
+    val innerType =
+        extractResultInnerType(returnTypeNorm)
+            ?: Regex("""Result<([^>]+)>""")
+                .find(returnTypeNorm)
+                ?.groupValues
+                ?.get(1)
+                ?.trim()
+            ?: returnTypeNorm
     val simpleType = innerType.substringAfterLast(".")
     val typePackage = if (innerType.contains(".")) innerType.substringBeforeLast(".") else modelPackage
     return resolveBasicTypeString(simpleType, typePackage, modelPackage, modulePackage, fixEntity)
@@ -247,15 +279,15 @@ internal fun buildPagedUseCaseArgumentList(
     uc: UseCaseInfo,
     pageParam: String,
     pageSizeParam: String,
-): String =
-    uc.parameters.joinToString(",\n            ") { p ->
-        val value = when (p.name) {
+): String = uc.parameters.joinToString(",\n            ") { p ->
+    val value =
+        when (p.name) {
             pageParam -> "page"
             pageSizeParam -> "size"
             else -> defaultLiteralForUseCaseParamType(p.type)
         }
-        "${p.name} = $value"
-    }
+    "${p.name} = $value"
+}
 
 internal fun resolvePagedItemFqn(
     innerResultType: String,
@@ -277,7 +309,10 @@ internal fun resolvePagedItemFqn(
     }
 }
 
-internal fun extractFirstGenericArgument(s: String, prefix: String): String? {
+internal fun extractFirstGenericArgument(
+    s: String,
+    prefix: String,
+): String? {
     if (!s.startsWith(prefix) || !s.endsWith(">")) return null
     val start = prefix.length
     var depth = 1
@@ -304,9 +339,11 @@ internal fun splitTopLevelCommaGenericArgs(args: String): List<String> {
             val part = args.substring(start, i).trim()
             if (part.isNotEmpty()) out.add(part)
             start = i + 1
-        } else when (c) {
-            '<' -> depth++
-            '>' -> depth--
+        } else {
+            when (c) {
+                '<' -> depth++
+                '>' -> depth--
+            }
         }
         i++
     }

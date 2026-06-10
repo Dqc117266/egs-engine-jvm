@@ -25,10 +25,9 @@ class WebCommand : CliktCommand(name = "web") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): WebCommand =
-            WebCommand().subcommands(
-                WebCrudCommand.withSubcommands(),
-            )
+        fun withSubcommands(): WebCommand = WebCommand().subcommands(
+            WebCrudCommand.withSubcommands(),
+        )
     }
 }
 
@@ -36,19 +35,19 @@ class WebCrudCommand : CliktCommand(name = "crud") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): WebCrudCommand =
-            WebCrudCommand().subcommands(
-                WebCrudGenCommand(),
-                WebCrudGenFromBackendCommand(),
-            )
+        fun withSubcommands(): WebCrudCommand = WebCrudCommand().subcommands(
+            WebCrudGenCommand(),
+            WebCrudGenFromBackendCommand(),
+        )
     }
 }
 
 /**
  * `egs web crud gen <module>` -- generates Vue3 CRUD pages for a module.
  */
-class WebCrudGenCommand : CliktCommand(name = "gen"), KoinComponent {
-
+class WebCrudGenCommand :
+    CliktCommand(name = "gen"),
+    KoinComponent {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Module name for CRUD generation")
@@ -62,12 +61,13 @@ class WebCrudGenCommand : CliktCommand(name = "gen"), KoinComponent {
         try {
             val dir = ProjectRootResolver.resolve(projectPath)
 
-            val result = scaffolder.scaffoldForProject(
-                projectRoot = dir,
-                moduleName = name,
-                projectKey = "admin",
-                dryRun = dryRun,
-            )
+            val result =
+                scaffolder.scaffoldForProject(
+                    projectRoot = dir,
+                    moduleName = name,
+                    projectKey = "admin",
+                    dryRun = dryRun,
+                )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run - the following files would be generated:"))
@@ -90,8 +90,9 @@ class WebCrudGenCommand : CliktCommand(name = "gen"), KoinComponent {
 /**
  * Admin CRUD from `feature/<module>/.egs-generated.json` `codegen`, or `--sql` + same DDL rules as backend.
  */
-class WebCrudGenFromBackendCommand : CliktCommand(name = "gen-from-backend"), KoinComponent {
-
+class WebCrudGenFromBackendCommand :
+    CliktCommand(name = "gen-from-backend"),
+    KoinComponent {
     private val adminVue: AdminVueCrudScaffolder by inject()
     private val manifest: SpringBootGeneratedPathsManifest by inject()
     private val crudGenerator: SpringBootCrudGenerator by inject()
@@ -140,10 +141,11 @@ class WebCrudGenFromBackendCommand : CliktCommand(name = "gen-from-backend"), Ko
             var codegen =
                 manifest.readCodegenOnly(backendRoot, moduleName)
             if (codegen == null) {
-                val raw = sqlFile
-                    ?: error(
-                        "No `codegen` in feature/$moduleName/.egs-generated.json; pass --sql <ddl> to derive it.",
-                    )
+                val raw =
+                    sqlFile
+                        ?: error(
+                            "No `codegen` in feature/$moduleName/.egs-generated.json; pass --sql <ddl> to derive it.",
+                        )
                 val sqlPath =
                     File(raw).let { path ->
                         if (path.isAbsolute) path else File(System.getProperty("user.dir")).resolve(path).normalize()
@@ -158,15 +160,17 @@ class WebCrudGenFromBackendCommand : CliktCommand(name = "gen-from-backend"), Ko
                                     "Could not find table '$mainTable' in ${sqlPath.path}. Found: ${tables.map { it.tableName }}",
                                 )
                         tables.size == 1 -> tables.first()
-                        else -> error(
-                            "DDL defines ${tables.size} tables; pass --main-table=<name>. Tables: ${tables.map { it.tableName }}",
-                        )
+                        else ->
+                            error(
+                                "DDL defines ${tables.size} tables; pass --main-table=<name>. Tables: ${tables.map { it.tableName }}",
+                            )
                     }
-                val options = SpringBootOpinionatedOptions(
-                    auditColumns = !noAudit,
-                    softDelete = !noSoftDelete,
-                    statusEnum = !noStatusEnum,
-                )
+                val options =
+                    SpringBootOpinionatedOptions(
+                        auditColumns = !noAudit,
+                        softDelete = !noSoftDelete,
+                        statusEnum = !noStatusEnum,
+                    )
                 codegen =
                     crudGenerator.buildCodegenManifest(
                         table = table,
@@ -176,11 +180,12 @@ class WebCrudGenFromBackendCommand : CliktCommand(name = "gen-from-backend"), Ko
                     )
             }
 
-            val result = adminVue.scaffoldFromCodegen(
-                projectRoot = dir,
-                codegen = codegen,
-                dryRun = dryRun,
-            )
+            val result =
+                adminVue.scaffoldFromCodegen(
+                    projectRoot = dir,
+                    codegen = codegen,
+                    dryRun = dryRun,
+                )
 
             if (result.dryRun) {
                 echo(CliFormatter.formatInfo("Dry run — admin module '${result.moduleName}' (${result.files.size} files):"))

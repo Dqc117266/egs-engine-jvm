@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PrefsGenerationModeResolverTest {
-
     @Test
     fun `single field without key uses camel to snake logical key`() {
         val fields = PrefsFieldParser.parseFields("userId:String")

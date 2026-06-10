@@ -5,8 +5,8 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
-import com.dqc.egsengine.feature.scaffold.data.generator.common.importLinesForKotlinTypeFqns
 import com.dqc.egsengine.feature.scaffold.data.generator.common.ViewModelMergeSnippet
+import com.dqc.egsengine.feature.scaffold.data.generator.common.importLinesForKotlinTypeFqns
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 
@@ -36,12 +36,12 @@ internal fun buildMergeSnippetForUseCase(
     val paramTypeFqns =
         (ucRow["parameters"] as? List<Map<String, Any?>>).orEmpty().mapNotNull { it["kotlinType"] as? String }
     val coreBase = templateMap["coreBase"] as? String ?: "template.core.base"
-    fun vmImportLinesForMerge(): List<String> =
-        (
-            listOf(vmImport) +
-                importLinesForKotlinTypeFqns(paramTypeFqns) +
-                if (h["resultBased"] == true) listOf("import $coreBase.ui.UiFailure") else emptyList()
-            ).distinct().sorted()
+
+    fun vmImportLinesForMerge(): List<String> = (
+        listOf(vmImport) +
+            importLinesForKotlinTypeFqns(paramTypeFqns) +
+            if (h["resultBased"] == true) listOf("import $coreBase.ui.UiFailure") else emptyList()
+        ).distinct().sorted()
 
     val pagedBased = h["pagedBased"] == true
     if (pagedBased) {
@@ -91,9 +91,10 @@ private fun renderIntentMember(intentInner: Map<String, Any?>): String {
         "\n        data object $simpleName : Intent()"
     } else {
         val params = intentInner["params"] as List<Map<String, String>>
-        val lines = params.joinToString(",\n") { p ->
-            "            val ${p["name"]}: ${p["kotlinType"]}"
-        }
+        val lines =
+            params.joinToString(",\n") { p ->
+                "            val ${p["name"]}: ${p["kotlinType"]}"
+            }
         "\n        data class $simpleName(\n$lines\n        ) : Intent()"
     }
 }
@@ -127,15 +128,14 @@ private fun resolveStateFieldSnippet(
     }
 }
 
-private fun defaultValueForStateField(name: String): String =
-    when (name) {
-        "items" -> "emptyList()"
-        "page" -> "DEFAULT_FIRST_PAGE"
-        "pageSize" -> "DEFAULT_PAGE_SIZE"
-        "total" -> "0L"
-        "endReached", "isRefreshing", "isLoadingMore" -> "false"
-        else -> "emptyList()"
-    }
+private fun defaultValueForStateField(name: String): String = when (name) {
+    "items" -> "emptyList()"
+    "page" -> "DEFAULT_FIRST_PAGE"
+    "pageSize" -> "DEFAULT_PAGE_SIZE"
+    "total" -> "0L"
+    "endReached", "isRefreshing", "isLoadingMore" -> "false"
+    else -> "emptyList()"
+}
 
 @Suppress("UNCHECKED_CAST")
 private fun renderRegisterIntentBlock(
@@ -191,82 +191,82 @@ private fun renderHandlerFunction(
     return when {
         h["pagedFlowBased"] == true ->
             """
-    private fun $handlerName($paramList) {
-        launch {
-            $useCaseCamel($paramPass).collect { pagingData ->
-                // Use androidx.paging.compose.collectAsLazyPagingItems(pagingData) on Android, or map PagingData in platform code.
-                updateState { copy(failure = null) }
+            private fun $handlerName($paramList) {
+                launch {
+                    $useCaseCamel($paramPass).collect { pagingData ->
+                        // Use androidx.paging.compose.collectAsLazyPagingItems(pagingData) on Android, or map PagingData in platform code.
+                        updateState { copy(failure = null) }
+                    }
+                }
             }
-        }
-    }
-""".trimIndent() + "\n"
+            """.trimIndent() + "\n"
 
         h["resultBased"] == true ->
             if (params.isNotEmpty()) {
                 """
-    private fun $handlerName($paramList) {
-        launchRequest(showLoading = $showLoading) {
-            updateState { copy(isLoading = true, failure = null) }
-            when (val result = $useCaseCamel($paramPass)) {
-                is Result.Success -> {
-                    updateState { copy($useCaseCamel = result.value, isLoading = false, failure = null) }
-                }
-                is Result.Failure -> {
-                    updateState {
-                        copy(
-                            failure = result.throwable?.let(UiFailure::fromThrowable),
-                            isLoading = false,
-                        )
+                private fun $handlerName($paramList) {
+                    launchRequest(showLoading = $showLoading) {
+                        updateState { copy(isLoading = true, failure = null) }
+                        when (val result = $useCaseCamel($paramPass)) {
+                            is Result.Success -> {
+                                updateState { copy($useCaseCamel = result.value, isLoading = false, failure = null) }
+                            }
+                            is Result.Failure -> {
+                                updateState {
+                                    copy(
+                                        failure = result.throwable?.let(UiFailure::fromThrowable),
+                                        isLoading = false,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
-    }
-""".trimIndent() + "\n"
+                """.trimIndent() + "\n"
             } else {
                 """
-    private fun $handlerName() {
-        launchRequest(showLoading = $showLoading) {
-            updateState { copy(isLoading = true, failure = null) }
-            when (val result = $useCaseCamel()) {
-                is Result.Success -> {
-                    updateState { copy($useCaseCamel = result.value, isLoading = false, failure = null) }
-                }
-                is Result.Failure -> {
-                    updateState {
-                        copy(
-                            failure = result.throwable?.let(UiFailure::fromThrowable),
-                            isLoading = false,
-                        )
+                private fun $handlerName() {
+                    launchRequest(showLoading = $showLoading) {
+                        updateState { copy(isLoading = true, failure = null) }
+                        when (val result = $useCaseCamel()) {
+                            is Result.Success -> {
+                                updateState { copy($useCaseCamel = result.value, isLoading = false, failure = null) }
+                            }
+                            is Result.Failure -> {
+                                updateState {
+                                    copy(
+                                        failure = result.throwable?.let(UiFailure::fromThrowable),
+                                        isLoading = false,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
-    }
-""".trimIndent() + "\n"
+                """.trimIndent() + "\n"
             }
 
         h["flowBased"] == true ->
             if (params.isNotEmpty()) {
                 """
-    private fun $handlerName($paramList) {
-        launch {
-            $useCaseCamel($paramPass).collect { value ->
-                updateState { copy($useCaseCamel = value, failure = null) }
-            }
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName($paramList) {
+                    launch {
+                        $useCaseCamel($paramPass).collect { value ->
+                            updateState { copy($useCaseCamel = value, failure = null) }
+                        }
+                    }
+                }
+                """.trimIndent() + "\n"
             } else {
                 """
-    private fun $handlerName() {
-        launch {
-            $useCaseCamel().collect { value ->
-                updateState { copy($useCaseCamel = value, failure = null) }
-            }
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName() {
+                    launch {
+                        $useCaseCamel().collect { value ->
+                            updateState { copy($useCaseCamel = value, failure = null) }
+                        }
+                    }
+                }
+                """.trimIndent() + "\n"
             }
 
         h["unitEntityEchoToState"] == true -> {
@@ -274,24 +274,24 @@ private fun renderHandlerFunction(
             val echoParam = h["unitEchoParamName"] as String
             if (params.isNotEmpty()) {
                 """
-    private fun $handlerName($paramList) {
-        launchRequest {
-            updateState { copy(isLoading = true, failure = null) }
-            $useCaseCamel($paramPass)
-            updateState { copy($echoProp = $echoParam, isLoading = false, failure = null) }
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName($paramList) {
+                    launchRequest {
+                        updateState { copy(isLoading = true, failure = null) }
+                        $useCaseCamel($paramPass)
+                        updateState { copy($echoProp = $echoParam, isLoading = false, failure = null) }
+                    }
+                }
+                """.trimIndent() + "\n"
             } else {
                 """
-    private fun $handlerName() {
-        launchRequest {
-            updateState { copy(isLoading = true, failure = null) }
-            $useCaseCamel()
-            updateState { copy(isLoading = false, failure = null) }
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName() {
+                    launchRequest {
+                        updateState { copy(isLoading = true, failure = null) }
+                        $useCaseCamel()
+                        updateState { copy(isLoading = false, failure = null) }
+                    }
+                }
+                """.trimIndent() + "\n"
             }
         }
 
@@ -299,46 +299,46 @@ private fun renderHandlerFunction(
             val prop = h["directStatePropertyName"] as String
             if (params.isNotEmpty()) {
                 """
-    private fun $handlerName($paramList) {
-        launchRequest {
-            updateState { copy(isLoading = true, failure = null) }
-            val ret = $useCaseCamel($paramPass)
-            updateState { copy($prop = ret, isLoading = false, failure = null) }
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName($paramList) {
+                    launchRequest {
+                        updateState { copy(isLoading = true, failure = null) }
+                        val ret = $useCaseCamel($paramPass)
+                        updateState { copy($prop = ret, isLoading = false, failure = null) }
+                    }
+                }
+                """.trimIndent() + "\n"
             } else {
                 """
-    private fun $handlerName() {
-        launchRequest {
-            updateState { copy(isLoading = true, failure = null) }
-            val ret = $useCaseCamel()
-            updateState { copy($prop = ret, isLoading = false, failure = null) }
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName() {
+                    launchRequest {
+                        updateState { copy(isLoading = true, failure = null) }
+                        val ret = $useCaseCamel()
+                        updateState { copy($prop = ret, isLoading = false, failure = null) }
+                    }
+                }
+                """.trimIndent() + "\n"
             }
         }
 
         else ->
             if (params.isNotEmpty()) {
                 """
-    private fun $handlerName($paramList) {
-        launchRequest {
-            $useCaseCamel($paramPass)
-            // TODO: map result to State (or add Result / Flow return type to UseCase)
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName($paramList) {
+                    launchRequest {
+                        $useCaseCamel($paramPass)
+                        // TODO: map result to State (or add Result / Flow return type to UseCase)
+                    }
+                }
+                """.trimIndent() + "\n"
             } else {
                 """
-    private fun $handlerName() {
-        launchRequest {
-            $useCaseCamel()
-            // TODO: map result to State (or add Result / Flow return type to UseCase)
-        }
-    }
-""".trimIndent() + "\n"
+                private fun $handlerName() {
+                    launchRequest {
+                        $useCaseCamel()
+                        // TODO: map result to State (or add Result / Flow return type to UseCase)
+                    }
+                }
+                """.trimIndent() + "\n"
             }
     }
 }

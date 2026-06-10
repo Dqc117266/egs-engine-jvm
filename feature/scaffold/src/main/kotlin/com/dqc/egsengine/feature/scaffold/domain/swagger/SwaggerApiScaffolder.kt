@@ -5,9 +5,9 @@ import com.dqc.egsengine.feature.scaffold.data.EgsConfigReader
 import com.dqc.egsengine.feature.scaffold.data.swagger.FtlSwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
-import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.feature.scaffold.domain.effectiveBasePackage
 import com.dqc.egsengine.feature.scaffold.domain.isAndroid
+import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
 import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -30,11 +30,12 @@ class SwaggerApiScaffolder(
         val config = configReader.readForScaffold(projectRoot)
         val template = buildTemplate(config, moduleName, customPackage)
         val spec = swaggerParser.parse(swaggerLocation)
-        val generated = if (useKotlinPoetGenerator()) {
-            swaggerCodeGenerator.generate(template, spec, projectRoot)
-        } else {
-            ftlSwaggerCodeGenerator.generate(projectRoot, template, spec)
-        }
+        val generated =
+            if (useKotlinPoetGenerator()) {
+                swaggerCodeGenerator.generate(template, spec, projectRoot)
+            } else {
+                ftlSwaggerCodeGenerator.generate(projectRoot, template, spec)
+            }
 
         if (dryRun) {
             return Result(files = generated.map { it.path }, dryRun = true)
@@ -50,7 +51,11 @@ class SwaggerApiScaffolder(
         return Result(files = generated.map { it.path }, dryRun = false)
     }
 
-    private fun buildTemplate(config: EgsConfig, moduleName: String, customPackage: String?): ModuleTemplate {
+    private fun buildTemplate(
+        config: EgsConfig,
+        moduleName: String,
+        customPackage: String?,
+    ): ModuleTemplate {
         val basePackage = customPackage ?: config.effectiveBasePackage() ?: "com.example"
         val nullableBase = customPackage ?: config.effectiveBasePackage()
         val normalizedModule = moduleName.replace("-", "").replace("_", "")
@@ -74,8 +79,9 @@ class SwaggerApiScaffolder(
     }
 
     private fun useKotlinPoetGenerator(): Boolean {
-        val configured = System.getProperty("egs.swagger.generator")
-            ?: System.getenv("EGS_SWAGGER_GENERATOR")
+        val configured =
+            System.getProperty("egs.swagger.generator")
+                ?: System.getenv("EGS_SWAGGER_GENERATOR")
         return when (configured?.trim()?.lowercase()) {
             null, "" -> true
             "kotlinpoet", "kotlin-poet" -> true

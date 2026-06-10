@@ -66,13 +66,15 @@ class ModuleScaffolder(
         dryRun: Boolean = false,
     ): ScaffoldResult {
         val config = workspaceResolver.resolveByKey(projectRoot, projectKey)
-        val effectiveConfig = if (config.platform == Platform.SPRING_BOOT) {
-            workspaceResolver.resolveEffectiveBackendConfig(projectRoot)
-        } else {
-            config
-        }
-        val gen = platformGenerators[effectiveConfig.platform]
-            ?: throw IllegalArgumentException("No generator registered for platform: ${effectiveConfig.platform}")
+        val effectiveConfig =
+            if (config.platform == Platform.SPRING_BOOT) {
+                workspaceResolver.resolveEffectiveBackendConfig(projectRoot)
+            } else {
+                config
+            }
+        val gen =
+            platformGenerators[effectiveConfig.platform]
+                ?: throw IllegalArgumentException("No generator registered for platform: ${effectiveConfig.platform}")
 
         val subProjectRoot = projectRoot.resolve(effectiveConfig.path)
         val preview = gen.preview(subProjectRoot, moduleName, effectiveConfig)
@@ -97,20 +99,26 @@ class ModuleScaffolder(
         )
     }
 
-    private fun buildTemplate(config: EgsConfig, moduleName: String, customPackage: String?): ModuleTemplate {
+    private fun buildTemplate(
+        config: EgsConfig,
+        moduleName: String,
+        customPackage: String?,
+    ): ModuleTemplate {
         val basePackage = customPackage ?: config.effectiveBasePackage()
-        val featurePackage = if (basePackage != null) {
-            "$basePackage.feature.${moduleName.replace("-", "")}"
-        } else {
-            "com.example.feature.${moduleName.replace("-", "")}"
-        }
+        val featurePackage =
+            if (basePackage != null) {
+                "$basePackage.feature.${moduleName.replace("-", "")}"
+            } else {
+                "com.example.feature.${moduleName.replace("-", "")}"
+            }
 
         val isAndroid = config.isAndroid
-        val namespace = if (isAndroid && basePackage != null) {
-            "${basePackage}.feature.${moduleName.replace("-", "")}"
-        } else {
-            null
-        }
+        val namespace =
+            if (isAndroid && basePackage != null) {
+                "$basePackage.feature.${moduleName.replace("-", "")}"
+            } else {
+                null
+            }
 
         val baseClassPackages = config.resolveScaffoldBaseClasses(includeRetrofitProvider = false)
         val apiResultClass = basePackage?.let { "$it.feature.base.data.retrofit.ApiResult" }

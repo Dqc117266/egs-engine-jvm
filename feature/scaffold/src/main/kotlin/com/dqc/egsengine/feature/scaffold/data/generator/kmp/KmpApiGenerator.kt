@@ -22,7 +22,6 @@ import java.io.File
 class KmpApiGenerator(
     private val kmpSwaggerCodeGenerator: KmpSwaggerCodeGenerator,
 ) : PlatformApiGenerator {
-
     override val platform: Platform = Platform.KMP
 
     override fun generate(
@@ -40,7 +39,8 @@ internal fun SubProjectConfig.toKmpSwaggerModuleTemplate(moduleName: String): Mo
     val base = toModuleTemplate(moduleName)
     val coreBase = "$basePackage.core.base"
     return base.copy(
-        baseClassPackages = BaseClassPackages(
+        baseClassPackages =
+        BaseClassPackages(
             baseViewModel = base.baseClassPackages.baseViewModel,
             baseFragment = base.baseClassPackages.baseFragment,
             resultClass = "$coreBase.network.domain.Result",

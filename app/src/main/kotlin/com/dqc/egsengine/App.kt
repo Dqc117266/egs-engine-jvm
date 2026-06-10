@@ -57,8 +57,7 @@ fun main(args: Array<String>) {
             WebCommand.withSubcommands(),
             LintCommand.withSubcommands(),
             TemplateCommand.withSubcommands(),
-        )
-        .main(args)
+        ).main(args)
 }
 
 private fun initKoin() {

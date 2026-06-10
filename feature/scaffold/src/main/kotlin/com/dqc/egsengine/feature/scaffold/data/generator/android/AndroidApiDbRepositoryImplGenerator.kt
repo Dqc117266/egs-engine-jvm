@@ -15,7 +15,6 @@ import java.io.File
  * Delegates Retrofit [GeneratedXApiRepositorySupport] and Room [GeneratedXDbRepositorySupport] into [XRepository].
  */
 class AndroidApiDbRepositoryImplGenerator {
-
     private val logger = LoggerFactory.getLogger(AndroidApiDbRepositoryImplGenerator::class.java)
 
     fun generateOrMerge(
@@ -43,7 +42,10 @@ class AndroidApiDbRepositoryImplGenerator {
         return GeneratedFile(path, content)
     }
 
-    private fun renderContent(pascal: String, pkg: String): String =
+    private fun renderContent(
+        pascal: String,
+        pkg: String,
+    ): String =
         """
         /*
          * Hand-written repository: delegates to generated API and DB support classes.

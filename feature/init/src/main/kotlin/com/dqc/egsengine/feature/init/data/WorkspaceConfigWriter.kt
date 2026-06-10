@@ -8,12 +8,16 @@ import java.io.File
 class WorkspaceConfigWriter {
     private val logger = LoggerFactory.getLogger(WorkspaceConfigWriter::class.java)
 
-    private val json = Json {
-        prettyPrint = true
-        encodeDefaults = true
-    }
+    private val json =
+        Json {
+            prettyPrint = true
+            encodeDefaults = true
+        }
 
-    fun write(config: WorkspaceConfig, projectRoot: File) {
+    fun write(
+        config: WorkspaceConfig,
+        projectRoot: File,
+    ) {
         val egsDir = projectRoot.resolve(".egs")
         egsDir.mkdirs()
 

@@ -7,9 +7,16 @@ import java.util.concurrent.ConcurrentHashMap
 
 interface TaskRepository {
     fun addTask(task: AutomationTask)
+
     fun getTask(id: String): AutomationTask?
+
     fun getAllTasks(): List<AutomationTask>
-    fun updateTaskStatus(id: String, status: TaskStatus)
+
+    fun updateTaskStatus(
+        id: String,
+        status: TaskStatus,
+    )
+
     fun removeTask(id: String)
 }
 
@@ -26,7 +33,10 @@ class TaskRepositoryImpl : TaskRepository {
 
     override fun getAllTasks(): List<AutomationTask> = tasks.values.toList()
 
-    override fun updateTaskStatus(id: String, status: TaskStatus) {
+    override fun updateTaskStatus(
+        id: String,
+        status: TaskStatus,
+    ) {
         tasks.computeIfPresent(id) { _, task -> task.copy(status = status) }
     }
 

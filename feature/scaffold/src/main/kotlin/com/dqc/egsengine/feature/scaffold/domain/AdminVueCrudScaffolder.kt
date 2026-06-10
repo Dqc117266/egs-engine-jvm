@@ -9,12 +9,12 @@ import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
+import com.dqc.egsengine.feature.scaffold.data.generator.springboot.FormControl
 import com.dqc.egsengine.template.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.Locale
-import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
-import com.dqc.egsengine.feature.scaffold.data.generator.springboot.FormControl
 
 /**
  * Emits Vue3 admin CRUD files from [BackendCodegenManifest] (written by backend `gen database`).
@@ -103,12 +103,19 @@ class AdminVueCrudScaffolder(
         return gf
     }
 
-    private fun renderPair(template: String, relativePath: String, model: Map<String, Any?>): GeneratedFile {
+    private fun renderPair(
+        template: String,
+        relativePath: String,
+        model: Map<String, Any?>,
+    ): GeneratedFile {
         val content = templateEngine.render(template, model, null)
         return GeneratedFile(path = relativePath, content = content)
     }
 
-    private fun buildFreemarkerModel(c: BackendCodegenManifest, ddlSql: String? = null): Map<String, Any?> {
+    private fun buildFreemarkerModel(
+        c: BackendCodegenManifest,
+        ddlSql: String? = null,
+    ): Map<String, Any?> {
         val listCols = c.columns.filter { !it.isPk }
         val formCols = c.columns.filter { it.inBusinessForm }
         val tableCols =
@@ -139,20 +146,21 @@ class AdminVueCrudScaffolder(
         )
     }
 
-    private fun moduleTitleZh(moduleSlug: String, entityPascal: String): String =
-        when (moduleSlug.lowercase(Locale.US)) {
-            "food" -> "食物"
-            "cooking_steps" -> "烹饪步骤"
-            else -> entityPascal
-        }
+    private fun moduleTitleZh(
+        moduleSlug: String,
+        entityPascal: String,
+    ): String = when (moduleSlug.lowercase(Locale.US)) {
+        "food" -> "食物"
+        "cooking_steps" -> "烹饪步骤"
+        else -> entityPascal
+    }
 
     /**
      * [order_num] for root sidebar rows ([parent_id] IS NULL). Example seed uses ~1–99; snacks sit after Dashboard.
      */
-    private fun topLevelSidebarOrderFor(moduleSlug: String): Int =
-        when (moduleSlug.lowercase(Locale.US)) {
-            "food" -> 4
-            "cooking_steps" -> 5
-            else -> 40 + kotlin.math.abs(moduleSlug.hashCode() % 39)
-        }
+    private fun topLevelSidebarOrderFor(moduleSlug: String): Int = when (moduleSlug.lowercase(Locale.US)) {
+        "food" -> 4
+        "cooking_steps" -> 5
+        else -> 40 + kotlin.math.abs(moduleSlug.hashCode() % 39)
+    }
 }

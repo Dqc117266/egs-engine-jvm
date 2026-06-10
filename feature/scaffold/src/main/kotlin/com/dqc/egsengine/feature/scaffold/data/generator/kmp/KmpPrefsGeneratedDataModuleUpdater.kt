@@ -14,7 +14,6 @@ import java.io.File
  * Merges `// egs-gen:prefs-begin` through `// egs-gen:prefs-end` inside [GeneratedDataModule.kt].
  */
 class KmpPrefsGeneratedDataModuleUpdater {
-
     private val logger = LoggerFactory.getLogger(KmpPrefsGeneratedDataModuleUpdater::class.java)
 
     fun apply(
@@ -25,9 +24,10 @@ class KmpPrefsGeneratedDataModuleUpdater {
         val pkg = template.packageName
         val pkgPath = pkg.replace('.', '/')
         val generateDiPackage = "$pkg.generate.di"
-        val file = subProjectRoot.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDataModule.kt",
-        )
+        val file =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/commonMain/kotlin/$pkgPath/generate/di/GeneratedDataModule.kt",
+            )
 
         val modulePascal = SqlNaming.moduleNameToPascal(moduleName)
         val prefsDataSource = "${modulePascal}PreferencesDataSource"
@@ -35,16 +35,18 @@ class KmpPrefsGeneratedDataModuleUpdater {
         val prefsDsPkg = "$pkg.generate.data.datasource.preferences"
         val prefsRepoPkg = "$pkg.generate.data.repository"
 
-        val body = """
+        val body =
+            """
     singleOf(::$prefsDataSource)
     singleOf(::$prefsSupport)
 """.trimEnd()
 
-        val importsToEnsure = listOf(
-            "import org.koin.core.module.dsl.singleOf",
-            "import $prefsDsPkg.$prefsDataSource",
-            "import $prefsRepoPkg.$prefsSupport",
-        )
+        val importsToEnsure =
+            listOf(
+                "import org.koin.core.module.dsl.singleOf",
+                "import $prefsDsPkg.$prefsDataSource",
+                "import $prefsRepoPkg.$prefsSupport",
+            )
 
         if (!file.exists()) {
             file.parentFile.mkdirs()
@@ -75,9 +77,10 @@ class KmpPrefsGeneratedDataModuleUpdater {
         val pkgPath = pkg.replace('.', '/')
         val modulePascal = SqlNaming.moduleNameToPascal(moduleName)
         val repoName = "${modulePascal}Repository"
-        val dataModuleFile = subProjectRoot.resolve(
-            "feature/$moduleName/src/commonMain/kotlin/$pkgPath/di/DataModule.kt",
-        )
+        val dataModuleFile =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/commonMain/kotlin/$pkgPath/di/DataModule.kt",
+            )
         if (!dataModuleFile.exists()) return
 
         var text = dataModuleFile.readText()
@@ -139,21 +142,30 @@ class KmpPrefsGeneratedDataModuleUpdater {
         return text
     }
 
-    private fun replacePrefsBlock(text: String, body: String): String {
-        val pattern = Regex(
-            """[ \t]*// egs-gen:prefs-begin\s*\n([\s\S]*?)\n[ \t]*// egs-gen:prefs-end""",
-            RegexOption.MULTILINE,
-        )
+    private fun replacePrefsBlock(
+        text: String,
+        body: String,
+    ): String {
+        val pattern =
+            Regex(
+                """[ \t]*// egs-gen:prefs-begin\s*\n([\s\S]*?)\n[ \t]*// egs-gen:prefs-end""",
+                RegexOption.MULTILINE,
+            )
         return pattern.replace(text) {
             "    // egs-gen:prefs-begin\n$body\n    // egs-gen:prefs-end"
         }
     }
 
-    private fun mergeImports(text: String, importsToEnsure: List<String>): String {
-        val existingImports = text.lines()
-            .filter { it.trim().startsWith("import ") }
-            .map { it.trim() }
-            .toSet()
+    private fun mergeImports(
+        text: String,
+        importsToEnsure: List<String>,
+    ): String {
+        val existingImports =
+            text
+                .lines()
+                .filter { it.trim().startsWith("import ") }
+                .map { it.trim() }
+                .toSet()
         val toAdd = importsToEnsure.filter { it.trim() !in existingImports }
         if (toAdd.isEmpty()) return text
 

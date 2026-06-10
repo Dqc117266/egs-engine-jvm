@@ -5,19 +5,16 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.common
 
-import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
 
 /**
  * Detects offset-style `Result<PageResult<T>>` vs `Flow<PagingData<T>>` for screen codegen.
  */
 internal object PagePagingDetector {
-
-    fun normalizePagingOption(raw: String): String =
-        raw.lowercase().trim().ifEmpty { "auto" }
+    fun normalizePagingOption(raw: String): String = raw.lowercase().trim().ifEmpty { "auto" }
 
     /**
-     * True when [returnType] is `Result<¡­>` whose inner type is generic `PageResult<Item>` **or**
+     * True when [returnType] is `Result<*>` whï¿½ï¿½>` whose inner type is generic `PageResult<Item>` **or**
      * a concrete Swagger DTO `PageResultFoo` (e.g. `PageResultAppAiChatSessionRespVO`) with page + size params.
      */
     fun isOffsetPageResultUseCase(
@@ -43,7 +40,7 @@ internal object PagePagingDetector {
     }
 
     /**
-     * Swagger-style `PageResultSomething` (not `PageResult<¡­>` generic).
+     * Swagger-style `PageResultSomething` (not `PageResult<ï¿½ï¿½>` generic).
      */
     fun isConcretePageResultInner(innerResultType: String): Boolean {
         val s = innerResultType.trim()
@@ -63,7 +60,7 @@ internal object PagePagingDetector {
     }
 
     /**
-     * `PageResultAppAiChatSessionRespVO` ¡ú `AppAiChatSessionRespVO` (simple name for [resolveParamTypeString]).
+     * `PageResultAppAiChatSessionRespVO` ï¿½ï¿½ `AppAiChatSessionRespVO` (simple name for [resolveParamTypeString]).
      */
     fun extractConcretePageResultItemSimpleName(innerResultType: String): String? {
         if (!isConcretePageResultInner(innerResultType)) return null
@@ -75,7 +72,10 @@ internal object PagePagingDetector {
 
     private val CONCRETE_PAGE_RESULT_SIMPLE = Regex("""^PageResult[A-Z]\w*$""")
 
-    fun isPaging3FlowUseCase(returnType: String?, pagingOption: String): Boolean {
+    fun isPaging3FlowUseCase(
+        returnType: String?,
+        pagingOption: String,
+    ): Boolean {
         val opt = normalizePagingOption(pagingOption)
         if (opt == "none") return false
         val rt = returnType?.trim().orEmpty()
@@ -99,13 +99,18 @@ internal object PagePagingDetector {
      * Extracts `T` from `Flow<PagingData<T>>` (first match).
      */
     fun extractPagingDataItemType(returnType: String): String? {
-        val m = Regex("""\bFlow\s*<\s*PagingData\s*<\s*([^>]+)\s*>""").find(returnType)
-            ?: Regex("""\bFlow\s*<\s*[\w.]*\.?PagingData\s*<\s*([^>]+)\s*>""").find(returnType)
-        return m?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
+        val m =
+            Regex("""\bFlow\s*<\s*PagingData\s*<\s*([^>]+)\s*>""").find(returnType)
+                ?: Regex("""\bFlow\s*<\s*[\w.]*\.?PagingData\s*<\s*([^>]+)\s*>""").find(returnType)
+        return m
+            ?.groupValues
+            ?.get(1)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
     }
 
     /**
-     * `PageResult<¡­>` with a single type argument (generic), not `PageResultSomething` single identifier.
+     * `PageResult<ï¿½ï¿½>` with a single type argument (generic), not `PageResultSomething` single identifier.
      */
     fun isGenericPageResultType(innerResultType: String): Boolean {
         val s = innerResultType.trim()
@@ -140,17 +145,22 @@ internal object PagePagingDetector {
         return returnType.substring(start, i - 1).trim()
     }
 
-    data class PageParamNames(val page: String, val pageSize: String)
+    data class PageParamNames(
+        val page: String,
+        val pageSize: String,
+    )
 
     /**
      * Heuristic: `page`/`pageNo`/`pageIndex` + `pageSize`/`size`/`limit`.
      */
     fun detectPageParams(parameters: List<UseCaseParam>): PageParamNames {
         val names = parameters.map { it.name }
-        val pageName = names.firstOrNull { it.equals("page", true) || it == "pageNo" || it.equals("pageIndex", true) }
-            ?: "page"
-        val sizeName = names.firstOrNull { it.equals("pageSize", true) || it.equals("size", true) || it.equals("limit", true) }
-            ?: "pageSize"
+        val pageName =
+            names.firstOrNull { it.equals("page", true) || it == "pageNo" || it.equals("pageIndex", true) }
+                ?: "page"
+        val sizeName =
+            names.firstOrNull { it.equals("pageSize", true) || it.equals("size", true) || it.equals("limit", true) }
+                ?: "pageSize"
         return PageParamNames(page = pageName, pageSize = sizeName)
     }
 }

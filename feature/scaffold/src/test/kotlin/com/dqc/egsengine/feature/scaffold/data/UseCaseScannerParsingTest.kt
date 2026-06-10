@@ -7,7 +7,6 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 class UseCaseScannerParsingTest {
-
     @TempDir
     lateinit var projectRoot: File
 
@@ -69,7 +68,9 @@ class UseCaseScannerParsingTest {
     @Test
     fun `parses AppAiChatGetSessionPage style with imports and internal class`() {
         val ucFile =
-            projectRoot.resolve("feature/todolist/src/main/kotlin/com/example/feature/todolist/domain/usecase/AppAiChatGetSessionPageUseCase.kt")
+            projectRoot.resolve(
+                "feature/todolist/src/main/kotlin/com/example/feature/todolist/domain/usecase/AppAiChatGetSessionPageUseCase.kt",
+            )
         ucFile.parentFile.mkdirs()
         ucFile.writeText(
             """
@@ -115,13 +116,14 @@ class UseCaseScannerParsingTest {
         )
 
         val scanner = UseCaseScanner()
-        val stale = UseCaseInfo(
-            name = "EnrichUseCase",
-            packageName = "com.foo",
-            path = "feature/enrichmod/src/main/kotlin/com/foo/EnrichUseCase.kt",
-            returnType = null,
-            parameters = emptyList(),
-        )
+        val stale =
+            UseCaseInfo(
+                name = "EnrichUseCase",
+                packageName = "com.foo",
+                path = "feature/enrichmod/src/main/kotlin/com/foo/EnrichUseCase.kt",
+                returnType = null,
+                parameters = emptyList(),
+            )
         val out = scanner.enrichReturnTypesIfMissing(projectRoot, listOf(stale))
         assertEquals("Result<String>", out.single().returnType)
     }

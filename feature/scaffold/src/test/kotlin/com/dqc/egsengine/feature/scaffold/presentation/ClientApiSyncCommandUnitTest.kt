@@ -13,7 +13,6 @@ import org.koin.dsl.module
 import java.io.File
 
 class ClientApiSyncCommandUnitTest {
-
     @AfterEach
     fun tearDown() {
         stopKoin()
@@ -24,12 +23,13 @@ class ClientApiSyncCommandUnitTest {
         val apiSync = mockk<ApiSyncScaffolder>()
         every {
             apiSync.syncClientApi(any(), any(), any(), any(), any())
-        } returns ApiSyncScaffolder.ApiSyncResult(
-            clientModule = "todo",
-            backendModule = "todo",
-            files = emptyList(),
-            dryRun = true,
-        )
+        } returns
+            ApiSyncScaffolder.ApiSyncResult(
+                clientModule = "todo",
+                backendModule = "todo",
+                files = emptyList(),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -70,12 +70,13 @@ class ClientApiSyncCommandUnitTest {
         val apiSync = mockk<ApiSyncScaffolder>()
         every {
             apiSync.syncClientApi(any(), any(), any(), any(), any())
-        } returns ApiSyncScaffolder.ApiSyncResult(
-            clientModule = "a",
-            backendModule = "b",
-            files = emptyList(),
-            dryRun = true,
-        )
+        } returns
+            ApiSyncScaffolder.ApiSyncResult(
+                clientModule = "a",
+                backendModule = "b",
+                files = emptyList(),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -120,12 +121,13 @@ class ClientApiSyncCommandUnitTest {
         val apiSync = mockk<ApiSyncScaffolder>()
         every {
             apiSync.syncClientApi(any(), any(), any(), any(), any())
-        } returns ApiSyncScaffolder.ApiSyncResult(
-            clientModule = "todo",
-            backendModule = "todo",
-            files = emptyList(),
-            dryRun = true,
-        )
+        } returns
+            ApiSyncScaffolder.ApiSyncResult(
+                clientModule = "todo",
+                backendModule = "todo",
+                files = emptyList(),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -163,12 +165,13 @@ class ClientApiSyncCommandUnitTest {
         val apiSync = mockk<ApiSyncScaffolder>()
         every {
             apiSync.syncClientApi(any(), any(), any(), any(), any())
-        } returns ApiSyncScaffolder.ApiSyncResult(
-            clientModule = "todo",
-            backendModule = "todo",
-            files = emptyList(),
-            dryRun = true,
-        )
+        } returns
+            ApiSyncScaffolder.ApiSyncResult(
+                clientModule = "todo",
+                backendModule = "todo",
+                files = emptyList(),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -203,8 +206,7 @@ class ClientApiSyncCommandUnitTest {
         }
     }
 
-    private fun createTempProjectDir(): File =
-        kotlin.io.path.createTempDirectory("client-api-sync-unit-test").toFile().also {
-            it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
-        }
+    private fun createTempProjectDir(): File = kotlin.io.path.createTempDirectory("client-api-sync-unit-test").toFile().also {
+        it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
+    }
 }

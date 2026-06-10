@@ -7,9 +7,10 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 class GradleSourceRootsTest {
-
     @Test
-    fun `orderedKotlinRoots prefers commonMain over androidMain and main`(@TempDir temp: File) {
+    fun `orderedKotlinRoots prefers commonMain over androidMain and main`(
+        @TempDir temp: File,
+    ) {
         val module = temp.resolve("mod").apply { mkdirs() }
         module.resolve("src/androidMain/kotlin").mkdirs()
         module.resolve("src/main/kotlin").mkdirs()
@@ -20,7 +21,9 @@ class GradleSourceRootsTest {
     }
 
     @Test
-    fun `hasAndroidStyleRes detects res under any source set`(@TempDir temp: File) {
+    fun `hasAndroidStyleRes detects res under any source set`(
+        @TempDir temp: File,
+    ) {
         val module = temp.resolve("m").apply { mkdirs() }
         assertTrue(!GradleSourceRoots.hasAndroidStyleRes(module))
 

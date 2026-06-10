@@ -11,7 +11,6 @@ import kotlin.io.path.createTempDirectory
  * Catches any unintended change in the wired `android/module` and `kmp/module` FTL templates.
  */
 class GoldenModuleTest {
-
     @Test
     fun `android module golden`() {
         val files = ScaffoldTestFixtures.androidModuleGenerator().preview(tempRoot(), androidTemplate())
@@ -36,10 +35,11 @@ class GoldenModuleTest {
             namespace = "com.example.demo.feature.task",
             projectType = "ANDROID",
             basePackage = "com.example.demo",
-            baseClassPackages = BaseClassPackages(
-                baseViewModel = "com.example.demo.feature.base.presentation.viewmodel.BaseViewModel",
-                resultClass = "com.example.demo.feature.base.domain.result.Result",
-            ),
+            baseClassPackages =
+                BaseClassPackages(
+                    baseViewModel = "com.example.demo.feature.base.presentation.viewmodel.BaseViewModel",
+                    resultClass = "com.example.demo.feature.base.domain.result.Result",
+                ),
         )
 
     private fun kmpTemplate(): ModuleTemplate =
@@ -52,9 +52,10 @@ class GoldenModuleTest {
             namespace = "org.mifos.feature.profile",
             projectType = "KMP",
             basePackage = "org.mifos",
-            baseClassPackages = BaseClassPackages(
-                baseViewModel = "template.core.base.ui.BaseViewModel",
-                resultClass = "template.core.base.network.domain.Result",
-            ),
+            baseClassPackages =
+                BaseClassPackages(
+                    baseViewModel = "template.core.base.ui.BaseViewModel",
+                    resultClass = "template.core.base.network.domain.Result",
+                ),
         )
 }

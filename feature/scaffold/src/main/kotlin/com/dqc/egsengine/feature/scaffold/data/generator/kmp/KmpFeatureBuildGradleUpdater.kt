@@ -13,20 +13,23 @@ import java.io.File
  * Room / no-js convention + coreBase.database after database codegen.
  */
 class KmpFeatureBuildGradleUpdater {
-
     private val logger = LoggerFactory.getLogger(KmpFeatureBuildGradleUpdater::class.java)
 
-    fun applyAfterApiSync(subProjectRoot: File, moduleName: String) {
+    fun applyAfterApiSync(
+        subProjectRoot: File,
+        moduleName: String,
+    ) {
         val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
         var text = file.readText()
         val original = text
 
         text = ensureKtorfitPlugins(text)
-        text = ensureKotlinBlockWithDependencies(
-            text,
-            gradleProjectRef = "projects.coreBase.network",
-            depLine = "implementation(projects.coreBase.network)",
-        )
+        text =
+            ensureKotlinBlockWithDependencies(
+                text,
+                gradleProjectRef = "projects.coreBase.network",
+                depLine = "implementation(projects.coreBase.network)",
+            )
 
         if (text != original) {
             file.writeText(text)
@@ -34,38 +37,47 @@ class KmpFeatureBuildGradleUpdater {
         }
     }
 
-    fun applyAfterPrefsGen(subProjectRoot: File, moduleName: String) {
+    fun applyAfterPrefsGen(
+        subProjectRoot: File,
+        moduleName: String,
+    ) {
         val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
         var text = file.readText()
         val original = text
-        text = ensureKotlinBlockWithDependencies(
-            text,
-            gradleProjectRef = "projects.coreBase.preferences",
-            depLine = "implementation(projects.coreBase.preferences)",
-        )
+        text =
+            ensureKotlinBlockWithDependencies(
+                text,
+                gradleProjectRef = "projects.coreBase.preferences",
+                depLine = "implementation(projects.coreBase.preferences)",
+            )
         if (text != original) {
             file.writeText(text)
             logger.info("Updated {} for coreBase.preferences", file.path)
         }
     }
 
-    fun applyAfterDatabaseGen(subProjectRoot: File, moduleName: String) {
+    fun applyAfterDatabaseGen(
+        subProjectRoot: File,
+        moduleName: String,
+    ) {
         val file = moduleBuildFile(subProjectRoot, moduleName) ?: return
         var text = file.readText()
         val original = text
 
         text = replaceCmpConventionWithNoJsAndRoom(text)
         text = ensureKtorfitPlugins(text)
-        text = ensureKotlinBlockWithDependencies(
-            text,
-            gradleProjectRef = "projects.coreBase.network",
-            depLine = "implementation(projects.coreBase.network)",
-        )
-        text = ensureKotlinBlockWithDependencies(
-            text,
-            gradleProjectRef = "projects.coreBase.database",
-            depLine = "implementation(projects.coreBase.database)",
-        )
+        text =
+            ensureKotlinBlockWithDependencies(
+                text,
+                gradleProjectRef = "projects.coreBase.network",
+                depLine = "implementation(projects.coreBase.network)",
+            )
+        text =
+            ensureKotlinBlockWithDependencies(
+                text,
+                gradleProjectRef = "projects.coreBase.database",
+                depLine = "implementation(projects.coreBase.database)",
+            )
 
         if (text != original) {
             file.writeText(text)
@@ -73,7 +85,10 @@ class KmpFeatureBuildGradleUpdater {
         }
     }
 
-    private fun moduleBuildFile(subProjectRoot: File, moduleName: String): File? {
+    private fun moduleBuildFile(
+        subProjectRoot: File,
+        moduleName: String,
+    ): File? {
         val f = subProjectRoot.resolve("feature/$moduleName/build.gradle.kts")
         if (!f.isFile) {
             logger.debug("No feature build file at {}", f.path)
@@ -96,7 +111,11 @@ class KmpFeatureBuildGradleUpdater {
         return text.substring(0, insertAt) + insertion + text.substring(insertAt)
     }
 
-    internal fun ensureKotlinBlockWithDependencies(text: String, gradleProjectRef: String, depLine: String): String {
+    internal fun ensureKotlinBlockWithDependencies(
+        text: String,
+        gradleProjectRef: String,
+        depLine: String,
+    ): String {
         if (text.contains(gradleProjectRef)) return text
 
         val indentedDep = "            $depLine"
@@ -115,7 +134,11 @@ $indentedDep
         return text.trimEnd() + kotlinBlock + "\n"
     }
 
-    private fun insertIntoCommonMainDependencies(text: String, gradleProjectRef: String, depLine: String): String? {
+    private fun insertIntoCommonMainDependencies(
+        text: String,
+        gradleProjectRef: String,
+        depLine: String,
+    ): String? {
         val marker = "commonMain.dependencies {"
         val idx = text.indexOf(marker)
         if (idx < 0) return null
@@ -130,10 +153,11 @@ $indentedDep
 
     internal fun replaceCmpConventionWithNoJsAndRoom(text: String): String {
         var t = text
-        val featureConventionLines = listOf(
-            "    alias(libs.plugins.cmp.feature.ui.convention)",
-            "    alias(libs.plugins.cmp.feature.convention)",
-        )
+        val featureConventionLines =
+            listOf(
+                "    alias(libs.plugins.cmp.feature.ui.convention)",
+                "    alias(libs.plugins.cmp.feature.convention)",
+            )
         val replacement = """    alias(libs.plugins.cmp.feature.no.js.convention)
     alias(libs.plugins.mifos.kmp.room)"""
         val matchedLine = featureConventionLines.firstOrNull { t.contains(it) }

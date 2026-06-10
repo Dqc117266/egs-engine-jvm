@@ -14,11 +14,12 @@ import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
  * [SwaggerOperation.responseBody] matches generated types.
  */
 class SwaggerPagingInferrer {
+    fun enrich(spec: SwaggerSpec): SwaggerSpec = spec.copy(operations = spec.operations.map { op -> op.copy(paging = inferPaging(op, spec)) })
 
-    fun enrich(spec: SwaggerSpec): SwaggerSpec =
-        spec.copy(operations = spec.operations.map { op -> op.copy(paging = inferPaging(op, spec)) })
-
-    private fun inferPaging(op: SwaggerOperation, spec: SwaggerSpec): PagingInfo? {
+    private fun inferPaging(
+        op: SwaggerOperation,
+        spec: SwaggerSpec,
+    ): PagingInfo? {
         val resp = op.responseBody ?: return null
 
         // Veto: raw array/list responses are not paged envelopes.
@@ -40,15 +41,17 @@ class SwaggerPagingInferrer {
         )
     }
 
-    private fun resolveSchema(type: SwaggerType, schemaByName: Map<String, SwaggerSchema>): SwaggerSchema? =
-        when (type) {
-            is SwaggerType.ModelRef -> schemaByName[type.name]
-            else -> null
-        }
+    private fun resolveSchema(
+        type: SwaggerType,
+        schemaByName: Map<String, SwaggerSchema>,
+    ): SwaggerSchema? = when (type) {
+        is SwaggerType.ModelRef -> schemaByName[type.name]
+        else -> null
+    }
 
     /**
      * Strong signal A: schema name contains `PageResult` (springdoc generic expansion).
-     * Strong signal B: shape ¡ª list-like array + total + at least one page/size field.
+     * Strong signal B: shape Â¡Âª list-like array + total + at least one page/size field.
      */
     private fun looksLikePageSchema(schema: SwaggerSchema): Boolean {
         val nameHit = schema.name.contains("PageResult", ignoreCase = true)
@@ -58,16 +61,18 @@ class SwaggerPagingInferrer {
         val hasTotal = props.contains("total") || props.contains("totalcount")
         if (!hasList || !hasTotal) return nameHit && hasList && hasTotal
 
-        val hasPageSignal = props.any {
-            it in setOf("page", "pageno", "pageindex", "pagesize", "size", "limit", "totalpages")
-        }
+        val hasPageSignal =
+            props.any {
+                it in setOf("page", "pageno", "pageindex", "pagesize", "size", "limit", "totalpages")
+            }
         return nameHit || hasPageSignal
     }
 
     private fun extractListField(schema: SwaggerSchema): Pair<String, SwaggerType>? {
         for (key in LIST_KEYS) {
-            val prop = schema.properties.find { it.originalName.equals(key, ignoreCase = true) }
-                ?: continue
+            val prop =
+                schema.properties.find { it.originalName.equals(key, ignoreCase = true) }
+                    ?: continue
             when (val t = prop.type) {
                 is SwaggerType.ListType -> return prop.name to t.elementType
                 else -> continue

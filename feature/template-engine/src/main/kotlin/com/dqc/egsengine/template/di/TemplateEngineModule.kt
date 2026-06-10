@@ -10,8 +10,9 @@ import com.dqc.egsengine.template.TemplateRegistry
 import com.dqc.egsengine.template.prefs.PrefsTemplateRenderer
 import org.koin.dsl.module
 
-val featureTemplateEngineModule = module {
-    single { TemplateRegistry() }
-    single { TemplateEngine(registry = get()) }
-    single { PrefsTemplateRenderer(engine = get()) }
-}
+val featureTemplateEngineModule =
+    module {
+        single { TemplateRegistry() }
+        single { TemplateEngine(registry = get()) }
+        single { PrefsTemplateRenderer(engine = get()) }
+    }

@@ -23,44 +23,65 @@ import com.dqc.egsengine.feature.scaffold.domain.KmpPreferencesScaffolder
 import org.koin.dsl.module
 
 /** KMP platform bindings. */
-val scaffoldKmpModule = module {
-    // Data generators
-    single { KmpSwaggerTemplateRenderer(get()) }
-    single { KmpSwaggerCodeGenerator(get(), get(), get()) }
-    single { KmpCombinedRepositoryGenerator() }
-    single { KmpRepositoryImplGenerator() }
-    single { KmpDatabaseCodeGenerator(get()) }
-    single { KmpDatabaseRepositoryGenerator(get()) }
-    single { KmpDatabaseDbOnlyDataModuleUpdater() }
-    single { KmpDatabaseEntityMapperGenerator(get()) }
-    single { KmpDatabaseUseCaseGenerator(get()) }
-    single { KmpPrefsUseCaseGenerator(get()) }
-    single { KmpFeatureBuildGradleUpdater() }
-    single { KmpDatabaseGeneratedDataModuleUpdater() }
-    single { KmpPrefsGeneratedDataModuleUpdater() }
-    single { KmpApiSyncKoinUpdater(get(), get()) }
-    single { KmpModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
-    single { KmpApiGenerator(get()) }
+val scaffoldKmpModule =
+    module {
+        // Data generators
+        single { KmpSwaggerTemplateRenderer(get()) }
+        single { KmpSwaggerCodeGenerator(get(), get(), get()) }
+        single { KmpCombinedRepositoryGenerator() }
+        single { KmpRepositoryImplGenerator() }
+        single { KmpDatabaseCodeGenerator(get()) }
+        single { KmpDatabaseRepositoryGenerator(get()) }
+        single { KmpDatabaseDbOnlyDataModuleUpdater() }
+        single { KmpDatabaseEntityMapperGenerator(get()) }
+        single { KmpDatabaseUseCaseGenerator(get()) }
+        single { KmpPrefsUseCaseGenerator(get()) }
+        single { KmpFeatureBuildGradleUpdater() }
+        single { KmpDatabaseGeneratedDataModuleUpdater() }
+        single { KmpPrefsGeneratedDataModuleUpdater() }
+        single { KmpApiSyncKoinUpdater(get(), get()) }
+        single { KmpModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
+        single { KmpApiGenerator(get()) }
 
-    // Domain
-    single {
-        KmpDatabaseScaffolder(
-            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-        )
+        // Domain
+        single {
+            KmpDatabaseScaffolder(
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+            )
+        }
+        single {
+            KmpPreferencesScaffolder(
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+            )
+        }
+        single {
+            ClientDatabaseScaffolder(
+                get(),
+                get(),
+                get(),
+            )
+        }
+        single {
+            ClientPrefsScaffolder(
+                get(),
+                get(),
+                get(),
+            )
+        }
     }
-    single {
-        KmpPreferencesScaffolder(
-            get(), get(), get(), get(), get(), get(),
-        )
-    }
-    single {
-        ClientDatabaseScaffolder(
-            get(), get(), get(),
-        )
-    }
-    single {
-        ClientPrefsScaffolder(
-            get(), get(), get(),
-        )
-    }
-}

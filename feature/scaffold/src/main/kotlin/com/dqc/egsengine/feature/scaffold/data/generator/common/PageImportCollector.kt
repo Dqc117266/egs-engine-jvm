@@ -29,7 +29,10 @@ internal fun contractShortTypeDisplayInner(s: String): String {
     return if (s.contains(".")) s.substringAfterLast(".") else s
 }
 
-internal fun collectContractImportsForType(typeFqn: String, out: MutableSet<String>) {
+internal fun collectContractImportsForType(
+    typeFqn: String,
+    out: MutableSet<String>,
+) {
     val trimmed = typeFqn.trimEnd('?')
     if (trimmed.startsWith("List<") && trimmed.endsWith(">")) {
         val inner = extractFirstGenericArgument(trimmed, "List<") ?: return
@@ -54,5 +57,4 @@ internal fun importLinesForKotlinTypeFqns(fqns: Iterable<String>): List<String> 
     return out.sorted()
 }
 
-internal fun importLinesForUseCaseHandlerParams(parameters: List<com.dqc.egsengine.template.model.PageUseCaseParamModel>): List<String> =
-    importLinesForKotlinTypeFqns(parameters.map { it.kotlinType })
+internal fun importLinesForUseCaseHandlerParams(parameters: List<com.dqc.egsengine.template.model.PageUseCaseParamModel>): List<String> = importLinesForKotlinTypeFqns(parameters.map { it.kotlinType })

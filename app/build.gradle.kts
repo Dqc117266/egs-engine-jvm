@@ -6,10 +6,11 @@ plugins {
 application {
     mainClass.set("com.dqc.egsengine.AppKt")
 
-    applicationDefaultJvmArgs = listOf(
-        "-Xmx512m",
-        "-Dfile.encoding=UTF-8",
-    )
+    applicationDefaultJvmArgs =
+        listOf(
+            "-Xmx512m",
+            "-Dfile.encoding=UTF-8",
+        )
 }
 
 dependencies {

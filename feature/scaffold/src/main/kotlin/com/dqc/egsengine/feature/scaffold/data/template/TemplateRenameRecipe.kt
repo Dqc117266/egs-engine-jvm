@@ -13,35 +13,38 @@ data class TemplateRenameRecipe(
 )
 
 object TemplateRenameRecipes {
+    val ANDROID: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            id = "android",
+            oldPackage = "com.example.egs_android_template",
+            oldProjectName = "egs-android-template",
+            oldProjectNameDisplay = "EGS-Android-Template",
+            oldPackageToken = "egs_android_template",
+        )
 
-    val ANDROID: TemplateRenameRecipe = TemplateRenameRecipe(
-        id = "android",
-        oldPackage = "com.example.egs_android_template",
-        oldProjectName = "egs-android-template",
-        oldProjectNameDisplay = "EGS-Android-Template",
-        oldPackageToken = "egs_android_template",
-    )
+    val KMP: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            id = "kmp",
+            oldPackage = "org.mifos",
+            oldProjectName = "egs-kmp-template",
+            oldProjectNameDisplay = "egs-kmp-template",
+        )
 
-    val KMP: TemplateRenameRecipe = TemplateRenameRecipe(
-        id = "kmp",
-        oldPackage = "org.mifos",
-        oldProjectName = "egs-kmp-template",
-        oldProjectNameDisplay = "egs-kmp-template",
-    )
+    val SERVER: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            id = "server",
+            oldPackage = "com.egs.server",
+            oldProjectName = "egs-server-template",
+            oldProjectNameDisplay = "egs-server-template",
+            oldPackageToken = "egs_server",
+        )
 
-    val SERVER: TemplateRenameRecipe = TemplateRenameRecipe(
-        id = "server",
-        oldPackage = "com.egs.server",
-        oldProjectName = "egs-server-template",
-        oldProjectNameDisplay = "egs-server-template",
-        oldPackageToken = "egs_server",
-    )
-
-    val ADMIN: TemplateRenameRecipe = TemplateRenameRecipe(
-        id = "admin",
-        oldProjectName = "egs-admin-template",
-        oldProjectNameDisplay = "egs-admin-template",
-    )
+    val ADMIN: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            id = "admin",
+            oldProjectName = "egs-admin-template",
+            oldProjectNameDisplay = "egs-admin-template",
+        )
 
     fun detectFromPath(path: String): TemplateRenameRecipe? {
         val normalized = path.lowercase().replace('\\', '/')

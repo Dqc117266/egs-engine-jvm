@@ -18,21 +18,15 @@ class PageKotlinTemplateRenderer(
 ) {
     private val m: PageTemplateModel = template.toPageTemplateModel()
 
-    fun renderContract(projectRoot: File? = null): String =
-        engine.render("android/page/PageContract.kt.ftl", m, projectRoot)
+    fun renderContract(projectRoot: File? = null): String = engine.render("android/page/PageContract.kt.ftl", m, projectRoot)
 
-    fun renderViewModel(projectRoot: File? = null): String =
-        engine.render("android/page/PageViewModel.kt.ftl", m, projectRoot)
+    fun renderViewModel(projectRoot: File? = null): String = engine.render("android/page/PageViewModel.kt.ftl", m, projectRoot)
 
-    fun renderScreen(projectRoot: File? = null): String =
-        engine.render("android/page/PageScreen.kt.ftl", m, projectRoot)
+    fun renderScreen(projectRoot: File? = null): String = engine.render("android/page/PageScreen.kt.ftl", m, projectRoot)
 
-    fun pathContract(): String =
-        "$kotlinRootRel/${m.screenPkg.replace(".", "/")}/${m.pascalName}Contract.kt"
+    fun pathContract(): String = "$kotlinRootRel/${m.screenPkg.replace(".", "/")}/${m.pascalName}Contract.kt"
 
-    fun pathViewModel(): String =
-        "$kotlinRootRel/${m.screenPkg.replace(".", "/")}/${m.pascalName}ViewModel.kt"
+    fun pathViewModel(): String = "$kotlinRootRel/${m.screenPkg.replace(".", "/")}/${m.pascalName}ViewModel.kt"
 
-    fun pathScreen(): String =
-        "$kotlinRootRel/${m.screenDirPkg.replace(".", "/")}/${m.pascalName}Screen.kt"
+    fun pathScreen(): String = "$kotlinRootRel/${m.screenDirPkg.replace(".", "/")}/${m.pascalName}Screen.kt"
 }

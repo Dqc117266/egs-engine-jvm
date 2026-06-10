@@ -33,18 +33,18 @@ data class ProjectSyncContext(
 )
 
 object DevProjectConfigLoader {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     fun loadSyncContext(projectDir: File): ProjectSyncContext {
         val normalized = projectDir.absoluteFile
         val workspaceRoot = findWorkspaceRoot(normalized)
         val configFile = normalized.resolve(".egs/config.json")
-        val config = if (configFile.isFile) {
-            json.decodeFromString<EgsConfigFile>(configFile.readText())
-        } else {
-            EgsConfigFile()
-        }
+        val config =
+            if (configFile.isFile) {
+                json.decodeFromString<EgsConfigFile>(configFile.readText())
+            } else {
+                EgsConfigFile()
+            }
 
         val workspaceEntry = workspaceRoot?.let { findWorkspaceEntry(it, normalized) }
         val templateUrl = workspaceEntry?.templateUrl
@@ -53,7 +53,10 @@ object DevProjectConfigLoader {
 
         return ProjectSyncContext(
             projectDir = normalized,
-            projectName = config.projectName ?: workspaceRoot?.let { json.decodeFromString<WorkspaceConfigFile>(it.resolve(".egs/workspace.json").readText()).name } ?: normalized.name,
+            projectName =
+            config.projectName
+                ?: workspaceRoot?.let { json.decodeFromString<WorkspaceConfigFile>(it.resolve(".egs/workspace.json").readText()).name }
+                ?: normalized.name,
             basePackage = config.basePackage ?: workspaceEntry?.basePackage,
             templateDir = templateDir,
             recipe = recipe,
@@ -69,7 +72,10 @@ object DevProjectConfigLoader {
         return null
     }
 
-    private fun findWorkspaceEntry(workspaceRoot: File, projectDir: File): WorkspaceProjectEntry? {
+    private fun findWorkspaceEntry(
+        workspaceRoot: File,
+        projectDir: File,
+    ): WorkspaceProjectEntry? {
         val workspaceFile = workspaceRoot.resolve(".egs/workspace.json")
         if (!workspaceFile.isFile) return null
         val workspace = json.decodeFromString<WorkspaceConfigFile>(workspaceFile.readText())

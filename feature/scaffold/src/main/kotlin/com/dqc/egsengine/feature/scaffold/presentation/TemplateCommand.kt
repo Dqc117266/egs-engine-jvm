@@ -16,13 +16,11 @@ class TemplateCommand : CliktCommand(name = "template") {
     override fun run() = Unit
 
     companion object {
-        fun withSubcommands(): TemplateCommand =
-            TemplateCommand().subcommands(TemplateSyncBackCommand(), TemplatePromoteFtlCommand())
+        fun withSubcommands(): TemplateCommand = TemplateCommand().subcommands(TemplateSyncBackCommand(), TemplatePromoteFtlCommand())
     }
 }
 
 class TemplateSyncBackCommand : CliktCommand(name = "sync-back") {
-
     private val fromOption by option("--from", help = "Generated project directory (default: demo-app subproject)")
         .default(".")
 
@@ -53,7 +51,12 @@ class TemplateSyncBackCommand : CliktCommand(name = "sync-back") {
             val context = DevProjectConfigLoader.loadSyncContext(fromDir)
             val toDir = resolveTargetDir(context)
             val recipe = resolveRecipe(toDir)
-            val paths = pathsOption?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+            val paths =
+                pathsOption
+                    ?.split(',')
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotEmpty() }
+                    .orEmpty()
 
             val resolvedFromProject = fromProjectName ?: context.projectName
             val resolvedToProject = toProjectName ?: recipe.oldProjectName ?: toDir.name
@@ -65,17 +68,18 @@ class TemplateSyncBackCommand : CliktCommand(name = "sync-back") {
                 echo(CliFormatter.formatInfo("Dry run mode"))
             }
 
-            val result = TemplateSyncBack().sync(
-                fromDir = fromDir,
-                toDir = toDir,
-                recipe = recipe,
-                fromProjectName = resolvedFromProject,
-                fromPackage = resolvedFromPackage,
-                toProjectName = resolvedToProject,
-                toPackage = resolvedToPackage,
-                pathFilters = paths,
-                dryRun = dryRun,
-            )
+            val result =
+                TemplateSyncBack().sync(
+                    fromDir = fromDir,
+                    toDir = toDir,
+                    recipe = recipe,
+                    fromProjectName = resolvedFromProject,
+                    fromPackage = resolvedFromPackage,
+                    toProjectName = resolvedToProject,
+                    toPackage = resolvedToPackage,
+                    pathFilters = paths,
+                    dryRun = dryRun,
+                )
 
             echo()
             echo("Copied files (${result.copiedFiles.size}):")
@@ -131,7 +135,6 @@ class TemplateSyncBackCommand : CliktCommand(name = "sync-back") {
 }
 
 class TemplatePromoteFtlCommand : CliktCommand(name = "promote-ftl") {
-
     private val fromOption by option(
         "--from",
         help = "Project .egs/templates directory (default: <project>/.egs/templates)",
@@ -150,8 +153,9 @@ class TemplatePromoteFtlCommand : CliktCommand(name = "promote-ftl") {
     override fun run() {
         try {
             val projectRoot = File(projectOption).absoluteFile
-            val sourceRoot = fromOption?.let { File(it).absoluteFile }
-                ?: projectRoot.resolve(".egs/templates")
+            val sourceRoot =
+                fromOption?.let { File(it).absoluteFile }
+                    ?: projectRoot.resolve(".egs/templates")
             require(sourceRoot.isDirectory) {
                 "Template override directory not found: ${sourceRoot.absolutePath}"
             }
@@ -166,11 +170,12 @@ class TemplatePromoteFtlCommand : CliktCommand(name = "promote-ftl") {
                 echo(CliFormatter.formatInfo("Dry run mode"))
             }
 
-            val result = TemplatePromoter().promote(
-                sourceRoot = sourceRoot,
-                targetRoot = targetRoot,
-                dryRun = dryRun,
-            )
+            val result =
+                TemplatePromoter().promote(
+                    sourceRoot = sourceRoot,
+                    targetRoot = targetRoot,
+                    dryRun = dryRun,
+                )
 
             echo()
             echo("Promoted templates (${result.promotedFiles.size}):")
@@ -194,11 +199,12 @@ class TemplatePromoteFtlCommand : CliktCommand(name = "promote-ftl") {
         TemplatePromoter.resolveTargetRoot(null)?.let { return it.absoluteFile }
 
         val cwd = File(System.getProperty("user.dir")).absoluteFile
-        val candidates = listOf(
-            cwd.resolve("feature/template-engine/src/main/resources/templates"),
-            cwd.resolve("egs-engine/feature/template-engine/src/main/resources/templates"),
-            cwd.parentFile?.resolve("egs-engine/feature/template-engine/src/main/resources/templates"),
-        ).filterNotNull()
+        val candidates =
+            listOf(
+                cwd.resolve("feature/template-engine/src/main/resources/templates"),
+                cwd.resolve("egs-engine/feature/template-engine/src/main/resources/templates"),
+                cwd.parentFile?.resolve("egs-engine/feature/template-engine/src/main/resources/templates"),
+            ).filterNotNull()
 
         return candidates.firstOrNull { it.isDirectory }
             ?: throw IllegalArgumentException(

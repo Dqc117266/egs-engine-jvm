@@ -15,7 +15,6 @@ import org.koin.dsl.module
 import java.io.File
 
 class ClientGenDatabaseCommandUnitTest {
-
     @AfterEach
     fun tearDown() {
         stopKoin()
@@ -26,11 +25,12 @@ class ClientGenDatabaseCommandUnitTest {
         val scaffolder = mockk<ClientDatabaseScaffolder>()
         every {
             scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
-        } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
-            moduleName = "storage",
-            files = listOf(GeneratedFile("feature/storage/x.kt", "")),
-            dryRun = true,
-        )
+        } returns
+            KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
+                moduleName = "storage",
+                files = listOf(GeneratedFile("feature/storage/x.kt", "")),
+                dryRun = true,
+            )
 
         startKoin {
             modules(
@@ -41,9 +41,10 @@ class ClientGenDatabaseCommandUnitTest {
         }
 
         val projectRoot = createTempProjectDir()
-        val sqlFile = File.createTempFile("dbgen", ".sql").apply {
-            writeText("CREATE TABLE t (id INT NOT NULL PRIMARY KEY);")
-        }
+        val sqlFile =
+            File.createTempFile("dbgen", ".sql").apply {
+                writeText("CREATE TABLE t (id INT NOT NULL PRIMARY KEY);")
+            }
 
         ClientCommand.withSubcommands().main(
             listOf(
@@ -75,11 +76,12 @@ class ClientGenDatabaseCommandUnitTest {
         val scaffolder = mockk<ClientDatabaseScaffolder>()
         every {
             scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
-        } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
-            moduleName = "m",
-            files = emptyList(),
-            dryRun = false,
-        )
+        } returns
+            KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
+                moduleName = "m",
+                files = emptyList(),
+                dryRun = false,
+            )
 
         startKoin {
             modules(
@@ -90,9 +92,10 @@ class ClientGenDatabaseCommandUnitTest {
         }
 
         val projectRoot = createTempProjectDir()
-        val sqlFile = File.createTempFile("dbgen2", ".sql").apply {
-            writeText("CREATE TABLE t (id INT NOT NULL PRIMARY KEY);")
-        }
+        val sqlFile =
+            File.createTempFile("dbgen2", ".sql").apply {
+                writeText("CREATE TABLE t (id INT NOT NULL PRIMARY KEY);")
+            }
 
         ClientCommand.withSubcommands().main(
             listOf(
@@ -116,11 +119,12 @@ class ClientGenDatabaseCommandUnitTest {
         val scaffolder = mockk<ClientDatabaseScaffolder>()
         every {
             scaffolder.scaffoldDatabase(any(), any(), any(), any(), any(), any())
-        } returns KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
-            moduleName = "todo",
-            files = emptyList(),
-            dryRun = false,
-        )
+        } returns
+            KmpDatabaseScaffolder.KmpDatabaseScaffoldResult(
+                moduleName = "todo",
+                files = emptyList(),
+                dryRun = false,
+            )
 
         startKoin {
             modules(
@@ -131,9 +135,10 @@ class ClientGenDatabaseCommandUnitTest {
         }
 
         val projectRoot = createTempProjectDir()
-        val sqlFile = File.createTempFile("dbgen3", ".sql").apply {
-            writeText("CREATE TABLE t (id INT NOT NULL PRIMARY KEY);")
-        }
+        val sqlFile =
+            File.createTempFile("dbgen3", ".sql").apply {
+                writeText("CREATE TABLE t (id INT NOT NULL PRIMARY KEY);")
+            }
 
         ClientCommand.withSubcommands().main(
             listOf(
@@ -154,8 +159,7 @@ class ClientGenDatabaseCommandUnitTest {
         }
     }
 
-    private fun createTempProjectDir(): File =
-        kotlin.io.path.createTempDirectory("client-gen-db-unit-test").toFile().also {
-            it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
-        }
+    private fun createTempProjectDir(): File = kotlin.io.path.createTempDirectory("client-gen-db-unit-test").toFile().also {
+        it.resolve("settings.gradle.kts").writeText("""rootProject.name = "unit-test-project"""")
+    }
 }

@@ -9,15 +9,20 @@ import java.io.File
 class BaseClassScannerImpl : BaseClassScanner {
     private val logger = LoggerFactory.getLogger(BaseClassScannerImpl::class.java)
 
-    private val kotlinBaseClassPattern = Regex(
-        """(?:abstract|open)\s+class\s+(Base\w+)""",
-    )
-    private val javaBaseClassPattern = Regex(
-        """(?:public\s+)?abstract\s+class\s+(Base\w+)""",
-    )
+    private val kotlinBaseClassPattern =
+        Regex(
+            """(?:abstract|open)\s+class\s+(Base\w+)""",
+        )
+    private val javaBaseClassPattern =
+        Regex(
+            """(?:public\s+)?abstract\s+class\s+(Base\w+)""",
+        )
     private val packagePattern = Regex("""^package\s+([\w.]+)""", RegexOption.MULTILINE)
 
-    override fun scan(projectRoot: File, modules: List<String>): List<BaseClassInfo> {
+    override fun scan(
+        projectRoot: File,
+        modules: List<String>,
+    ): List<BaseClassInfo> {
         val results = mutableListOf<BaseClassInfo>()
 
         for (modulePath in modules) {
@@ -68,11 +73,12 @@ class BaseClassScannerImpl : BaseClassScanner {
         val pattern = if (file.extension == "kt") kotlinBaseClassPattern else javaBaseClassPattern
         for (match in pattern.findAll(content)) {
             val className = match.groupValues[1]
-            val kind = if (match.value.trimStart().startsWith("abstract")) {
-                BaseClassKind.ABSTRACT_CLASS
-            } else {
-                BaseClassKind.OPEN_CLASS
-            }
+            val kind =
+                if (match.value.trimStart().startsWith("abstract")) {
+                    BaseClassKind.ABSTRACT_CLASS
+                } else {
+                    BaseClassKind.OPEN_CLASS
+                }
 
             results.add(
                 BaseClassInfo(

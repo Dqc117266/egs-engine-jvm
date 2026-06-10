@@ -21,7 +21,6 @@ class KmpModuleGenerator(
     private val settingsUpdater: SettingsGradleUpdater,
     private val templateEngine: TemplateEngine,
 ) : PlatformModuleGenerator {
-
     private val logger = LoggerFactory.getLogger(KmpModuleGenerator::class.java)
 
     override val platform: Platform = Platform.KMP

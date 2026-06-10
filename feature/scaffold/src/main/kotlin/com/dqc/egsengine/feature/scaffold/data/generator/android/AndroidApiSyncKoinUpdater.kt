@@ -16,7 +16,6 @@ import java.io.File
  * and [generate.di] module integration (mirrors [com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiSyncKoinUpdater]).
  */
 class AndroidApiSyncKoinUpdater {
-
     private val logger = LoggerFactory.getLogger(AndroidApiSyncKoinUpdater::class.java)
 
     fun applyAfterSync(
@@ -42,9 +41,10 @@ class AndroidApiSyncKoinUpdater {
         pkgPath: String,
         moduleName: String,
     ) {
-        val file = subProjectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/$pkgPath/data/repository/${pascal}RepositoryImpl.kt",
-        )
+        val file =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/main/kotlin/$pkgPath/data/repository/${pascal}RepositoryImpl.kt",
+            )
         val newContent = renderHandwrittenRepositoryImpl(packageName, pascal)
         if (!file.exists()) {
             file.parentFile.mkdirs()
@@ -66,23 +66,30 @@ class AndroidApiSyncKoinUpdater {
         logger.info("Updated handwritten {}RepositoryImpl at {}", pascal, file.path)
     }
 
-    private fun shouldOverwriteRepositoryImpl(text: String, pascal: String): Boolean {
+    private fun shouldOverwriteRepositoryImpl(
+        text: String,
+        pascal: String,
+    ): Boolean {
         if (text.contains("override suspend fun getData(")) return true
         if (text.contains("egs-codegen: scaffold-repository-impl")) return true
         val legacyGen = "Generated${pascal}RepositorySupport"
         if (text.contains(legacyGen)) return true
         val gen = "Generated${pascal}ApiRepositorySupport"
         if (!text.contains(gen)) return false
-        val m = Regex(
-            """class\s+${Regex.escape(pascal)}RepositoryImpl\s*\(\s*([\s\S]*?)\)\s*:\s*${Regex.escape(gen)}""",
-            RegexOption.MULTILINE,
-        ).find(text) ?: return false
+        val m =
+            Regex(
+                """class\s+${Regex.escape(pascal)}RepositoryImpl\s*\(\s*([\s\S]*?)\)\s*:\s*${Regex.escape(gen)}""",
+                RegexOption.MULTILINE,
+            ).find(text) ?: return false
         val params = m.groupValues[1].trim()
         if (params.isEmpty()) return true
         return !params.contains(',')
     }
 
-    private fun renderHandwrittenRepositoryImpl(packageName: String, pascal: String): String =
+    private fun renderHandwrittenRepositoryImpl(
+        packageName: String,
+        pascal: String,
+    ): String =
         """
         /*
          * Hand-written repository: extends generated API support.
@@ -107,9 +114,10 @@ class AndroidApiSyncKoinUpdater {
         pkgPath: String,
         moduleName: String,
     ) {
-        val rootFile = subProjectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/$pkgPath/${pascal}KoinModule.kt",
-        )
+        val rootFile =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/main/kotlin/$pkgPath/${pascal}KoinModule.kt",
+            )
         if (!rootFile.exists()) {
             logger.debug("Android feature root Koin module not found (skip wire): {}", rootFile.path)
             return
@@ -140,32 +148,36 @@ class AndroidApiSyncKoinUpdater {
             text = insertAfterPackage(text, "$importData\n$importDomain\n")
         }
 
-        val defaultListBlock = """
+        val defaultListBlock =
+            """
     dataModule,
     domainModule,
     presentationModule,
 """.trimEnd()
-        val legacyAndroidListBlock = """
+        val legacyAndroidListBlock =
+            """
     presentationModule,
     domainModule,
     dataModule,
 """.trimEnd()
-        val wiredListBlock = """
+        val wiredListBlock =
+            """
     generatedDataModule,
     dataModule,
     generatedDomainModule,
     domainModule,
     presentationModule,
 """.trimEnd()
-        var replaced = when {
-            text.contains(defaultListBlock) -> text.replaceFirst(defaultListBlock, wiredListBlock)
-            text.contains(legacyAndroidListBlock) -> text.replaceFirst(legacyAndroidListBlock, wiredListBlock)
-            else ->
-                Regex("""(\s*)dataModule\s*,\s*domainModule\s*,\s*presentationModule\s*,""").replace(text) { m ->
-                    val ind = m.groupValues[1]
-                    "${ind}generatedDataModule,\n${ind}dataModule,\n${ind}generatedDomainModule,\n${ind}domainModule,\n${ind}presentationModule,"
-                }
-        }
+        var replaced =
+            when {
+                text.contains(defaultListBlock) -> text.replaceFirst(defaultListBlock, wiredListBlock)
+                text.contains(legacyAndroidListBlock) -> text.replaceFirst(legacyAndroidListBlock, wiredListBlock)
+                else ->
+                    Regex("""(\s*)dataModule\s*,\s*domainModule\s*,\s*presentationModule\s*,""").replace(text) { m ->
+                        val ind = m.groupValues[1]
+                        "${ind}generatedDataModule,\n${ind}dataModule,\n${ind}generatedDomainModule,\n${ind}domainModule,\n${ind}presentationModule,"
+                    }
+            }
         if (replaced == text && !replaced.contains("generatedDataModule,")) {
             logger.warn(
                 "Could not auto-wire generated modules into {} - add generatedDataModule / generatedDomainModule manually.",
@@ -186,9 +198,10 @@ class AndroidApiSyncKoinUpdater {
         pkgPath: String,
         moduleName: String,
     ) {
-        val file = subProjectRoot.resolve(
-            "feature/$moduleName/src/main/kotlin/$pkgPath/data/DataModule.kt",
-        )
+        val file =
+            subProjectRoot.resolve(
+                "feature/$moduleName/src/main/kotlin/$pkgPath/data/DataModule.kt",
+            )
         if (!file.exists()) return
 
         var text = file.readText()
@@ -204,7 +217,10 @@ class AndroidApiSyncKoinUpdater {
         }
     }
 
-    private fun insertAfterPackage(text: String, insertion: String): String {
+    private fun insertAfterPackage(
+        text: String,
+        insertion: String,
+    ): String {
         val match = Regex("^package\\s+[^\\s]+", RegexOption.MULTILINE).find(text) ?: return text
         val insertAt = match.range.last + 1
         return text.substring(0, insertAt) + "\n\n" + insertion + text.substring(insertAt)
@@ -215,7 +231,7 @@ class AndroidApiSyncKoinUpdater {
     }
 }
 
-private fun String.androidModulePascalCase(): String =
-    split("-", "_").joinToString("") { part ->
+private fun String.androidModulePascalCase(): String = split("-", "_")
+    .joinToString("") { part ->
         part.replaceFirstChar { c -> c.uppercase() }
     }.ifBlank { "Feature" }

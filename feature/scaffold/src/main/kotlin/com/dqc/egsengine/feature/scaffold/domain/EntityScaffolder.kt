@@ -21,13 +21,14 @@ class EntityScaffolder(
         val tmp = File.createTempFile("egs-ddl-", ddlFileName)
         try {
             tmp.writeText(ddlSql)
-            val r = databaseScaffolder.scaffoldDatabase(
-                projectRoot = projectRoot,
-                sqlFile = tmp,
-                moduleName = moduleName,
-                dryRun = dryRun,
-                options = options,
-            )
+            val r =
+                databaseScaffolder.scaffoldDatabase(
+                    projectRoot = projectRoot,
+                    sqlFile = tmp,
+                    moduleName = moduleName,
+                    dryRun = dryRun,
+                    options = options,
+                )
             return EntityScaffoldResult(
                 moduleName = r.moduleName,
                 tables = listOf(r.tableName),
@@ -46,13 +47,14 @@ class EntityScaffolder(
         dryRun: Boolean = false,
         options: SpringBootOpinionatedOptions = SpringBootOpinionatedOptions(),
     ): EntityScaffoldResult {
-        val r = databaseScaffolder.scaffoldDatabase(
-            projectRoot = projectRoot,
-            sqlFile = ddlFile,
-            moduleName = moduleName,
-            dryRun = dryRun,
-            options = options,
-        )
+        val r =
+            databaseScaffolder.scaffoldDatabase(
+                projectRoot = projectRoot,
+                sqlFile = ddlFile,
+                moduleName = moduleName,
+                dryRun = dryRun,
+                options = options,
+            )
         return EntityScaffoldResult(
             moduleName = r.moduleName,
             tables = listOf(r.tableName),
