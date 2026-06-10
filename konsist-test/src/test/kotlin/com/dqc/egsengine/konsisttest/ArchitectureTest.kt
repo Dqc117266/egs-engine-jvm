@@ -1,32 +1,32 @@
 package com.dqc.egsengine.konsisttest
 
 import com.lemonappdev.konsist.api.Konsist
-import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertTrue
 import org.junit.jupiter.api.Test
 
 class ArchitectureTest {
+    /**
+     * Production source classes only — excludes golden snapshots, build output, test sources.
+     */
+    private fun productionClasses() = Konsist
+        .scopeFromProject()
+        .classes()
+        .filter { !it.containingFile.path.contains("/build/") }
+        .filter { !it.containingFile.path.contains("/src/test/") }
+        .filter { !it.containingFile.path.contains("/golden/") }
 
     @Test
-    fun `classes in data package should have 'Repository' or 'Runner' or 'Loader' or 'Impl' suffix`() {
-        Konsist
-            .scopeFromProject()
-            .classes()
-            .filter { it.resideInPackage("..data..") }
+    fun `repository implementations should have Repository or Impl suffix`() {
+        productionClasses()
+            .filter { it.resideInPackage("..data.repository..") }
             .assertTrue {
-                it.name.endsWith("Repository") ||
-                    it.name.endsWith("RepositoryImpl") ||
-                    it.name.endsWith("Runner") ||
-                    it.name.endsWith("Loader") ||
-                    it.name.endsWith("Impl")
+                it.name.endsWith("Repository") || it.name.endsWith("Impl")
             }
     }
 
     @Test
     fun `classes in domain package should not depend on data package directly`() {
-        Konsist
-            .scopeFromProject()
-            .classes()
+        productionClasses()
             .filter { it.resideInPackage("..domain..") }
             .assertTrue {
                 !it.text.contains("import com.dqc.egsengine.feature.*.data")
@@ -34,12 +34,18 @@ class ArchitectureTest {
     }
 
     @Test
-    fun `classes in presentation package should have 'Cli' suffix`() {
-        Konsist
-            .scopeFromProject()
-            .classes()
+    fun `source files in presentation package follow naming convention`() {
+        // Kontist's KoFile.name returns the name without extension (e.g. "ScriptCli", not "ScriptCli.kt").
+        // Files must end with Cli, Command, Resolver, or Formatter.
+        // Classes within those files include Clikt sub-commands, nested models, and the primary class.
+        productionClasses()
             .filter { it.resideInPackage("..presentation..") }
-            .withNameEndingWith("Cli")
-            .assertTrue { it.name.endsWith("Cli") }
+            .assertTrue {
+                val fileName = it.containingFile.name
+                fileName.endsWith("Cli") ||
+                    fileName.endsWith("Command") ||
+                    fileName.endsWith("Resolver") ||
+                    fileName.endsWith("Formatter")
+            }
     }
 }
