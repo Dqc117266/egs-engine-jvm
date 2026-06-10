@@ -11,10 +11,11 @@ import com.github.ajalt.clikt.parameters.arguments.help
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
-import com.github.ajalt.clikt.parameters.options.multiple as optionMultiple
 import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
+import com.github.ajalt.clikt.parameters.options.multiple as optionMultiple
 
 /**
  * Create a Compose screen (full CLI + interactive).
@@ -36,14 +37,17 @@ import org.koin.core.component.inject
  * egs create screen Login -m user -u FirstUseCase SecondUseCase ThirdUseCase
  * ```
  */
-class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
+class CreateScreenCommand :
+    CliktCommand(name = "screen"),
+    KoinComponent {
+    private val logger = LoggerFactory.getLogger(CreateScreenCommand::class.java)
 
     private val pageScaffolder: PageScaffolder by inject()
     private val useCaseScanner: UseCaseScanner by inject()
 
     private val screenName by argument(
         name = "NAME",
-        help = "Screen name, e.g. Login, Profile, Settings"
+        help = "Screen name, e.g. Login, Profile, Settings",
     )
 
     /**
@@ -55,35 +59,39 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
     ).multiple(required = false)
 
     private val module by option(
-        "-m", "--module",
-        help = "Target feature module, e.g. user, home, profile"
+        "-m",
+        "--module",
+        help = "Target feature module, e.g. user, home, profile",
     )
 
     private val useCaseOptions by option(
-        "-u", "--usecase",
+        "-u",
+        "--usecase",
         help =
-            "Use case class name(s). Prefer spaces: `-u FooUseCase BarUseCase` (like `git add`). " +
-                "Also: `-u A,B`, repeat `-u`, or `-u \"A B\"`.",
+        "Use case class name(s). Prefer spaces: `-u FooUseCase BarUseCase` (like `git add`). " +
+            "Also: `-u A,B`, repeat `-u`, or `-u \"A B\"`.",
     ).optionMultiple()
 
     private val route by option(
-        "-r", "--route",
-        help = "Navigation path, e.g. user/login, profile/{id}"
+        "-r",
+        "--route",
+        help = "Navigation path, e.g. user/login, profile/{id}",
     )
 
     private val params by option(
-        "-p", "--params",
-        help = "Screen args as name:Type pairs, comma-separated, e.g. email:String,password:String"
+        "-p",
+        "--params",
+        help = "Screen args as name:Type pairs, comma-separated, e.g. email:String,password:String",
     )
 
     private val projectPath by option(
         "--project",
-        help = "Project root path"
+        help = "Project root path",
     ).default(".")
 
     private val dryRun by option(
         "--dry-run",
-        help = "Preview only; do not write files"
+        help = "Preview only; do not write files",
     ).flag()
 
     private val paging by option(
@@ -121,12 +129,15 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         } catch (e: Exception) {
             echo(CliFormatter.formatError("Screen generation failed: ${e.message}"), err = true)
             if (System.getenv("EGS_DEBUG") == "true") {
-                e.printStackTrace()
+                logger.error("Screen generation failed", e)
             }
         }
     }
 
-    private fun runCommandMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
+    private fun runCommandMode(
+        workspaceRoot: java.io.File,
+        clientRoot: java.io.File,
+    ) {
         val targetModule = module!!
         val name = validateScreenName(screenName)
 
@@ -149,23 +160,27 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         if (screenParams.isNotEmpty()) echo("   Params: ${screenParams.joinToString(", ") { "${it.first}: ${it.second}" }}")
         echo()
 
-        val result = pageScaffolder.scaffold(
-            projectRoot = clientRoot,
-            moduleName = targetModule,
-            pageName = name,
-            useCases = selectedUseCases,
-            dryRun = dryRun,
-            workspaceRoot = workspaceRoot,
-            pagingOption = paging,
-            skipNav = skipNav,
-            skipAppWire = skipAppWire,
-            withViewModelTest = withViewModelTest,
-        )
+        val result =
+            pageScaffolder.scaffold(
+                projectRoot = clientRoot,
+                moduleName = targetModule,
+                pageName = name,
+                useCases = selectedUseCases,
+                dryRun = dryRun,
+                workspaceRoot = workspaceRoot,
+                pagingOption = paging,
+                skipNav = skipNav,
+                skipAppWire = skipAppWire,
+                withViewModelTest = withViewModelTest,
+            )
 
         printResult(result)
     }
 
-    private fun runInteractiveMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
+    private fun runInteractiveMode(
+        workspaceRoot: java.io.File,
+        clientRoot: java.io.File,
+    ) {
         echo(CliFormatter.formatInfo("Create new screen"))
         echo()
 
@@ -185,20 +200,22 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         echo()
 
         print("> Module index: ")
-        val moduleIndex = readlnOrNull()?.toIntOrNull()
-            ?: throw IllegalArgumentException("Invalid module selection")
+        val moduleIndex =
+            readlnOrNull()?.toIntOrNull()
+                ?: throw IllegalArgumentException("Invalid module selection")
         require(moduleIndex in modules.indices) { "Invalid module index" }
 
         val selectedModule = modules[moduleIndex]
         echo()
 
         val availableUseCases = useCaseScanner.scanByModule(clientRoot, selectedModule)
-        val selectedUseCases = if (availableUseCases.isNotEmpty()) {
-            selectUseCasesInteractively(availableUseCases)
-        } else {
-            echo("No UseCases in module '$selectedModule'")
-            emptyList()
-        }
+        val selectedUseCases =
+            if (availableUseCases.isNotEmpty()) {
+                selectUseCasesInteractively(availableUseCases)
+            } else {
+                echo("No UseCases in module '$selectedModule'")
+                emptyList()
+            }
 
         echo()
         print("> Navigation route (optional, e.g. user/login): ")
@@ -223,18 +240,19 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
         echo()
         echo(CliFormatter.formatInfo("Generating..."))
 
-        val result = pageScaffolder.scaffold(
-            projectRoot = clientRoot,
-            moduleName = selectedModule,
-            pageName = name,
-            useCases = selectedUseCases,
-            dryRun = dryRun,
-            workspaceRoot = workspaceRoot,
-            pagingOption = paging,
-            skipNav = skipNav,
-            skipAppWire = skipAppWire,
-            withViewModelTest = withViewModelTest,
-        )
+        val result =
+            pageScaffolder.scaffold(
+                projectRoot = clientRoot,
+                moduleName = selectedModule,
+                pageName = name,
+                useCases = selectedUseCases,
+                dryRun = dryRun,
+                workspaceRoot = workspaceRoot,
+                pagingOption = paging,
+                skipNav = skipNav,
+                skipAppWire = skipAppWire,
+                withViewModelTest = withViewModelTest,
+            )
 
         printResult(result)
     }
@@ -248,9 +266,10 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
     }
 
     private fun collectedUseCaseNames(): List<String> {
-        val fromOptions = useCaseOptions.flatMap { part ->
-            part.split(Regex("[,\\s]+")).map { it.trim() }.filter { it.isNotBlank() }
-        }
+        val fromOptions =
+            useCaseOptions.flatMap { part ->
+                part.split(Regex("[,\\s]+")).map { it.trim() }.filter { it.isNotBlank() }
+            }
         val fromTrailing = trailingUseCaseNames.map { it.trim() }.filter { it.isNotBlank() }
         return fromOptions + fromTrailing
     }
@@ -294,9 +313,11 @@ class CreateScreenCommand : CliktCommand(name = "screen"), KoinComponent {
             input.isEmpty() -> emptyList()
             input == "a" || input == "all" -> useCases
             else -> {
-                val indices = input.split(",", " ")
-                    .mapNotNull { it.trim().toIntOrNull() }
-                    .filter { it in useCases.indices }
+                val indices =
+                    input
+                        .split(",", " ")
+                        .mapNotNull { it.trim().toIntOrNull() }
+                        .filter { it in useCases.indices }
                 indices.map { useCases[it] }
             }
         }

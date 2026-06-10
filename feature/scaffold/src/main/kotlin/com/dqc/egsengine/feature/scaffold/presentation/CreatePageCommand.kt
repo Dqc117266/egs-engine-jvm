@@ -12,6 +12,7 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 /**
  * Create a page (interactive or non-interactive).
@@ -27,34 +28,41 @@ import org.koin.core.component.inject
  * egs create page --module home --name Profile --api GetUserPostsUseCase --api GetUserLevelUseCase
  * ```
  */
-class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
+class CreatePageCommand :
+    CliktCommand(name = "page"),
+    KoinComponent {
+    private val logger = LoggerFactory.getLogger(CreatePageCommand::class.java)
 
     private val pageScaffolder: PageScaffolder by inject()
     private val useCaseScanner: UseCaseScanner by inject()
 
     private val module by option(
-        "-m", "--module",
-        help = "Target feature module, e.g. home"
+        "-m",
+        "--module",
+        help = "Target feature module, e.g. home",
     )
 
     private val pageName by option(
-        "-n", "--name",
-        help = "Page name, e.g. Profile"
+        "-n",
+        "--name",
+        help = "Page name, e.g. Profile",
     )
 
     private val apis by option(
-        "-a", "--api",
-        help = "UseCase name; can be repeated"
+        "-a",
+        "--api",
+        help = "UseCase name; can be repeated",
     ).multiple()
 
     private val projectPath by option(
-        "-p", "--project",
-        help = "Project root path"
+        "-p",
+        "--project",
+        help = "Project root path",
     ).default(".")
 
     private val dryRun by option(
         "--dry-run",
-        help = "Preview only; do not write files"
+        help = "Preview only; do not write files",
     ).flag()
 
     private val paging by option(
@@ -82,12 +90,15 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         } catch (e: Exception) {
             echo(CliFormatter.formatError("Page generation failed: ${e.message}"), err = true)
             if (System.getenv("EGS_DEBUG") == "true") {
-                e.printStackTrace()
+                logger.error("Page generation failed", e)
             }
         }
     }
 
-    private fun runCommandMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
+    private fun runCommandMode(
+        workspaceRoot: java.io.File,
+        clientRoot: java.io.File,
+    ) {
         val targetModule = module!!
         val name = pageName!!
 
@@ -97,32 +108,37 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         }
 
         val allUseCases = useCaseScanner.scanByModule(clientRoot, targetModule)
-        val selectedUseCases = if (apis.isNotEmpty()) {
-            apis.map { apiName ->
-                allUseCases.find { it.name == apiName || it.name == "${apiName}UseCase" }
-                    ?: throw IllegalArgumentException("UseCase '$apiName' not found in module '$targetModule'")
+        val selectedUseCases =
+            if (apis.isNotEmpty()) {
+                apis.map { apiName ->
+                    allUseCases.find { it.name == apiName || it.name == "${apiName}UseCase" }
+                        ?: throw IllegalArgumentException("UseCase '$apiName' not found in module '$targetModule'")
+                }
+            } else {
+                emptyList()
             }
-        } else {
-            emptyList()
-        }
 
-        val result = pageScaffolder.scaffold(
-            projectRoot = clientRoot,
-            moduleName = targetModule,
-            pageName = name,
-            useCases = selectedUseCases,
-            dryRun = dryRun,
-            workspaceRoot = workspaceRoot,
-            pagingOption = paging,
-            skipNav = skipNav,
-            skipAppWire = skipAppWire,
-            withViewModelTest = withViewModelTest,
-        )
+        val result =
+            pageScaffolder.scaffold(
+                projectRoot = clientRoot,
+                moduleName = targetModule,
+                pageName = name,
+                useCases = selectedUseCases,
+                dryRun = dryRun,
+                workspaceRoot = workspaceRoot,
+                pagingOption = paging,
+                skipNav = skipNav,
+                skipAppWire = skipAppWire,
+                withViewModelTest = withViewModelTest,
+            )
 
         printResult(result)
     }
 
-    private fun runInteractiveMode(workspaceRoot: java.io.File, clientRoot: java.io.File) {
+    private fun runInteractiveMode(
+        workspaceRoot: java.io.File,
+        clientRoot: java.io.File,
+    ) {
         echo(CliFormatter.formatInfo("Create new page"))
         echo()
 
@@ -138,16 +154,18 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         echo()
 
         print("> Module index: ")
-        val moduleIndex = readlnOrNull()?.toIntOrNull()
-            ?: throw IllegalArgumentException("Invalid module selection")
+        val moduleIndex =
+            readlnOrNull()?.toIntOrNull()
+                ?: throw IllegalArgumentException("Invalid module selection")
         require(moduleIndex in modules.indices) { "Invalid module index" }
 
         val selectedModule = modules[moduleIndex]
         echo()
 
         print("> Page name (e.g. Profile): ")
-        val name = readlnOrNull()?.trim()
-            ?: throw IllegalArgumentException("Page name cannot be empty")
+        val name =
+            readlnOrNull()?.trim()
+                ?: throw IllegalArgumentException("Page name cannot be empty")
         require(name.isNotBlank()) { "Page name cannot be empty" }
         require(name.first().isLetter() && name.all { it.isLetterOrDigit() }) {
             "Page name must start with a letter and contain only letters and digits (e.g. taskDetail)"
@@ -155,12 +173,13 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         echo()
 
         val availableUseCases = useCaseScanner.scanByModule(clientRoot, selectedModule)
-        val selectedUseCases = if (availableUseCases.isNotEmpty()) {
-            selectUseCasesInteractively(availableUseCases)
-        } else {
-            echo("No UseCases in module '$selectedModule'")
-            emptyList()
-        }
+        val selectedUseCases =
+            if (availableUseCases.isNotEmpty()) {
+                selectUseCasesInteractively(availableUseCases)
+            } else {
+                echo("No UseCases in module '$selectedModule'")
+                emptyList()
+            }
 
         echo()
         echo("Generation summary:")
@@ -180,18 +199,19 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
         echo()
         echo(CliFormatter.formatInfo("Generating..."))
 
-        val result = pageScaffolder.scaffold(
-            projectRoot = clientRoot,
-            moduleName = selectedModule,
-            pageName = name,
-            useCases = selectedUseCases,
-            dryRun = dryRun,
-            workspaceRoot = workspaceRoot,
-            pagingOption = paging,
-            skipNav = skipNav,
-            skipAppWire = skipAppWire,
-            withViewModelTest = withViewModelTest,
-        )
+        val result =
+            pageScaffolder.scaffold(
+                projectRoot = clientRoot,
+                moduleName = selectedModule,
+                pageName = name,
+                useCases = selectedUseCases,
+                dryRun = dryRun,
+                workspaceRoot = workspaceRoot,
+                pagingOption = paging,
+                skipNav = skipNav,
+                skipAppWire = skipAppWire,
+                withViewModelTest = withViewModelTest,
+            )
 
         printResult(result)
     }
@@ -212,9 +232,11 @@ class CreatePageCommand : CliktCommand(name = "page"), KoinComponent {
             input.isEmpty() -> emptyList()
             input == "a" || input == "all" -> useCases
             else -> {
-                val indices = input.split(",", " ")
-                    .mapNotNull { it.trim().toIntOrNull() }
-                    .filter { it in useCases.indices }
+                val indices =
+                    input
+                        .split(",", " ")
+                        .mapNotNull { it.trim().toIntOrNull() }
+                        .filter { it in useCases.indices }
                 indices.map { useCases[it] }
             }
         }
