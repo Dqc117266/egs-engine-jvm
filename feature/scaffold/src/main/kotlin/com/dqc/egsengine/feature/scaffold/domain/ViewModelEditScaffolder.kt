@@ -412,7 +412,7 @@ internal object TextDiffUtil {
                     i++
                     j++
                 }
-                j < b.size && (i >= a.size || (i < a.size && a[i] != b[j] && !a.subList(i, a.size).contains(b[j]))) -> {
+                j < b.size && (i >= a.size || (a[i] != b[j] && !a.subList(i, a.size).contains(b[j]))) -> {
                     sb.appendLine("+${b[j]}")
                     j++
                 }
