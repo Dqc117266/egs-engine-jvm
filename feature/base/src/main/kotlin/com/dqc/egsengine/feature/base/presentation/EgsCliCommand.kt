@@ -14,7 +14,9 @@ import org.koin.core.component.KoinComponent
  *
  * 子类用 `@CliktCommand(...)` 注解提供 name/help，并实现 [runCommand]。
  */
-abstract class EgsCliCommand : CliktCommand(), KoinComponent {
+abstract class EgsCliCommand(
+    name: String,
+) : CliktCommand(name = name), KoinComponent {
 
     /** 子类实现的实际命令逻辑。抛 [CliError] 表达预期失败。 */
     protected abstract fun runCommand()

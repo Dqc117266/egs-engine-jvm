@@ -2,17 +2,15 @@ package com.dqc.egsengine.feature.analyzer.presentation
 
 import com.dqc.egsengine.feature.analyzer.domain.ProjectAnalyzer
 import com.dqc.egsengine.feature.analyzer.domain.model.ProjectInfo
-import com.github.ajalt.clikt.core.CliktCommand
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import org.koin.core.component.KoinComponent
+import kotlinx.serialization.json.Json
 import org.koin.core.component.inject
 
-class AnalyzeCommand :
-    CliktCommand(name = "analyze"),
-    KoinComponent {
+class AnalyzeCommand : EgsCliCommand(name = "analyze") {
     private val analyzer: ProjectAnalyzer by inject()
 
     private val projectPath by argument().default(".")
@@ -21,22 +19,16 @@ class AnalyzeCommand :
 
     private val json by option("--json").flag()
 
-    override fun run() {
-        try {
-            val info = analyzer.analyze(projectPath)
+    override fun runCommand() {
+        val info = analyzer.analyze(projectPath)
 
-            if (json) {
-                echo(toJson(info))
-            } else {
-                echo(analyzer.generateSummary(info))
-                if (verbose) {
-                    printVerboseDetails(info)
-                }
+        if (json) {
+            echo(encodeAnalyzeJson(info))
+        } else {
+            echo(analyzer.generateSummary(info))
+            if (verbose) {
+                printVerboseDetails(info)
             }
-        } catch (e: IllegalArgumentException) {
-            echo("Error: ${e.message}", err = true)
-        } catch (e: Exception) {
-            echo("Analysis failed: ${e.message}", err = true)
         }
     }
 
@@ -68,37 +60,5 @@ class AnalyzeCommand :
 
             echo()
         }
-    }
-
-    private fun toJson(info: ProjectInfo): String = buildString {
-        appendLine("{")
-        appendLine("""  "name": "${info.name}",""")
-        appendLine("""  "rootPath": "${info.rootPath.replace("\\", "\\\\")}",""")
-        appendLine("""  "gradleVersion": "${info.gradleVersion}",""")
-        appendLine("""  "kotlinVersion": ${info.kotlinVersion?.let { "\"$it\"" } ?: "null"},""")
-        appendLine("""  "javaVersion": ${info.javaVersion?.let { "\"$it\"" } ?: "null"},""")
-        appendLine("""  "overallType": "${info.overallType}",""")
-        appendLine("""  "isAndroidProject": ${info.isAndroidProject},""")
-        appendLine("""  "isKmpProject": ${info.isKmpProject},""")
-        info.compileSdk?.let { appendLine("""  "compileSdk": "$it",""") }
-        info.minSdk?.let { appendLine("""  "minSdk": "$it",""") }
-        info.targetSdk?.let { appendLine("""  "targetSdk": "$it",""") }
-        appendLine("""  "moduleCount": ${info.modules.size},""")
-        appendLine("""  "modules": [""")
-
-        info.modules.forEachIndexed { index, mod ->
-            val comma = if (index < info.modules.size - 1) "," else ""
-            appendLine("""    {""")
-            appendLine("""      "name": "${mod.name}",""")
-            appendLine("""      "type": "${mod.type.displayName}",""")
-            appendLine("""      "hasAndroidManifest": ${mod.hasAndroidManifest},""")
-            appendLine("""      "plugins": [${mod.plugins.joinToString(", ") { "\"$it\"" }}],""")
-            appendLine("""      "dependencies": [${mod.dependencies.joinToString(", ") { "\"$it\"" }}],""")
-            appendLine("""      "sourceSets": [${mod.sourceSetDirs.joinToString(", ") { "\"$it\"" }}]""")
-            appendLine("""    }$comma""")
-        }
-
-        appendLine("  ]")
-        appendLine("}")
     }
 }

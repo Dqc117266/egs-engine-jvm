@@ -62,7 +62,13 @@ fun main(args: Array<String>) {
 
 private fun initKoin() {
     GlobalContext.startKoin {
-        printLogger(Level.INFO)
+        // 默认静默 Koin 启动日志（P0：--help 不应打印 [INFO] [Koin] Started...）。
+        // 设 EGS_DEBUG=true 时才开启 INFO 级别，便于调试 DI 问题。
+        if (System.getenv("EGS_DEBUG")?.equals("true", ignoreCase = true) == true) {
+            printLogger(Level.INFO)
+        } else {
+            printLogger(Level.NONE)
+        }
 
         modules(
             appModule,

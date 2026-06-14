@@ -1,46 +1,38 @@
 package com.dqc.egsengine.feature.init.presentation
 
+import com.dqc.egsengine.feature.base.presentation.CliError
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
 import com.dqc.egsengine.feature.init.domain.model.EgsConfig
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 
-class InitCommand :
-    CliktCommand(name = "init"),
-    KoinComponent {
+class InitCommand : EgsCliCommand(name = "init") {
     private val initializer: ProjectInitializer by inject()
     private val workspaceConfigReader: WorkspaceConfigReader by inject()
 
     private val projectPath by argument(help = "Path to the project to initialize").default(".")
 
-    override fun run() {
-        try {
-            val resolvedRoot = ProjectRootResolver.resolve(projectPath)
-            val dir = resolveInitGradleRoot(resolvedRoot)
+    override fun runCommand() {
+        val resolvedRoot = ProjectRootResolver.resolve(projectPath)
+        val dir = resolveInitGradleRoot(resolvedRoot)
 
-            echo("Initializing .egs for project at: ${dir.absolutePath}")
-            if (dir != resolvedRoot) {
-                echo(CliFormatter.formatInfo("(workspace root: ${resolvedRoot.absolutePath})"))
-            }
-            echo()
-
-            val config = initializer.initialize(dir)
-            printSummary(config)
-
-            echo()
-            echo(CliFormatter.formatSuccess("Created .egs/config.json"))
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Init failed: ${e.message}"), err = true)
+        echo("Initializing .egs for project at: ${dir.absolutePath}")
+        if (dir != resolvedRoot) {
+            echo(CliFormatter.formatInfo("(workspace root: ${resolvedRoot.absolutePath})"))
         }
+        echo()
+
+        val config = initializer.initialize(dir)
+        printSummary(config)
+
+        echo()
+        echo(CliFormatter.formatSuccess("Created .egs/config.json"))
     }
 
     private fun printSummary(config: EgsConfig) {
@@ -93,7 +85,7 @@ class InitCommand :
         if (ProjectRootResolver.hasGradleSettings(resolvedRoot)) return resolvedRoot
 
         if (!workspaceConfigReader.hasWorkspaceConfig(resolvedRoot)) {
-            throw IllegalArgumentException(
+            throw CliError.UsageError(
                 "Not a Gradle project (no settings.gradle): ${resolvedRoot.absolutePath}. " +
                     "If you use `new project`, run init on the client app, e.g. " +
                     "-p ${resolvedRoot.resolve("client").absolutePath}",
@@ -109,7 +101,7 @@ class InitCommand :
             val subRoot = resolvedRoot.resolve(sub.path)
             if (ProjectRootResolver.hasGradleSettings(subRoot)) return subRoot
         }
-        throw IllegalArgumentException(
+        throw CliError.UsageError(
             "Workspace at ${resolvedRoot.absolutePath} has no Gradle subproject with settings.gradle. " +
                 "Projects in workspace.json: ${workspace.projects.keys.joinToString()}. " +
                 "Clone/finish template setup, then run init with -p pointing at that subfolder.",
