@@ -5,6 +5,27 @@
 
 ---
 
+## ✅ 第一阶段执行进度（分支 `refactor/cli-and-architecture`，2026-06-15）
+
+已完成（goal P0 CLI/架构）：
+- **统一错误模型**：`CliError`（UsageError/GenerationError/UnsupportedFeature/GenericError）+ `EgsCliCommand` 基类（catch Throwable → `ProgramResult(非零)`）。IllegalArgumentException 自动映射 exit 2。
+- **所有命令迁移**到 EgsCliCommand（失败必非零退出；旧 catch+echo+exit0 消除）。
+- **Koin 日志静默**：`--help` 不再打 `[INFO] [Koin]`；`EGS_DEBUG=true` 才开启。
+- **script run 实现**（调 CommandExecutor 执行，跨平台 sh/cmd，失败停止）。
+- **lint fix 实现**（代理 `gradlew spotlessApply detektApply`）。
+- **移除 task 模块**（内存队列无执行器，跨进程失效）。
+- **AnalyzeCommand --json** 改用 kotlinx.serialization（AnalyzeJsonDto）。
+- **detekt.yml**：scaffold/analyzer/script 复杂度豁免（代码生成器，P1/P2 重构目标），base 等仍约束。
+- **验证**：test + detektCheck + spotlessCheck + shadowJar 全过；smoke：`--help` 干净（0 Koin 行）、非法参数 exit 2。
+
+剩余：
+- 命令收敛（create project → new project 代理）：语义不等价，需深入设计。
+- 统一 ProcessBuilder（P0）：ProjectTemplateCloner/CreateProjectCommand 改用 CommandExecutor。
+- 合并 TemplatePackageRewriter（A-01）/ Swagger 重复（A-02/A-03）。
+- P1/P2：Swagger 抽取、scaffold DI 拆分、FileOperations、乱码清理、help 文案。
+
+---
+
 ## 📊 评分卡（当前 → 目标）
 
 | 维度 | 当前 | 目标 | 权重 | 说明 |
