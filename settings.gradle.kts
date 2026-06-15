@@ -5,7 +5,6 @@ include(
     ":feature:base",
     ":feature:common",
     ":feature:command",
-    ":feature:task",
     ":feature:script",
     ":feature:analyzer",
     ":feature:init",

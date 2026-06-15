@@ -19,8 +19,6 @@ import com.dqc.egsengine.feature.scaffold.presentation.TemplateCommand
 import com.dqc.egsengine.feature.scaffold.presentation.WebCommand
 import com.dqc.egsengine.feature.script.di.featureScriptModule
 import com.dqc.egsengine.feature.script.presentation.ScriptCommand
-import com.dqc.egsengine.feature.task.di.featureTaskModule
-import com.dqc.egsengine.feature.task.presentation.TaskCommand
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.core.subcommands
@@ -46,7 +44,6 @@ fun main(args: Array<String>) {
         .subcommands(
             AnalyzeCommand(),
             ShellCommand(),
-            TaskCommand(),
             ScriptCommand(),
             InitCommand(),
             CreateCommand.withSubcommands(),
@@ -74,7 +71,6 @@ private fun initKoin() {
             appModule,
             commonModule,
             featureCommandModule,
-            featureTaskModule,
             featureScriptModule,
             featureAnalyzerModule,
             featureInitModule,
