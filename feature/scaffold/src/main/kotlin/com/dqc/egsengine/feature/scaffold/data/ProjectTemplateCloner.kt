@@ -32,7 +32,7 @@ internal class ProjectTemplateCloner(
                 parentDir,
             )
         if (result.exitCode != 0) {
-            throw IllegalStateException(
+            error(
                 "Template clone failed: ${result.output.ifBlank { "exitCode=${result.exitCode}" }}",
             )
         }

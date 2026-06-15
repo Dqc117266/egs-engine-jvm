@@ -1,31 +1,28 @@
 package com.dqc.egsengine.feature.task.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.task.domain.TaskScheduler
 import com.dqc.egsengine.feature.task.domain.model.AutomationTask
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.multiple
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.UUID
 
-class TaskCommand : CliktCommand(name = "task") {
+class TaskCommand : EgsCliCommand(name = "task") {
     init {
         subcommands(TaskList(), TaskAdd(), TaskCancel())
     }
 
-    override fun run() = Unit
+    override fun runCommand() = Unit
 }
 
-private class TaskList :
-    CliktCommand(name = "list"),
-    KoinComponent {
+private class TaskList : EgsCliCommand(name = "list") {
 
     private val taskScheduler: TaskScheduler by inject()
 
-    override fun run() {
+    override fun runCommand() {
         val tasks = taskScheduler.getPendingTasks()
         if (tasks.isEmpty()) {
             echo(CliFormatter.formatInfo("No pending tasks"))
@@ -40,15 +37,13 @@ private class TaskList :
     }
 }
 
-private class TaskAdd :
-    CliktCommand(name = "add"),
-    KoinComponent {
+private class TaskAdd : EgsCliCommand(name = "add") {
 
     private val taskScheduler: TaskScheduler by inject()
     private val taskName by argument()
     private val commands by argument().multiple()
 
-    override fun run() {
+    override fun runCommand() {
         val task = AutomationTask(
             id = UUID.randomUUID().toString().take(8),
             name = taskName,
@@ -60,19 +55,17 @@ private class TaskAdd :
     }
 }
 
-private class TaskCancel :
-    CliktCommand(name = "cancel"),
-    KoinComponent {
+private class TaskCancel : EgsCliCommand(name = "cancel") {
 
     private val taskScheduler: TaskScheduler by inject()
     private val taskId by argument()
 
-    override fun run() {
+    override fun runCommand() {
         val success = taskScheduler.cancelTask(taskId)
         if (success) {
             echo(CliFormatter.formatSuccess("Task '$taskId' cancelled"))
         } else {
-            echo(CliFormatter.formatError("Failed to cancel task: $taskId"), err = true)
+            require(false) { "Failed to cancel task: $taskId" }
         }
     }
 }

@@ -1,22 +1,19 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
 import com.dqc.egsengine.feature.scaffold.data.template.TemplatePackageRewriter
 import com.dqc.egsengine.feature.scaffold.data.template.TemplateRenameRecipes
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 import java.util.Base64
 
-class CreateProjectCommand :
-    CliktCommand(name = "project"),
-    KoinComponent {
+class CreateProjectCommand : EgsCliCommand(name = "project") {
     private val initializer: ProjectInitializer by inject()
 
     private val projectNameArg by argument(help = "Project name").optional()
@@ -57,54 +54,48 @@ class CreateProjectCommand :
         help = "GitHub username for token HTTPS clone (default: x-access-token)",
     ).default("x-access-token")
 
-    override fun run() {
-        try {
-            val type = resolveProjectType()
-            val projectName = resolveProjectName()
-            val packageName = resolvePackageName()
-            val authMode = resolveCloneAuthMode()
-            val githubToken = resolveGitHubToken(authMode)
+    override fun runCommand() {
+        val type = resolveProjectType()
+        val projectName = resolveProjectName()
+        val packageName = resolvePackageName()
+        val authMode = resolveCloneAuthMode()
+        val githubToken = resolveGitHubToken(authMode)
 
-            validateProjectName(projectName)
-            validatePackageName(packageName)
+        validateProjectName(projectName)
+        validatePackageName(packageName)
 
-            val outputDir = File(outputPath).absoluteFile
-            if (!outputDir.exists()) {
-                outputDir.mkdirs()
-            }
-            require(outputDir.isDirectory) { "Output path is not a directory: ${outputDir.absolutePath}" }
-
-            val targetDir = outputDir.resolve(projectName)
-            ensureTargetDirectory(targetDir)
-
-            echo(CliFormatter.formatInfo("Cloning template: $templateSourceOption (auth=${authMode.value})"))
-            cloneTemplate(
-                templateUrl = templateSourceOption,
-                targetDir = targetDir,
-                authMode = authMode,
-                githubUsername = githubUsernameOption,
-                githubToken = githubToken,
-            )
-
-            echo(CliFormatter.formatInfo("Replacing project name and package..."))
-            customizeTemplate(targetDir, projectName, packageName)
-
-            echo(CliFormatter.formatInfo("Initializing .egs config..."))
-            val config = initializer.initialize(targetDir)
-
-            echo()
-            echo(CliFormatter.formatSuccess("Project created"))
-            echo("  Path: ${targetDir.absolutePath}")
-            echo("  Type: $type")
-            echo("  Name: $projectName")
-            echo("  Package: $packageName")
-            echo("  .egs: ${targetDir.resolve(".egs/config.json").absolutePath}")
-            echo("  Detected type: ${config.projectType}")
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Create project failed: ${e.message}"), err = true)
+        val outputDir = File(outputPath).absoluteFile
+        if (!outputDir.exists()) {
+            outputDir.mkdirs()
         }
+        require(outputDir.isDirectory) { "Output path is not a directory: ${outputDir.absolutePath}" }
+
+        val targetDir = outputDir.resolve(projectName)
+        ensureTargetDirectory(targetDir)
+
+        echo(CliFormatter.formatInfo("Cloning template: $templateSourceOption (auth=${authMode.value})"))
+        cloneTemplate(
+            templateUrl = templateSourceOption,
+            targetDir = targetDir,
+            authMode = authMode,
+            githubUsername = githubUsernameOption,
+            githubToken = githubToken,
+        )
+
+        echo(CliFormatter.formatInfo("Replacing project name and package..."))
+        customizeTemplate(targetDir, projectName, packageName)
+
+        echo(CliFormatter.formatInfo("Initializing .egs config..."))
+        val config = initializer.initialize(targetDir)
+
+        echo()
+        echo(CliFormatter.formatSuccess("Project created"))
+        echo("  Path: ${targetDir.absolutePath}")
+        echo("  Type: $type")
+        echo("  Name: $projectName")
+        echo("  Package: $packageName")
+        echo("  .egs: ${targetDir.resolve(".egs/config.json").absolutePath}")
+        echo("  Detected type: ${config.projectType}")
     }
 
     private fun resolveProjectType(): String {
@@ -220,7 +211,7 @@ class CreateProjectCommand :
             }
 
         if (result.exitCode != 0) {
-            throw IllegalStateException(
+            error(
                 "Template clone failed: ${result.output.ifBlank { "git clone exitCode=${result.exitCode}" }}",
             )
         }

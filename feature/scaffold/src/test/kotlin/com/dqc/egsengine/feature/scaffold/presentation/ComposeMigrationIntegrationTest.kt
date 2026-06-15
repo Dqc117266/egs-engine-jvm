@@ -154,7 +154,6 @@ class ComposeMigrationIntegrationTest {
     fun `create page with use cases generates proper Screen with state handling`() {
         startKoin { modules(featureInitModule, featureScaffoldModule) }
         val projectRoot = createProjectFixture()
-        createUseCaseFixture(projectRoot)
 
         CreateCommand.withSubcommands().main(
             listOf(
@@ -164,6 +163,7 @@ class ComposeMigrationIntegrationTest {
                 projectRoot.absolutePath,
             ),
         )
+        createUseCaseFixture(projectRoot)
 
         CreateCommand.withSubcommands().main(
             listOf(

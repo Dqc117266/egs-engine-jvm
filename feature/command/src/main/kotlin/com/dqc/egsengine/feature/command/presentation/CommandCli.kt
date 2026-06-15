@@ -15,28 +15,28 @@ class ShellCommand : EgsCliCommand(name = "command") {
 
     private val commandService: CommandService by inject()
     private val workDir by option("--dir", "-d")
+
     /** --raw：不打印成功 banner，仅输出子进程 stdout（便于脚本管道）。 */
     private val raw by option("--raw").flag()
     private val shellArgs by argument().multiple(required = true)
 
-    override fun runCommand() =
-        runBlocking {
-            val shellCommand = shellArgs.joinToString(" ")
-            val result = commandService.executeCommand(shellCommand, workDir)
+    override fun runCommand() = runBlocking {
+        val shellCommand = shellArgs.joinToString(" ")
+        val result = commandService.executeCommand(shellCommand, workDir)
 
-            if (result.isSuccess) {
-                if (!raw) {
-                    echo(CliFormatter.formatSuccess("Command executed successfully"))
-                }
-                if (result.output.isNotBlank()) {
-                    echo(result.output)
-                }
-            } else {
-                // P1：透传子进程失败 —— 非 0 退出，stderr 给出 exit code。
-                if (result.error.isNotBlank()) {
-                    echo(result.error, err = true)
-                }
-                throw CliError.GenericError("Command failed with exit code: ${result.exitCode}")
+        if (result.isSuccess) {
+            if (!raw) {
+                echo(CliFormatter.formatSuccess("Command executed successfully"))
             }
+            if (result.output.isNotBlank()) {
+                echo(result.output)
+            }
+        } else {
+            // P1：透传子进程失败 —— 非 0 退出，stderr 给出 exit code。
+            if (result.error.isNotBlank()) {
+                echo(result.error, err = true)
+            }
+            throw CliError.GenericError("Command failed with exit code: ${result.exitCode}")
         }
+    }
 }

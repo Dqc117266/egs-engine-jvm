@@ -16,11 +16,15 @@ import org.koin.core.component.KoinComponent
  */
 abstract class EgsCliCommand(
     name: String,
-) : CliktCommand(name = name), KoinComponent {
+) : CliktCommand(name = name),
+    KoinComponent {
 
     /** 子类实现的实际命令逻辑。抛 [CliError] 表达预期失败。 */
     protected abstract fun runCommand()
 
+    // CLI 顶层错误兜底必须 catch Throwable 并映射为非零退出码（P0）；
+    // 各分支均已 echo 诊断信息，并非静默吞掉，故抑制 detekt 的泛型捕获/吞异常告警。
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     final override fun run() {
         try {
             runCommand()
@@ -30,6 +34,10 @@ abstract class EgsCliCommand(
         } catch (e: kotlinx.coroutines.CancellationException) {
             // 协程取消不应被当作普通错误吞掉
             throw e
+        } catch (e: IllegalArgumentException) {
+            // require{} / 显式用法检查 —— 映射为用法错误（exit 2），命令无需逐个改抛 CliError.UsageError。
+            echo(CliFormatter.formatError(e.message ?: "invalid argument"), err = true)
+            throw ProgramResult(CliError.UsageError(e.message ?: "invalid argument").exitCode)
         } catch (e: Throwable) {
             echo(CliFormatter.formatError(e.message ?: e.javaClass.simpleName), err = true)
             if (isVerbose()) {

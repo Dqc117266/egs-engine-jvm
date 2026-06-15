@@ -7,7 +7,6 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import kotlinx.serialization.json.Json
 import org.koin.core.component.inject
 
 class AnalyzeCommand : EgsCliCommand(name = "analyze") {

@@ -1,13 +1,13 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.domain.ApiSyncScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ClientDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ClientPrefsScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.optional
@@ -15,12 +15,11 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 
-class ClientCommand : CliktCommand(name = "client") {
-    override fun run() = Unit
+class ClientCommand : EgsCliCommand(name = "client") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): ClientCommand = ClientCommand().subcommands(
@@ -35,8 +34,8 @@ class ClientCommand : CliktCommand(name = "client") {
 
 // -- client module --
 
-class ClientModuleCommand : CliktCommand(name = "module") {
-    override fun run() = Unit
+class ClientModuleCommand : EgsCliCommand(name = "module") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): ClientModuleCommand = ClientModuleCommand().subcommands(
@@ -45,9 +44,7 @@ class ClientModuleCommand : CliktCommand(name = "module") {
     }
 }
 
-class ClientModuleCreateCommand :
-    CliktCommand(name = "create"),
-    KoinComponent {
+class ClientModuleCreateCommand : EgsCliCommand(name = "create") {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -57,48 +54,42 @@ class ClientModuleCreateCommand :
 
     private val dryRun by option("--dry-run", help = "Preview without creating files").flag()
 
-    override fun run() {
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
+    override fun runCommand() {
+        val dir = ProjectRootResolver.resolve(projectPath)
 
-            val result =
-                scaffolder.scaffoldForProject(
-                    projectRoot = dir,
-                    moduleName = name,
-                    projectKey = "client",
-                    dryRun = dryRun,
-                )
+        val result =
+            scaffolder.scaffoldForProject(
+                projectRoot = dir,
+                moduleName = name,
+                projectKey = "client",
+                dryRun = dryRun,
+            )
 
-            val clientRoot = ProjectRootResolver.resolveGradleClientRoot(dir)
-            val moduleRoot = clientRoot.resolve("feature/$name")
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
-                echo()
-                echo(CliFormatter.formatInfo("  Client project (Gradle root): ${clientRoot.absolutePath}"))
-                echo(CliFormatter.formatInfo("  Module directory: ${moduleRoot.absolutePath}"))
-                echo()
-                result.files.forEach { echo("  $it") }
-            } else {
-                echo(CliFormatter.formatSuccess("Created client module 'feature:$name'"))
-                echo()
-                echo("  Client project (Gradle root): ${clientRoot.absolutePath}")
-                echo("  Module directory: ${moduleRoot.absolutePath}")
-                echo()
-                echo("  Files created (paths relative to client project):")
-                result.files.forEach { echo("    $it") }
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Failed to create client module: ${e.message}"), err = true)
+        val clientRoot = ProjectRootResolver.resolveGradleClientRoot(dir)
+        val moduleRoot = clientRoot.resolve("feature/$name")
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
+            echo()
+            echo(CliFormatter.formatInfo("  Client project (Gradle root): ${clientRoot.absolutePath}"))
+            echo(CliFormatter.formatInfo("  Module directory: ${moduleRoot.absolutePath}"))
+            echo()
+            result.files.forEach { echo("  $it") }
+        } else {
+            echo(CliFormatter.formatSuccess("Created client module 'feature:$name'"))
+            echo()
+            echo("  Client project (Gradle root): ${clientRoot.absolutePath}")
+            echo("  Module directory: ${moduleRoot.absolutePath}")
+            echo()
+            echo("  Files created (paths relative to client project):")
+            result.files.forEach { echo("    $it") }
         }
     }
 }
 
 // -- client list --
 
-class ClientListCommand : CliktCommand(name = "list") {
-    override fun run() = Unit
+class ClientListCommand : EgsCliCommand(name = "list") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): ClientListCommand = ClientListCommand().subcommands(
@@ -113,9 +104,7 @@ class ClientListCommand : CliktCommand(name = "list") {
  * Lists use case **class names** only (e.g. `DeleteUserSessionUseCase`), one per line.
  * Without `-m`, groups under `feature/<module>` headers. With `-m`, only that module is listed.
  */
-class ClientListUsecasesCommand :
-    CliktCommand(name = "usecases"),
-    KoinComponent {
+class ClientListUsecasesCommand : EgsCliCommand(name = "usecases") {
     private val scanner: UseCaseScanner by inject()
 
     private val module by option(
@@ -127,62 +116,56 @@ class ClientListUsecasesCommand :
     private val projectPath by option("--project", "-p", help = "Workspace or Gradle project root")
         .default(".")
 
-    override fun run() {
-        try {
-            val workspaceRoot = ProjectRootResolver.resolve(projectPath)
-            val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
+    override fun runCommand() {
+        val workspaceRoot = ProjectRootResolver.resolve(projectPath)
+        val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
 
-            if (module != null) {
-                val target = module!!
-                val modules = scanner.listModules(clientRoot)
-                require(modules.contains(target)) {
-                    "Module '$target' not found. Available: ${modules.joinToString(", ").ifEmpty { "(none)" }}"
-                }
-                val useCases = scanner.scanByModule(clientRoot, target)
-                echo(CliFormatter.formatInfo("Client root: ${clientRoot.absolutePath}"))
-                echo()
-                if (useCases.isEmpty()) {
-                    echo("feature/$target")
-                    echo("(no *UseCase.kt files)")
-                    return
-                }
-                echo("feature/$target")
-                useCases.forEach { uc -> echo(uc.name) }
-                return
-            }
-
+        if (module != null) {
+            val target = module!!
             val modules = scanner.listModules(clientRoot)
+            require(modules.contains(target)) {
+                "Module '$target' not found. Available: ${modules.joinToString(", ").ifEmpty { "(none)" }}"
+            }
+            val useCases = scanner.scanByModule(clientRoot, target)
             echo(CliFormatter.formatInfo("Client root: ${clientRoot.absolutePath}"))
             echo()
-            if (modules.isEmpty()) {
-                echo("(no feature modules under feature/)")
+            if (useCases.isEmpty()) {
+                echo("feature/$target")
+                echo("(no *UseCase.kt files)")
                 return
             }
+            echo("feature/$target")
+            useCases.forEach { uc -> echo(uc.name) }
+            return
+        }
 
-            var anyPrinted = false
-            for (m in modules) {
-                val useCases = scanner.scanByModule(clientRoot, m)
-                if (useCases.isEmpty()) continue
-                anyPrinted = true
-                echo("feature/$m")
-                useCases.forEach { uc -> echo(uc.name) }
-                echo()
-            }
-            if (!anyPrinted) {
-                echo("(no *UseCase.kt files in any feature module)")
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Failed to list use cases: ${e.message}"), err = true)
+        val modules = scanner.listModules(clientRoot)
+        echo(CliFormatter.formatInfo("Client root: ${clientRoot.absolutePath}"))
+        echo()
+        if (modules.isEmpty()) {
+            echo("(no feature modules under feature/)")
+            return
+        }
+
+        var anyPrinted = false
+        for (m in modules) {
+            val useCases = scanner.scanByModule(clientRoot, m)
+            if (useCases.isEmpty()) continue
+            anyPrinted = true
+            echo("feature/$m")
+            useCases.forEach { uc -> echo(uc.name) }
+            echo()
+        }
+        if (!anyPrinted) {
+            echo("(no *UseCase.kt files in any feature module)")
         }
     }
 }
 
 // -- client gen --
 
-class ClientGenCommand : CliktCommand(name = "gen") {
-    override fun run() = Unit
+class ClientGenCommand : EgsCliCommand(name = "gen") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): ClientGenCommand = ClientGenCommand().subcommands(
@@ -196,9 +179,7 @@ class ClientGenCommand : CliktCommand(name = "gen") {
 /**
  * `egs client gen database <sql-file> --module=X`
  */
-class ClientGenDatabaseCommand :
-    CliktCommand(name = "database"),
-    KoinComponent {
+class ClientGenDatabaseCommand : EgsCliCommand(name = "database") {
     private val scaffolder: ClientDatabaseScaffolder by inject()
 
     private val sqlFile by argument(help = "Path to SQL DDL file (CREATE TABLE)")
@@ -224,37 +205,31 @@ class ClientGenDatabaseCommand :
         help = "With --repo and existing API sync: cache-aside GETs + entity mappers (implies --repo)",
     ).flag()
 
-    override fun run() {
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
-            val sqlPath = File(sqlFile)
-            val resolvedSql = if (sqlPath.isAbsolute) sqlPath else File(System.getProperty("user.dir")).resolve(sqlPath).normalize()
+    override fun runCommand() {
+        val dir = ProjectRootResolver.resolve(projectPath)
+        val sqlPath = File(sqlFile)
+        val resolvedSql = if (sqlPath.isAbsolute) sqlPath else File(System.getProperty("user.dir")).resolve(sqlPath).normalize()
 
-            val effectiveRepo = repo || cached
-            val result =
-                scaffolder.scaffoldDatabase(
-                    projectRoot = dir,
-                    sqlFile = resolvedSql,
-                    moduleName = moduleName,
-                    dryRun = dryRun,
-                    repo = effectiveRepo,
-                    cached = cached,
-                )
+        val effectiveRepo = repo || cached
+        val result =
+            scaffolder.scaffoldDatabase(
+                projectRoot = dir,
+                sqlFile = resolvedSql,
+                moduleName = moduleName,
+                dryRun = dryRun,
+                repo = effectiveRepo,
+                cached = cached,
+            )
 
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run - database codegen preview:"))
-                echo("  Module: ${result.moduleName}")
-                echo("  Files:")
-                result.files.forEach { echo("    ${it.path}") }
-            } else {
-                echo(CliFormatter.formatSuccess("Generated Room database sources for module '${result.moduleName}'"))
-                echo("  ${result.files.size} files")
-                result.files.forEach { echo("    ${it.path}") }
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Database codegen failed: ${e.message}"), err = true)
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run - database codegen preview:"))
+            echo("  Module: ${result.moduleName}")
+            echo("  Files:")
+            result.files.forEach { echo("    ${it.path}") }
+        } else {
+            echo(CliFormatter.formatSuccess("Generated Room database sources for module '${result.moduleName}'"))
+            echo("  ${result.files.size} files")
+            result.files.forEach { echo("    ${it.path}") }
         }
     }
 }
@@ -262,9 +237,7 @@ class ClientGenDatabaseCommand :
 /**
  * `egs client gen prefs --module=X --fields=... [--key=Y]`
  */
-class ClientGenPrefsCommand :
-    CliktCommand(name = "prefs"),
-    KoinComponent {
+class ClientGenPrefsCommand : EgsCliCommand(name = "prefs") {
     private val scaffolder: ClientPrefsScaffolder by inject()
 
     private val moduleName by option(
@@ -295,42 +268,34 @@ class ClientGenPrefsCommand :
         help = "Overwrite snapshot model / duplicate keys (MVP: snapshot should usually be generated once per --key)",
     ).flag()
 
-    override fun run() {
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
-            val result =
-                scaffolder.scaffoldPrefs(
-                    projectRoot = dir,
-                    moduleName = moduleName,
-                    fieldsArg = fields,
-                    keyArg = key,
-                    dryRun = dryRun,
-                    force = force,
-                )
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run - preferences codegen preview:"))
-                echo("  Module: ${result.moduleName}")
-                echo("  Files:")
-                result.files.forEach { echo("    ${it.path}") }
-            } else {
-                echo(CliFormatter.formatSuccess("Generated preferences for module '${result.moduleName}'"))
-                echo("  ${result.files.size} files")
-                result.files.forEach { echo("    ${it.path}") }
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: IllegalStateException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid state"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Preferences codegen failed: ${e.message}"), err = true)
+    override fun runCommand() {
+        val dir = ProjectRootResolver.resolve(projectPath)
+        val result =
+            scaffolder.scaffoldPrefs(
+                projectRoot = dir,
+                moduleName = moduleName,
+                fieldsArg = fields,
+                keyArg = key,
+                dryRun = dryRun,
+                force = force,
+            )
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run - preferences codegen preview:"))
+            echo("  Module: ${result.moduleName}")
+            echo("  Files:")
+            result.files.forEach { echo("    ${it.path}") }
+        } else {
+            echo(CliFormatter.formatSuccess("Generated preferences for module '${result.moduleName}'"))
+            echo("  ${result.files.size} files")
+            result.files.forEach { echo("    ${it.path}") }
         }
     }
 }
 
 // -- client api --
 
-class ClientApiCommand : CliktCommand(name = "api") {
-    override fun run() = Unit
+class ClientApiCommand : EgsCliCommand(name = "api") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): ClientApiCommand = ClientApiCommand().subcommands(
@@ -343,9 +308,7 @@ class ClientApiCommand : CliktCommand(name = "api") {
  * `egs client api sync <module>` or
  * `egs client api sync --client-module=X --backend-module=Y`
  */
-class ClientApiSyncCommand :
-    CliktCommand(name = "sync"),
-    KoinComponent {
+class ClientApiSyncCommand : EgsCliCommand(name = "sync") {
     private val apiSyncScaffolder: ApiSyncScaffolder by inject()
 
     private val moduleArg by argument(help = "Module name (shortcut for same-name sync)").optional()
@@ -378,46 +341,40 @@ class ClientApiSyncCommand :
 
     private val dryRun by option("--dry-run", help = "Preview without writing files").flag()
 
-    override fun run() {
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
+    override fun runCommand() {
+        val dir = ProjectRootResolver.resolve(projectPath)
 
-            // Priority: explicit --client-module / --backend-module > --module > positional argument
-            val clientModule =
-                clientModuleOption ?: moduleOption ?: moduleArg
-                    ?: throw IllegalArgumentException(
-                        "Module name required. Usage: egs client api sync <module> or --module=X or --client-module=X [--backend-module=Y]",
-                    )
-            val backendModule =
-                backendModuleOption ?: moduleOption ?: moduleArg
-                    ?: throw IllegalArgumentException(
-                        "Backend module name required. Use --backend-module=Y, --module=X, or positional <module>",
-                    )
-
-            val result =
-                apiSyncScaffolder.syncClientApi(
-                    projectRoot = dir,
-                    clientModuleName = clientModule,
-                    backendModuleName = backendModule,
-                    swaggerUrl = swaggerUrl,
-                    dryRun = dryRun,
+        // Priority: explicit --client-module / --backend-module > --module > positional argument
+        val clientModule =
+            clientModuleOption ?: moduleOption ?: moduleArg
+                ?: throw IllegalArgumentException(
+                    "Module name required. Usage: egs client api sync <module> or --module=X or --client-module=X [--backend-module=Y]",
+                )
+        val backendModule =
+            backendModuleOption ?: moduleOption ?: moduleArg
+                ?: throw IllegalArgumentException(
+                    "Backend module name required. Use --backend-module=Y, --module=X, or positional <module>",
                 )
 
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run - API sync preview:"))
-                echo("  Client module: ${result.clientModule}")
-                echo("  Backend module: ${result.backendModule}")
-                echo("  Files:")
-                result.files.forEach { echo("    ${it.path}") }
-            } else {
-                echo(CliFormatter.formatSuccess("API synced: ${result.backendModule} -> ${result.clientModule}"))
-                echo("  Generated ${result.files.size} files")
-                result.files.forEach { echo("    ${it.path}") }
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("API sync failed: ${e.message}"), err = true)
+        val result =
+            apiSyncScaffolder.syncClientApi(
+                projectRoot = dir,
+                clientModuleName = clientModule,
+                backendModuleName = backendModule,
+                swaggerUrl = swaggerUrl,
+                dryRun = dryRun,
+            )
+
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run - API sync preview:"))
+            echo("  Client module: ${result.clientModule}")
+            echo("  Backend module: ${result.backendModule}")
+            echo("  Files:")
+            result.files.forEach { echo("    ${it.path}") }
+        } else {
+            echo(CliFormatter.formatSuccess("API synced: ${result.backendModule} -> ${result.clientModule}"))
+            echo("  Generated ${result.files.size} files")
+            result.files.forEach { echo("    ${it.path}") }
         }
     }
 }

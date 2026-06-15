@@ -80,7 +80,7 @@ class WorkspaceConfigResolver(
         val workspace = readWorkspace(projectRoot)
         val swagger =
             workspace.swagger
-                ?: throw IllegalStateException("No swagger sync config in workspace.json")
+                ?: error("No swagger sync config in workspace.json")
         return joinSwaggerUrl(swagger.baseUrl, swagger.docPath)
     }
 
@@ -95,7 +95,7 @@ class WorkspaceConfigResolver(
         val workspace = readWorkspace(projectRoot)
         val swagger =
             workspace.swagger
-                ?: throw IllegalStateException("No swagger sync config in workspace.json")
+                ?: error("No swagger sync config in workspace.json")
         val mod = swagger.modules[clientModule]
         when {
             !mod?.url.isNullOrBlank() -> return mod!!.url!!.trim()

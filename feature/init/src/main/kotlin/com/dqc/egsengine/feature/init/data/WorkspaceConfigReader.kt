@@ -27,7 +27,7 @@ class WorkspaceConfigReader {
             return wrapLegacy(legacy)
         }
 
-        throw IllegalStateException(
+        error(
             "No .egs/workspace.json or .egs/config.json found at ${projectRoot.absolutePath}. Run 'egs init' first.",
         )
     }

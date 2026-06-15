@@ -64,5 +64,4 @@ private fun ProjectInfo.toDto() = AnalyzeJsonDto(
 private val analyzeJson = Json { prettyPrint = true }
 
 /** 将 [ProjectInfo] 序列化为格式化 JSON（取代手拼，避免字符串转义错误）。 */
-internal fun encodeAnalyzeJson(info: ProjectInfo): String =
-    analyzeJson.encodeToString(AnalyzeJsonDto.serializer(), info.toDto())
+internal fun encodeAnalyzeJson(info: ProjectInfo): String = analyzeJson.encodeToString(AnalyzeJsonDto.serializer(), info.toDto())

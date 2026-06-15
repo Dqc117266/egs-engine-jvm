@@ -1,18 +1,16 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.data.UseCaseScanner
 import com.dqc.egsengine.feature.scaffold.domain.PageScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import org.slf4j.LoggerFactory
 
 /**
  * Create a page (interactive or non-interactive).
@@ -28,11 +26,7 @@ import org.slf4j.LoggerFactory
  * egs create page --module home --name Profile --api GetUserPostsUseCase --api GetUserLevelUseCase
  * ```
  */
-class CreatePageCommand :
-    CliktCommand(name = "page"),
-    KoinComponent {
-    private val logger = LoggerFactory.getLogger(CreatePageCommand::class.java)
-
+class CreatePageCommand : EgsCliCommand(name = "page") {
     private val pageScaffolder: PageScaffolder by inject()
     private val useCaseScanner: UseCaseScanner by inject()
 
@@ -75,23 +69,14 @@ class CreatePageCommand :
 
     private val withViewModelTest by option("--with-test", help = "Emit minimal ViewModelTest skeleton").flag()
 
-    override fun run() {
-        try {
-            val workspaceRoot = ProjectRootResolver.resolve(projectPath)
-            val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
+    override fun runCommand() {
+        val workspaceRoot = ProjectRootResolver.resolve(projectPath)
+        val clientRoot = ProjectRootResolver.resolveGradleClientRoot(workspaceRoot)
 
-            if (module != null && pageName != null) {
-                runCommandMode(workspaceRoot, clientRoot)
-            } else {
-                runInteractiveMode(workspaceRoot, clientRoot)
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Page generation failed: ${e.message}"), err = true)
-            if (System.getenv("EGS_DEBUG") == "true") {
-                logger.error("Page generation failed", e)
-            }
+        if (module != null && pageName != null) {
+            runCommandMode(workspaceRoot, clientRoot)
+        } else {
+            runInteractiveMode(workspaceRoot, clientRoot)
         }
     }
 
@@ -143,9 +128,7 @@ class CreatePageCommand :
         echo()
 
         val modules = useCaseScanner.listModules(clientRoot)
-        if (modules.isEmpty()) {
-            throw IllegalArgumentException("No feature modules found; create a module first")
-        }
+        require(modules.isNotEmpty()) { "No feature modules found; create a module first" }
 
         echo("Select module:")
         modules.forEachIndexed { index, m ->

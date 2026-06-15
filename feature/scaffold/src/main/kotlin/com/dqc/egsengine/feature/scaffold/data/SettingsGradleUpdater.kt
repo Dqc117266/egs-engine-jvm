@@ -13,7 +13,7 @@ class SettingsGradleUpdater {
         val settingsFile =
             projectRoot.resolve("settings.gradle.kts").takeIf { it.exists() }
                 ?: projectRoot.resolve("settings.gradle").takeIf { it.exists() }
-                ?: throw IllegalStateException("No settings.gradle found at ${projectRoot.absolutePath}")
+                ?: error("No settings.gradle found at ${projectRoot.absolutePath}")
 
         val content = settingsFile.readText()
         val modulePath = ":feature:$moduleName"

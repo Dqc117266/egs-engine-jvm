@@ -2,13 +2,11 @@ package com.dqc.egsengine.feature.script.domain
 
 import com.dqc.egsengine.feature.script.data.ScriptLoader
 import com.dqc.egsengine.feature.script.domain.model.Script
-import org.slf4j.LoggerFactory
 import java.io.File
 
 class ScriptEngine(
     private val scriptLoader: ScriptLoader,
 ) {
-    private val logger = LoggerFactory.getLogger(ScriptEngine::class.java)
 
     fun loadScript(path: String): Script? {
         val file = File(path)

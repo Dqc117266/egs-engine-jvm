@@ -1,20 +1,19 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.swagger.SwaggerApiScaffolder
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class CreateCommand : CliktCommand(name = "create") {
-    override fun run() = Unit
+class CreateCommand : EgsCliCommand(name = "create") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): CreateCommand = CreateCommand().subcommands(
@@ -28,9 +27,7 @@ class CreateCommand : CliktCommand(name = "create") {
     }
 }
 
-class CreateModuleCommand :
-    CliktCommand(name = "module"),
-    KoinComponent {
+class CreateModuleCommand : EgsCliCommand(name = "module") {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -42,54 +39,46 @@ class CreateModuleCommand :
 
     private val dryRun by option("--dry-run", help = "Preview without creating files").flag()
 
-    override fun run() {
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
+    override fun runCommand() {
+        val dir = ProjectRootResolver.resolve(projectPath)
 
-            // Try workspace-aware scaffold first (client sub-project)
-            val workspaceFile = dir.resolve(".egs/workspace.json")
-            val result =
-                if (workspaceFile.exists()) {
-                    scaffolder.scaffoldForProject(
-                        projectRoot = dir,
-                        moduleName = name,
-                        projectKey = "client",
-                        dryRun = dryRun,
-                    )
-                } else {
-                    scaffolder.scaffold(
-                        projectRoot = dir,
-                        moduleName = name,
-                        customPackage = packageName,
-                        dryRun = dryRun,
-                    )
-                }
-
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
-                echo()
-                result.files.forEach { echo("  $it") }
-                echo()
-                echo("  settings.gradle.kts would be updated with :feature:$name")
+        // Try workspace-aware scaffold first (client sub-project)
+        val workspaceFile = dir.resolve(".egs/workspace.json")
+        val result =
+            if (workspaceFile.exists()) {
+                scaffolder.scaffoldForProject(
+                    projectRoot = dir,
+                    moduleName = name,
+                    projectKey = "client",
+                    dryRun = dryRun,
+                )
             } else {
-                echo(CliFormatter.formatSuccess("Created module 'feature:$name'"))
-                echo()
-                echo("  Files created:")
-                result.files.forEach { echo("    $it") }
-                echo()
-                echo("  settings.gradle.kts updated with :feature:$name")
+                scaffolder.scaffold(
+                    projectRoot = dir,
+                    moduleName = name,
+                    customPackage = packageName,
+                    dryRun = dryRun,
+                )
             }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Failed to create module: ${e.message}"), err = true)
+
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run - the following files would be created:"))
+            echo()
+            result.files.forEach { echo("  $it") }
+            echo()
+            echo("  settings.gradle.kts would be updated with :feature:$name")
+        } else {
+            echo(CliFormatter.formatSuccess("Created module 'feature:$name'"))
+            echo()
+            echo("  Files created:")
+            result.files.forEach { echo("    $it") }
+            echo()
+            echo("  settings.gradle.kts updated with :feature:$name")
         }
     }
 }
 
-class CreateApiCommand :
-    CliktCommand(name = "api"),
-    KoinComponent {
+class CreateApiCommand : EgsCliCommand(name = "api") {
     private val scaffolder: SwaggerApiScaffolder by inject()
 
     private val moduleName by argument(help = "Target feature module name, e.g. home")
@@ -100,35 +89,26 @@ class CreateApiCommand :
     private val packageName by option("--package", help = "Base package override, e.g. com.dqc.kango")
     private val dryRun by option("--dry-run", help = "Preview without creating files").flag()
 
-    override fun run() {
-        if (swaggerUrl.isBlank()) {
-            echo(CliFormatter.formatError("Missing --swagger option"), err = true)
-            return
-        }
+    override fun runCommand() {
+        require(swaggerUrl.isNotBlank()) { "Missing --swagger option" }
 
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
-            val result =
-                scaffolder.scaffold(
-                    projectRoot = dir,
-                    moduleName = moduleName,
-                    swaggerLocation = swaggerUrl,
-                    customPackage = packageName,
-                    dryRun = dryRun,
-                )
+        val dir = ProjectRootResolver.resolve(projectPath)
+        val result =
+            scaffolder.scaffold(
+                projectRoot = dir,
+                moduleName = moduleName,
+                swaggerLocation = swaggerUrl,
+                customPackage = packageName,
+                dryRun = dryRun,
+            )
 
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run - swagger files to generate:"))
-                result.files.forEach { echo("  $it") }
-            } else {
-                echo(CliFormatter.formatSuccess("Generated swagger API/domain scaffold for feature:$moduleName"))
-                echo("  Generated files:")
-                result.files.forEach { echo("    $it") }
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Failed to generate from swagger: ${e.message}"), err = true)
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run - swagger files to generate:"))
+            result.files.forEach { echo("  $it") }
+        } else {
+            echo(CliFormatter.formatSuccess("Generated swagger API/domain scaffold for feature:$moduleName"))
+            echo("  Generated files:")
+            result.files.forEach { echo("    $it") }
         }
     }
 }

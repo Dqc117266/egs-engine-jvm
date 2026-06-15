@@ -1,35 +1,30 @@
 package com.dqc.egsengine.feature.script.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.script.domain.ScriptEngine
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class ScriptCommand : CliktCommand(name = "script") {
+class ScriptCommand : EgsCliCommand(name = "script") {
     init {
         subcommands(ScriptRun(), ScriptList(), ScriptValidate())
     }
 
-    override fun run() = Unit
+    override fun runCommand() = Unit
 }
 
-private class ScriptRun :
-    CliktCommand(name = "run"),
-    KoinComponent {
+private class ScriptRun : EgsCliCommand(name = "run") {
 
     private val scriptEngine: ScriptEngine by inject()
     private val path by argument()
 
-    override fun run() {
-        val script = scriptEngine.loadScript(path)
-        if (script == null) {
-            echo(CliFormatter.formatError("Failed to load script: $path"), err = true)
-            return
-        }
+    override fun runCommand() {
+        val script =
+            scriptEngine.loadScript(path)
+                ?: throw IllegalArgumentException("Failed to load script: $path")
 
         echo(CliFormatter.formatInfo("Running script: ${script.name} (${script.commands.size} commands)"))
         // TODO: Execute script commands through CommandService
@@ -37,14 +32,12 @@ private class ScriptRun :
     }
 }
 
-private class ScriptList :
-    CliktCommand(name = "list"),
-    KoinComponent {
+private class ScriptList : EgsCliCommand(name = "list") {
 
     private val scriptEngine: ScriptEngine by inject()
     private val directory by argument().default(".")
 
-    override fun run() {
+    override fun runCommand() {
         val scripts = scriptEngine.listScripts(directory)
 
         if (scripts.isEmpty()) {
@@ -60,19 +53,15 @@ private class ScriptList :
     }
 }
 
-private class ScriptValidate :
-    CliktCommand(name = "validate"),
-    KoinComponent {
+private class ScriptValidate : EgsCliCommand(name = "validate") {
 
     private val scriptEngine: ScriptEngine by inject()
     private val path by argument()
 
-    override fun run() {
-        val script = scriptEngine.loadScript(path)
-        if (script == null) {
-            echo(CliFormatter.formatError("Failed to load script: $path"), err = true)
-            return
-        }
+    override fun runCommand() {
+        val script =
+            scriptEngine.loadScript(path)
+                ?: throw IllegalArgumentException("Failed to load script: $path")
 
         val errors = scriptEngine.validateScript(script)
 
@@ -80,7 +69,7 @@ private class ScriptValidate :
             echo(CliFormatter.formatSuccess("Script '${script.name}' is valid"))
         } else {
             errors.forEach { echo(CliFormatter.formatError(it)) }
-            echo(CliFormatter.formatError("Script validation failed with ${errors.size} error(s)"))
+            throw IllegalArgumentException("Script validation failed with ${errors.size} error(s)")
         }
     }
 }

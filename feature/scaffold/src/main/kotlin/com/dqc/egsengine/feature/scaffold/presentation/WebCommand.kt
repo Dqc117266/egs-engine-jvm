@@ -1,6 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
@@ -10,19 +11,17 @@ import com.dqc.egsengine.feature.scaffold.data.generator.springboot.SpringBootGe
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootOpinionatedOptions
 import com.dqc.egsengine.feature.scaffold.domain.AdminVueCrudScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.ModuleScaffolder
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 
-class WebCommand : CliktCommand(name = "web") {
-    override fun run() = Unit
+class WebCommand : EgsCliCommand(name = "web") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): WebCommand = WebCommand().subcommands(
@@ -31,8 +30,8 @@ class WebCommand : CliktCommand(name = "web") {
     }
 }
 
-class WebCrudCommand : CliktCommand(name = "crud") {
-    override fun run() = Unit
+class WebCrudCommand : EgsCliCommand(name = "crud") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): WebCrudCommand = WebCrudCommand().subcommands(
@@ -45,9 +44,7 @@ class WebCrudCommand : CliktCommand(name = "crud") {
 /**
  * `egs web crud gen <module>` -- generates Vue3 CRUD pages for a module.
  */
-class WebCrudGenCommand :
-    CliktCommand(name = "gen"),
-    KoinComponent {
+class WebCrudGenCommand : EgsCliCommand(name = "gen") {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Module name for CRUD generation")
@@ -57,32 +54,26 @@ class WebCrudGenCommand :
 
     private val dryRun by option("--dry-run", help = "Preview without creating files").flag()
 
-    override fun run() {
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
+    override fun runCommand() {
+        val dir = ProjectRootResolver.resolve(projectPath)
 
-            val result =
-                scaffolder.scaffoldForProject(
-                    projectRoot = dir,
-                    moduleName = name,
-                    projectKey = "admin",
-                    dryRun = dryRun,
-                )
+        val result =
+            scaffolder.scaffoldForProject(
+                projectRoot = dir,
+                moduleName = name,
+                projectKey = "admin",
+                dryRun = dryRun,
+            )
 
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run - the following files would be generated:"))
-                echo()
-                result.files.forEach { echo("  $it") }
-            } else {
-                echo(CliFormatter.formatSuccess("Generated Vue3 CRUD for module '$name'"))
-                echo()
-                echo("  Files created:")
-                result.files.forEach { echo("    $it") }
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Failed to generate web CRUD: ${e.message}"), err = true)
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run - the following files would be generated:"))
+            echo()
+            result.files.forEach { echo("  $it") }
+        } else {
+            echo(CliFormatter.formatSuccess("Generated Vue3 CRUD for module '$name'"))
+            echo()
+            echo("  Files created:")
+            result.files.forEach { echo("    $it") }
         }
     }
 }
@@ -90,9 +81,7 @@ class WebCrudGenCommand :
 /**
  * Admin CRUD from `feature/<module>/.egs-generated.json` `codegen`, or `--sql` + same DDL rules as backend.
  */
-class WebCrudGenFromBackendCommand :
-    CliktCommand(name = "gen-from-backend"),
-    KoinComponent {
+class WebCrudGenFromBackendCommand : EgsCliCommand(name = "gen-from-backend") {
     private val adminVue: AdminVueCrudScaffolder by inject()
     private val manifest: SpringBootGeneratedPathsManifest by inject()
     private val crudGenerator: SpringBootCrudGenerator by inject()
@@ -129,85 +118,79 @@ class WebCrudGenFromBackendCommand :
         help = "Match backend --no-status-enum when using --sql",
     ).flag()
 
-    override fun run() {
-        try {
-            val dir = ProjectRootResolver.resolve(projectPath)
-            val backendCfg = workspace.resolveBackend(dir)
-            require(backendCfg.platform == Platform.SPRING_BOOT) {
-                "web crud gen-from-backend requires workspace project 'backend' with platform spring_boot; got ${backendCfg.platform}"
-            }
-            val backendRoot = dir.resolve(backendCfg.path).normalize()
+    override fun runCommand() {
+        val dir = ProjectRootResolver.resolve(projectPath)
+        val backendCfg = workspace.resolveBackend(dir)
+        require(backendCfg.platform == Platform.SPRING_BOOT) {
+            "web crud gen-from-backend requires workspace project 'backend' with platform spring_boot; got ${backendCfg.platform}"
+        }
+        val backendRoot = dir.resolve(backendCfg.path).normalize()
 
-            var codegen =
-                manifest.readCodegenOnly(backendRoot, moduleName)
-            if (codegen == null) {
-                val raw =
-                    sqlFile
-                        ?: error(
-                            "No `codegen` in feature/$moduleName/.egs-generated.json; pass --sql <ddl> to derive it.",
-                        )
-                val sqlPath =
-                    File(raw).let { path ->
-                        if (path.isAbsolute) path else File(System.getProperty("user.dir")).resolve(path).normalize()
-                    }
-                val tables = ddlParser.parseFile(sqlPath)
-                require(tables.isNotEmpty()) { "No CREATE TABLE statements in ${sqlPath.path}" }
-                val table =
-                    when {
-                        mainTable != null ->
-                            tables.singleOrNull { it.tableName.equals(mainTable, ignoreCase = true) }
-                                ?: error(
-                                    "Could not find table '$mainTable' in ${sqlPath.path}. Found: ${tables.map { it.tableName }}",
-                                )
-                        tables.size == 1 -> tables.first()
-                        else ->
-                            error(
-                                "DDL defines ${tables.size} tables; pass --main-table=<name>. Tables: ${tables.map { it.tableName }}",
+        var codegen =
+            manifest.readCodegenOnly(backendRoot, moduleName)
+        if (codegen == null) {
+            val raw =
+                sqlFile
+                    ?: error(
+                        "No `codegen` in feature/$moduleName/.egs-generated.json; pass --sql <ddl> to derive it.",
+                    )
+            val sqlPath =
+                File(raw).let { path ->
+                    if (path.isAbsolute) path else File(System.getProperty("user.dir")).resolve(path).normalize()
+                }
+            val tables = ddlParser.parseFile(sqlPath)
+            require(tables.isNotEmpty()) { "No CREATE TABLE statements in ${sqlPath.path}" }
+            val table =
+                when {
+                    mainTable != null ->
+                        tables.singleOrNull { it.tableName.equals(mainTable, ignoreCase = true) }
+                            ?: error(
+                                "Could not find table '$mainTable' in ${sqlPath.path}. Found: ${tables.map { it.tableName }}",
                             )
-                    }
-                val options =
-                    SpringBootOpinionatedOptions(
-                        auditColumns = !noAudit,
-                        softDelete = !noSoftDelete,
-                        statusEnum = !noStatusEnum,
-                    )
-                codegen =
-                    crudGenerator.buildCodegenManifest(
-                        table = table,
-                        moduleName = moduleName,
-                        config = backendCfg,
-                        options = options,
-                    )
-            }
-
-            val result =
-                adminVue.scaffoldFromCodegen(
-                    projectRoot = dir,
-                    codegen = codegen,
-                    dryRun = dryRun,
-                )
-
-            if (result.dryRun) {
-                echo(CliFormatter.formatInfo("Dry run — admin module '${result.moduleName}' (${result.files.size} files):"))
-                result.files.forEach { echo("  ${it.path}") }
-                result.sysMenuFlywayMigration?.let {
-                    echo(CliFormatter.formatInfo("Dry run — Flyway sys_menus: ${it.path}"))
+                    tables.size == 1 -> tables.first()
+                    else ->
+                        error(
+                            "DDL defines ${tables.size} tables; pass --main-table=<name>. Tables: ${tables.map { it.tableName }}",
+                        )
                 }
-            } else {
-                echo(
-                    CliFormatter.formatSuccess(
-                        "Admin Vue CRUD from backend manifest: module '${result.moduleName}' (${result.files.size} files)",
-                    ),
+            val options =
+                SpringBootOpinionatedOptions(
+                    auditColumns = !noAudit,
+                    softDelete = !noSoftDelete,
+                    statusEnum = !noStatusEnum,
                 )
-                result.files.forEach { echo("    ${it.path}") }
-                result.sysMenuFlywayMigration?.let {
-                    echo(CliFormatter.formatSuccess("Flyway sidebar migration: ${it.path}"))
-                }
+            codegen =
+                crudGenerator.buildCodegenManifest(
+                    table = table,
+                    moduleName = moduleName,
+                    config = backendCfg,
+                    options = options,
+                )
+        }
+
+        val result =
+            adminVue.scaffoldFromCodegen(
+                projectRoot = dir,
+                codegen = codegen,
+                dryRun = dryRun,
+            )
+
+        if (result.dryRun) {
+            echo(CliFormatter.formatInfo("Dry run — admin module '${result.moduleName}' (${result.files.size} files):"))
+            result.files.forEach { echo("  ${it.path}") }
+            result.sysMenuFlywayMigration?.let {
+                echo(CliFormatter.formatInfo("Dry run — Flyway sys_menus: ${it.path}"))
             }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("gen-from-backend failed: ${e.message}"), err = true)
+        } else {
+            echo(
+                CliFormatter.formatSuccess(
+                    "Admin Vue CRUD from backend manifest: module '${result.moduleName}' (${result.files.size} files)",
+                ),
+            )
+            result.files.forEach { echo("    ${it.path}") }
+            result.sysMenuFlywayMigration?.let {
+                echo(CliFormatter.formatSuccess("Flyway sidebar migration: ${it.path}"))
+            }
         }
     }
 }

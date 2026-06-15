@@ -1,26 +1,26 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
+import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.scaffold.data.template.DevProjectConfigLoader
 import com.dqc.egsengine.feature.scaffold.data.template.TemplatePromoter
 import com.dqc.egsengine.feature.scaffold.data.template.TemplateRenameRecipes
 import com.dqc.egsengine.feature.scaffold.data.template.TemplateSyncBack
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
-class TemplateCommand : CliktCommand(name = "template") {
-    override fun run() = Unit
+class TemplateCommand : EgsCliCommand(name = "template") {
+    override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): TemplateCommand = TemplateCommand().subcommands(TemplateSyncBackCommand(), TemplatePromoteFtlCommand())
     }
 }
 
-class TemplateSyncBackCommand : CliktCommand(name = "sync-back") {
+class TemplateSyncBackCommand : EgsCliCommand(name = "sync-back") {
     private val fromOption by option("--from", help = "Generated project directory (default: demo-app subproject)")
         .default(".")
 
@@ -43,64 +43,58 @@ class TemplateSyncBackCommand : CliktCommand(name = "sync-back") {
 
     private val dryRun by option("--dry-run", help = "Preview without writing").flag()
 
-    override fun run() {
-        try {
-            val fromDir = File(fromOption).absoluteFile
-            require(fromDir.isDirectory) { "--from is not a directory: ${fromDir.absolutePath}" }
+    override fun runCommand() {
+        val fromDir = File(fromOption).absoluteFile
+        require(fromDir.isDirectory) { "--from is not a directory: ${fromDir.absolutePath}" }
 
-            val context = DevProjectConfigLoader.loadSyncContext(fromDir)
-            val toDir = resolveTargetDir(context)
-            val recipe = resolveRecipe(toDir)
-            val paths =
-                pathsOption
-                    ?.split(',')
-                    ?.map { it.trim() }
-                    ?.filter { it.isNotEmpty() }
-                    .orEmpty()
+        val context = DevProjectConfigLoader.loadSyncContext(fromDir)
+        val toDir = resolveTargetDir(context)
+        val recipe = resolveRecipe(toDir)
+        val paths =
+            pathsOption
+                ?.split(',')
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                .orEmpty()
 
-            val resolvedFromProject = fromProjectName ?: context.projectName
-            val resolvedToProject = toProjectName ?: recipe.oldProjectName ?: toDir.name
-            val resolvedFromPackage = fromPackage ?: context.basePackage
-            val resolvedToPackage = toPackage ?: recipe.oldPackage
+        val resolvedFromProject = fromProjectName ?: context.projectName
+        val resolvedToProject = toProjectName ?: recipe.oldProjectName ?: toDir.name
+        val resolvedFromPackage = fromPackage ?: context.basePackage
+        val resolvedToPackage = toPackage ?: recipe.oldPackage
 
-            echo(CliFormatter.formatInfo("Sync-back ${fromDir.name} -> ${toDir.name} (recipe=${recipe.id})"))
-            if (dryRun) {
-                echo(CliFormatter.formatInfo("Dry run mode"))
-            }
+        echo(CliFormatter.formatInfo("Sync-back ${fromDir.name} -> ${toDir.name} (recipe=${recipe.id})"))
+        if (dryRun) {
+            echo(CliFormatter.formatInfo("Dry run mode"))
+        }
 
-            val result =
-                TemplateSyncBack().sync(
-                    fromDir = fromDir,
-                    toDir = toDir,
-                    recipe = recipe,
-                    fromProjectName = resolvedFromProject,
-                    fromPackage = resolvedFromPackage,
-                    toProjectName = resolvedToProject,
-                    toPackage = resolvedToPackage,
-                    pathFilters = paths,
-                    dryRun = dryRun,
-                )
+        val result =
+            TemplateSyncBack().sync(
+                fromDir = fromDir,
+                toDir = toDir,
+                recipe = recipe,
+                fromProjectName = resolvedFromProject,
+                fromPackage = resolvedFromPackage,
+                toProjectName = resolvedToProject,
+                toPackage = resolvedToPackage,
+                pathFilters = paths,
+                dryRun = dryRun,
+            )
 
+        echo()
+        echo("Copied files (${result.copiedFiles.size}):")
+        result.copiedFiles.forEach { echo("  $it") }
+
+        if (result.rewrittenFiles.isNotEmpty()) {
             echo()
-            echo("Copied files (${result.copiedFiles.size}):")
-            result.copiedFiles.forEach { echo("  $it") }
+            echo("Rewritten files (${result.rewrittenFiles.size}):")
+            result.rewrittenFiles.forEach { echo("  $it") }
+        }
 
-            if (result.rewrittenFiles.isNotEmpty()) {
-                echo()
-                echo("Rewritten files (${result.rewrittenFiles.size}):")
-                result.rewrittenFiles.forEach { echo("  $it") }
-            }
-
-            echo()
-            if (dryRun) {
-                echo(CliFormatter.formatSuccess("Dry run complete — no files written"))
-            } else {
-                echo(CliFormatter.formatSuccess("Sync-back complete"))
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Sync-back failed: ${e.message}"), err = true)
+        echo()
+        if (dryRun) {
+            echo(CliFormatter.formatSuccess("Dry run complete — no files written"))
+        } else {
+            echo(CliFormatter.formatSuccess("Sync-back complete"))
         }
     }
 
@@ -134,7 +128,7 @@ class TemplateSyncBackCommand : CliktCommand(name = "sync-back") {
     }
 }
 
-class TemplatePromoteFtlCommand : CliktCommand(name = "promote-ftl") {
+class TemplatePromoteFtlCommand : EgsCliCommand(name = "promote-ftl") {
     private val fromOption by option(
         "--from",
         help = "Project .egs/templates directory (default: <project>/.egs/templates)",
@@ -150,47 +144,41 @@ class TemplatePromoteFtlCommand : CliktCommand(name = "promote-ftl") {
 
     private val dryRun by option("--dry-run", help = "Preview without writing").flag()
 
-    override fun run() {
-        try {
-            val projectRoot = File(projectOption).absoluteFile
-            val sourceRoot =
-                fromOption?.let { File(it).absoluteFile }
-                    ?: projectRoot.resolve(".egs/templates")
-            require(sourceRoot.isDirectory) {
-                "Template override directory not found: ${sourceRoot.absolutePath}"
-            }
+    override fun runCommand() {
+        val projectRoot = File(projectOption).absoluteFile
+        val sourceRoot =
+            fromOption?.let { File(it).absoluteFile }
+                ?: projectRoot.resolve(".egs/templates")
+        require(sourceRoot.isDirectory) {
+            "Template override directory not found: ${sourceRoot.absolutePath}"
+        }
 
-            val targetRoot = resolveTargetRoot(toOption)
-            require(targetRoot.isDirectory) {
-                "Target template root not found: ${targetRoot.absolutePath}. Set EGS_TEMPLATE_ROOT or pass --to."
-            }
+        val targetRoot = resolveTargetRoot(toOption)
+        require(targetRoot.isDirectory) {
+            "Target template root not found: ${targetRoot.absolutePath}. Set EGS_TEMPLATE_ROOT or pass --to."
+        }
 
-            echo(CliFormatter.formatInfo("Promote FTL ${sourceRoot.absolutePath} -> ${targetRoot.absolutePath}"))
-            if (dryRun) {
-                echo(CliFormatter.formatInfo("Dry run mode"))
-            }
+        echo(CliFormatter.formatInfo("Promote FTL ${sourceRoot.absolutePath} -> ${targetRoot.absolutePath}"))
+        if (dryRun) {
+            echo(CliFormatter.formatInfo("Dry run mode"))
+        }
 
-            val result =
-                TemplatePromoter().promote(
-                    sourceRoot = sourceRoot,
-                    targetRoot = targetRoot,
-                    dryRun = dryRun,
-                )
+        val result =
+            TemplatePromoter().promote(
+                sourceRoot = sourceRoot,
+                targetRoot = targetRoot,
+                dryRun = dryRun,
+            )
 
-            echo()
-            echo("Promoted templates (${result.promotedFiles.size}):")
-            result.promotedFiles.forEach { echo("  $it") }
+        echo()
+        echo("Promoted templates (${result.promotedFiles.size}):")
+        result.promotedFiles.forEach { echo("  $it") }
 
-            echo()
-            if (dryRun) {
-                echo(CliFormatter.formatSuccess("Dry run complete — no files written"))
-            } else {
-                echo(CliFormatter.formatSuccess("Promote complete"))
-            }
-        } catch (e: IllegalArgumentException) {
-            echo(CliFormatter.formatError(e.message ?: "Invalid argument"), err = true)
-        } catch (e: Exception) {
-            echo(CliFormatter.formatError("Promote failed: ${e.message}"), err = true)
+        echo()
+        if (dryRun) {
+            echo(CliFormatter.formatSuccess("Dry run complete — no files written"))
+        } else {
+            echo(CliFormatter.formatSuccess("Promote complete"))
         }
     }
 
