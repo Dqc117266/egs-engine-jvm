@@ -51,8 +51,6 @@ val scaffoldServerModule =
                 Platform.ANDROID to get<com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiGenerator>(),
                 Platform.KMP to get<com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator>(),
                 Platform.KMP_ANDROID to get<com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpApiGenerator>(),
-                Platform.SPRING_BOOT to get<SpringBootApiGenerator>(),
-                Platform.VUE3 to get<Vue3ApiGenerator>(),
             )
         }
 
