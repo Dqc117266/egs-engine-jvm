@@ -1,11 +1,14 @@
 package com.dqc.egsengine.feature.scaffold.data
 
+import com.dqc.egsengine.feature.base.command.CommandExecutor
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 internal class ProjectTemplateCloner(
     private val githubToken: String?,
     private val githubUsername: String,
-    private val logInfo: (String) -> Unit,
+    private val commandExecutor: CommandExecutor = CommandExecutor(),
+    private val logInfo: (String) -> Unit = {},
 ) {
     private val packageRewriter = TemplatePackageRewriter()
 
@@ -127,18 +130,10 @@ internal class ProjectTemplateCloner(
         command: List<String>,
         workDir: File,
     ): ProcessResult {
-        val process =
-            ProcessBuilder(command)
-                .directory(workDir)
-                .redirectErrorStream(true)
-                .start()
-        val output =
-            process.inputStream
-                .bufferedReader()
-                .readText()
-                .trim()
-        val exitCode = process.waitFor()
-        return ProcessResult(exitCode, output)
+        // 统一走 CommandExecutor（P0：分开消费 stdout/stderr，避免大输出死锁）。
+        val result = runBlocking { commandExecutor.execute(command, workDir) }
+        val combined = listOf(result.output, result.error).filter { it.isNotBlank() }.joinToString("\n")
+        return ProcessResult(result.exitCode, combined)
     }
 
     private data class ProcessResult(

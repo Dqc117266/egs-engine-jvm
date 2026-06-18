@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.presentation
 
+import com.dqc.egsengine.feature.base.command.CommandExecutor
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
@@ -9,12 +10,14 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
+import kotlinx.coroutines.runBlocking
 import org.koin.core.component.inject
 import java.io.File
 import java.util.Base64
 
 class CreateProjectCommand : EgsCliCommand(name = "project") {
     private val initializer: ProjectInitializer by inject()
+    private val commandExecutor = CommandExecutor()
 
     private val projectNameArg by argument(help = "Project name").optional()
 
@@ -272,24 +275,10 @@ class CreateProjectCommand : EgsCliCommand(name = "project") {
         workDir: File,
         environment: Map<String, String> = emptyMap(),
     ): ProcessResult {
-        val process =
-            ProcessBuilder(command)
-                .directory(workDir)
-                .redirectErrorStream(true)
-
-        environment.forEach { (key, value) ->
-            process.environment()[key] = value
-        }
-
-        val running = process.start()
-
-        val output =
-            running.inputStream
-                .bufferedReader()
-                .readText()
-                .trim()
-        val exitCode = running.waitFor()
-        return ProcessResult(exitCode, output)
+        // 统一走 CommandExecutor（P0：分开消费 stdout/stderr，避免大输出死锁）。
+        val result = runBlocking { commandExecutor.execute(command, workDir, environment) }
+        val combined = listOf(result.output, result.error).filter { it.isNotBlank() }.joinToString("\n")
+        return ProcessResult(result.exitCode, combined)
     }
 
     private fun execInteractive(
