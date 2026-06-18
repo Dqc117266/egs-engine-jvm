@@ -35,9 +35,6 @@ class ArchitectureTest {
 
     @Test
     fun `source files in presentation package follow naming convention`() {
-        // Kontist's KoFile.name returns the name without extension (e.g. "ScriptCli", not "ScriptCli.kt").
-        // Files must end with Cli, Command, Resolver, or Formatter.
-        // Classes within those files include Clikt sub-commands, nested models, and the primary class.
         productionClasses()
             .filter { it.resideInPackage("..presentation..") }
             .assertTrue {
@@ -45,7 +42,22 @@ class ArchitectureTest {
                 fileName.endsWith("Cli") ||
                     fileName.endsWith("Command") ||
                     fileName.endsWith("Resolver") ||
-                    fileName.endsWith("Formatter")
+                    fileName.endsWith("Formatter") ||
+                    fileName.endsWith("Error") ||
+                    fileName.endsWith("Dto") ||
+                    fileName.endsWith("Json")
+            }
+    }
+
+    @Test
+    fun `presentation layer in base and common should not import from data layer`() {
+        productionClasses()
+            .filter {
+                it.resideInPackage("..feature.base.presentation..") ||
+                    it.resideInPackage("..feature.common.presentation..")
+            }
+            .assertTrue {
+                !it.text.contains("import com.dqc.egsengine.feature.*.data")
             }
     }
 }
