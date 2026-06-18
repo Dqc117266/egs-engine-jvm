@@ -250,6 +250,7 @@ class ClientGenPrefsCommand : EgsCliCommand(name = "prefs") {
         "--fields",
         "--feilds",
         help = "Comma-separated fields: name:type (String, Boolean/bool, Int, Long)",
+        hidden = true,
     ).required()
 
     private val key by option(

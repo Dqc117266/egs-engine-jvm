@@ -55,7 +55,7 @@ class ClientEditViewModelCommand : EgsCliCommand(name = "viewmodel") {
             "Also: `-u A,B`, repeat `-u`, or one quoted `-u \"A B\"`.",
     ).optionMultiple()
 
-    private val projectPath by option("--project", help = "Workspace / Gradle project root")
+    private val projectPath by option("--project", "-p", help = "Workspace / Gradle project root")
         .default(".")
 
     private val dryRun by option("--dry-run", help = "Print unified diff; do not write files").flag()
