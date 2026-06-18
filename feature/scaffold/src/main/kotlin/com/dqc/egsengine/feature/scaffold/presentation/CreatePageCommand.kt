@@ -26,7 +26,7 @@ import org.koin.core.component.inject
  * egs create page --module home --name Profile --api GetUserPostsUseCase --api GetUserLevelUseCase
  * ```
  */
-class CreatePageCommand : EgsCliCommand(name = "page") {
+class CreatePageCommand : EgsCliCommand(name = "page", help = "Create a new Compose page/screen") {
     private val pageScaffolder: PageScaffolder by inject()
     private val useCaseScanner: UseCaseScanner by inject()
 

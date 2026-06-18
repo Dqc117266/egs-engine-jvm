@@ -12,7 +12,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.inject
 
-class FlowCommand : EgsCliCommand(name = "flow") {
+class FlowCommand : EgsCliCommand(name = "flow", help = "Cross-platform workflow orchestration") {
     override fun runCommand() = Unit
 
     companion object {
@@ -23,7 +23,7 @@ class FlowCommand : EgsCliCommand(name = "flow") {
 /**
  * `egs flow add-feature <module>` — client module scaffold + `client api sync` for the same module name.
  */
-class FlowAddFeatureCommand : EgsCliCommand(name = "add-feature") {
+class FlowAddFeatureCommand : EgsCliCommand(name = "add-feature", help = "Add a feature module + sync API across platforms") {
     private val moduleScaffolder: ModuleScaffolder by inject()
     private val apiSync: ApiSyncScaffolder by inject()
 

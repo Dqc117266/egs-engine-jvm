@@ -27,7 +27,7 @@ import com.github.ajalt.clikt.parameters.options.multiple as optionMultiple
  * Use case names can be space-separated after `-u` (like `git add a b c`), for example:
  * `-m todo -u GetUserIdUseCase DeleteUserSessionUseCase`. Commas still work: `-u A,B,C`.
  */
-class ClientEditViewModelCommand : EgsCliCommand(name = "viewmodel") {
+class ClientEditViewModelCommand : EgsCliCommand(name = "viewmodel", help = "Edit ViewModel: add use cases to constructor") {
     private val scaffolder: ViewModelEditScaffolder by inject()
     private val useCaseScanner: UseCaseScanner by inject()
 
@@ -191,7 +191,7 @@ class ClientEditViewModelCommand : EgsCliCommand(name = "viewmodel") {
     }
 }
 
-class ClientEditCommand : EgsCliCommand(name = "edit") {
+class ClientEditCommand : EgsCliCommand(name = "edit", help = "Edit existing client code (ViewModel, navigation)") {
     override fun runCommand() = Unit
 
     companion object {

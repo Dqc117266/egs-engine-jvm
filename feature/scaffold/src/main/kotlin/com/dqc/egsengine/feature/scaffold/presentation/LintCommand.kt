@@ -8,7 +8,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
-class LintCommand : EgsCliCommand(name = "lint") {
+class LintCommand : EgsCliCommand(name = "lint", help = "Run lint checks on generated code") {
     override fun runCommand() = Unit
 
     companion object {
@@ -18,7 +18,7 @@ class LintCommand : EgsCliCommand(name = "lint") {
     }
 }
 
-class LintFixCommand : EgsCliCommand(name = "fix") {
+class LintFixCommand : EgsCliCommand(name = "fix", help = "Auto-fix lint issues in generated code") {
     private val projectPath by option("--project", "-p", help = "Workspace root path")
         .default(".")
 

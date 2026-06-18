@@ -15,7 +15,7 @@ import org.koin.core.component.inject
 /**
  * `egs client gen strings --module=X --keys=a,b,c` — writes a small `StringKeys` object for Compose/MR wiring.
  */
-class ClientGenStringsCommand : EgsCliCommand(name = "strings") {
+class ClientGenStringsCommand : EgsCliCommand(name = "strings", help = "Generate String resource keys object") {
     private val configReader: EgsConfigReader by inject()
 
     private val moduleName by option("-m", "--module").required()

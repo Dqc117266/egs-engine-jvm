@@ -12,7 +12,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.inject
 
-class CreateCommand : EgsCliCommand(name = "create") {
+class CreateCommand : EgsCliCommand(name = "create", help = "Create modules, pages, APIs, use cases, and projects") {
     override fun runCommand() = Unit
 
     companion object {
@@ -27,7 +27,7 @@ class CreateCommand : EgsCliCommand(name = "create") {
     }
 }
 
-class CreateModuleCommand : EgsCliCommand(name = "module") {
+class CreateModuleCommand : EgsCliCommand(name = "module", help = "Create a new client feature module") {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -78,7 +78,7 @@ class CreateModuleCommand : EgsCliCommand(name = "module") {
     }
 }
 
-class CreateApiCommand : EgsCliCommand(name = "api") {
+class CreateApiCommand : EgsCliCommand(name = "api", help = "Create API interfaces and implementations") {
     private val scaffolder: SwaggerApiScaffolder by inject()
 
     private val moduleName by argument(help = "Target feature module name, e.g. home")

@@ -20,7 +20,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.inject
 import java.io.File
 
-class NewCommand : EgsCliCommand(name = "new") {
+class NewCommand : EgsCliCommand(name = "new", help = "Create a new multi-platform workspace") {
     override fun runCommand() = Unit
 
     companion object {
@@ -28,7 +28,7 @@ class NewCommand : EgsCliCommand(name = "new") {
     }
 }
 
-class NewProjectCommand : EgsCliCommand(name = "project") {
+class NewProjectCommand : EgsCliCommand(name = "project", help = "Create a new project workspace (client + backend + admin)") {
     private val workspaceConfigWriter: WorkspaceConfigWriter by inject()
     private val workspaceConfigResolver: WorkspaceConfigResolver by inject()
 

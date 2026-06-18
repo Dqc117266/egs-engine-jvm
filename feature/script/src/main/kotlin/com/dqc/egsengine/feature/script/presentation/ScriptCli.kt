@@ -13,7 +13,7 @@ import kotlinx.coroutines.runBlocking
 import org.koin.core.component.inject
 import java.io.File
 
-class ScriptCommand : EgsCliCommand(name = "script") {
+class ScriptCommand : EgsCliCommand(name = "script", help = "Load and run .egs scripts") {
     init {
         subcommands(ScriptRun(), ScriptList(), ScriptValidate())
     }
@@ -21,7 +21,7 @@ class ScriptCommand : EgsCliCommand(name = "script") {
     override fun runCommand() = Unit
 }
 
-private class ScriptRun : EgsCliCommand(name = "run") {
+private class ScriptRun : EgsCliCommand(name = "run", help = "Run an .egs script file") {
 
     private val scriptEngine: ScriptEngine by inject()
     private val commandExecutor: CommandExecutor by inject()
@@ -54,7 +54,7 @@ private class ScriptRun : EgsCliCommand(name = "run") {
     }
 }
 
-private class ScriptList : EgsCliCommand(name = "list") {
+private class ScriptList : EgsCliCommand(name = "list", help = "List available .egs scripts") {
 
     private val scriptEngine: ScriptEngine by inject()
     private val directory by argument().default(".")
@@ -75,7 +75,7 @@ private class ScriptList : EgsCliCommand(name = "list") {
     }
 }
 
-private class ScriptValidate : EgsCliCommand(name = "validate") {
+private class ScriptValidate : EgsCliCommand(name = "validate", help = "Validate an .egs script without executing") {
 
     private val scriptEngine: ScriptEngine by inject()
     private val path by argument()

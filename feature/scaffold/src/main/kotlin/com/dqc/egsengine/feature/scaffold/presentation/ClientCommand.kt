@@ -18,7 +18,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import org.koin.core.component.inject
 import java.io.File
 
-class ClientCommand : EgsCliCommand(name = "client") {
+class ClientCommand : EgsCliCommand(name = "client", help = "Client code generation and scaffolding") {
     override fun runCommand() = Unit
 
     companion object {
@@ -34,7 +34,7 @@ class ClientCommand : EgsCliCommand(name = "client") {
 
 // -- client module --
 
-class ClientModuleCommand : EgsCliCommand(name = "module") {
+class ClientModuleCommand : EgsCliCommand(name = "module", help = "Client module management") {
     override fun runCommand() = Unit
 
     companion object {
@@ -44,7 +44,7 @@ class ClientModuleCommand : EgsCliCommand(name = "module") {
     }
 }
 
-class ClientModuleCreateCommand : EgsCliCommand(name = "create") {
+class ClientModuleCreateCommand : EgsCliCommand(name = "create", help = "Create a new client feature module") {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -88,7 +88,7 @@ class ClientModuleCreateCommand : EgsCliCommand(name = "create") {
 
 // -- client list --
 
-class ClientListCommand : EgsCliCommand(name = "list") {
+class ClientListCommand : EgsCliCommand(name = "list", help = "List client modules and their contents") {
     override fun runCommand() = Unit
 
     companion object {
@@ -104,7 +104,7 @@ class ClientListCommand : EgsCliCommand(name = "list") {
  * Lists use case **class names** only (e.g. `DeleteUserSessionUseCase`), one per line.
  * Without `-m`, groups under `feature/<module>` headers. With `-m`, only that module is listed.
  */
-class ClientListUsecasesCommand : EgsCliCommand(name = "usecases") {
+class ClientListUsecasesCommand : EgsCliCommand(name = "usecases", help = "List use cases in a client module") {
     private val scanner: UseCaseScanner by inject()
 
     private val module by option(
@@ -164,7 +164,7 @@ class ClientListUsecasesCommand : EgsCliCommand(name = "usecases") {
 
 // -- client gen --
 
-class ClientGenCommand : EgsCliCommand(name = "gen") {
+class ClientGenCommand : EgsCliCommand(name = "gen", help = "Generate client code from specs") {
     override fun runCommand() = Unit
 
     companion object {
@@ -179,7 +179,7 @@ class ClientGenCommand : EgsCliCommand(name = "gen") {
 /**
  * `egs client gen database <sql-file> --module=X`
  */
-class ClientGenDatabaseCommand : EgsCliCommand(name = "database") {
+class ClientGenDatabaseCommand : EgsCliCommand(name = "database", help = "Generate Room database from DDL") {
     private val scaffolder: ClientDatabaseScaffolder by inject()
 
     private val sqlFile by argument(help = "Path to SQL DDL file (CREATE TABLE)")
@@ -237,7 +237,7 @@ class ClientGenDatabaseCommand : EgsCliCommand(name = "database") {
 /**
  * `egs client gen prefs --module=X --fields=... [--key=Y]`
  */
-class ClientGenPrefsCommand : EgsCliCommand(name = "prefs") {
+class ClientGenPrefsCommand : EgsCliCommand(name = "prefs", help = "Generate DataStore preferences from field spec") {
     private val scaffolder: ClientPrefsScaffolder by inject()
 
     private val moduleName by option(
@@ -295,7 +295,7 @@ class ClientGenPrefsCommand : EgsCliCommand(name = "prefs") {
 
 // -- client api --
 
-class ClientApiCommand : EgsCliCommand(name = "api") {
+class ClientApiCommand : EgsCliCommand(name = "api", help = "Client API management") {
     override fun runCommand() = Unit
 
     companion object {
@@ -309,7 +309,7 @@ class ClientApiCommand : EgsCliCommand(name = "api") {
  * `egs client api sync <module>` or
  * `egs client api sync --client-module=X --backend-module=Y`
  */
-class ClientApiSyncCommand : EgsCliCommand(name = "sync") {
+class ClientApiSyncCommand : EgsCliCommand(name = "sync", help = "Sync API interfaces from Swagger to client modules") {
     private val apiSyncScaffolder: ApiSyncScaffolder by inject()
 
     private val moduleArg by argument(help = "Module name (shortcut for same-name sync)").optional()

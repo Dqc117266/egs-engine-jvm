@@ -12,7 +12,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.inject
 
-class ShellCommand : EgsCliCommand(name = "command") {
+class ShellCommand : EgsCliCommand(name = "command", help = "Execute shell commands with timeout and streaming output") {
 
     private val commandService: CommandService by inject()
     private val workDir by option("--dir", "-d")

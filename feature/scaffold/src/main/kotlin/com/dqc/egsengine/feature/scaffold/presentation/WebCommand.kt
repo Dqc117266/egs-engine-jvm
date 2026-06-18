@@ -20,7 +20,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import org.koin.core.component.inject
 import java.io.File
 
-class WebCommand : EgsCliCommand(name = "web") {
+class WebCommand : EgsCliCommand(name = "web", help = "Web admin panel code generation") {
     override fun runCommand() = Unit
 
     companion object {
@@ -30,7 +30,7 @@ class WebCommand : EgsCliCommand(name = "web") {
     }
 }
 
-class WebCrudCommand : EgsCliCommand(name = "crud") {
+class WebCrudCommand : EgsCliCommand(name = "crud", help = "CRUD generation for web admin") {
     override fun runCommand() = Unit
 
     companion object {
@@ -44,7 +44,7 @@ class WebCrudCommand : EgsCliCommand(name = "crud") {
 /**
  * `egs web crud gen <module>` -- generates Vue3 CRUD pages for a module.
  */
-class WebCrudGenCommand : EgsCliCommand(name = "gen") {
+class WebCrudGenCommand : EgsCliCommand(name = "gen", help = "Generate CRUD pages from DDL spec") {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Module name for CRUD generation")
@@ -81,7 +81,7 @@ class WebCrudGenCommand : EgsCliCommand(name = "gen") {
 /**
  * Admin CRUD from `feature/<module>/.egs-generated.json` `codegen`, or `--sql` + same DDL rules as backend.
  */
-class WebCrudGenFromBackendCommand : EgsCliCommand(name = "gen-from-backend") {
+class WebCrudGenFromBackendCommand : EgsCliCommand(name = "gen-from-backend", help = "Generate CRUD pages from backend entities") {
     private val adminVue: AdminVueCrudScaffolder by inject()
     private val manifest: SpringBootGeneratedPathsManifest by inject()
     private val crudGenerator: SpringBootCrudGenerator by inject()

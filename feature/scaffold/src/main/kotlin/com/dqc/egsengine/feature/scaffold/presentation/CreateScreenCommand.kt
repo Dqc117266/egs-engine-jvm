@@ -35,7 +35,7 @@ import com.github.ajalt.clikt.parameters.options.multiple as optionMultiple
  * egs create screen Login -m user -u FirstUseCase SecondUseCase ThirdUseCase
  * ```
  */
-class CreateScreenCommand : EgsCliCommand(name = "screen") {
+class CreateScreenCommand : EgsCliCommand(name = "screen", help = "Create a new screen with navigation wiring") {
     private val pageScaffolder: PageScaffolder by inject()
     private val useCaseScanner: UseCaseScanner by inject()
 

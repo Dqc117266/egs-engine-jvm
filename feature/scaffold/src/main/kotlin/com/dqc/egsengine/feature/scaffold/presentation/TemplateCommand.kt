@@ -12,7 +12,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
-class TemplateCommand : EgsCliCommand(name = "template") {
+class TemplateCommand : EgsCliCommand(name = "template", help = "Manage FreeMarker template overrides") {
     override fun runCommand() = Unit
 
     companion object {
@@ -20,7 +20,7 @@ class TemplateCommand : EgsCliCommand(name = "template") {
     }
 }
 
-class TemplateSyncBackCommand : EgsCliCommand(name = "sync-back") {
+class TemplateSyncBackCommand : EgsCliCommand(name = "sync-back", help = "Sync customized templates back to source") {
     private val fromOption by option("--from", help = "Generated project directory (default: demo-app subproject)")
         .default(".")
 
@@ -128,7 +128,7 @@ class TemplateSyncBackCommand : EgsCliCommand(name = "sync-back") {
     }
 }
 
-class TemplatePromoteFtlCommand : EgsCliCommand(name = "promote-ftl") {
+class TemplatePromoteFtlCommand : EgsCliCommand(name = "promote-ftl", help = "Promote .ftl files to project template override") {
     private val fromOption by option(
         "--from",
         help = "Project .egs/templates directory (default: <project>/.egs/templates)",

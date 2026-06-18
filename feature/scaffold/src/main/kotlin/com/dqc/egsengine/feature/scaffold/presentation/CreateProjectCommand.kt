@@ -15,7 +15,7 @@ import org.koin.core.component.inject
 import java.io.File
 import java.util.Base64
 
-class CreateProjectCommand : EgsCliCommand(name = "project") {
+class CreateProjectCommand : EgsCliCommand(name = "project", help = "Create a new Android project from template") {
     private val initializer: ProjectInitializer by inject()
     private val commandExecutor = CommandExecutor()
 

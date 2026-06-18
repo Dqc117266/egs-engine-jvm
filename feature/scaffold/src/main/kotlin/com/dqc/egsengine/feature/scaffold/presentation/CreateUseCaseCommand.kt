@@ -14,7 +14,7 @@ import org.koin.core.component.inject
 /**
  * `egs create usecase <Name> -m <module>` — generates a UseCase skeleton and repository stubs.
  */
-class CreateUseCaseCommand : EgsCliCommand(name = "usecase") {
+class CreateUseCaseCommand : EgsCliCommand(name = "usecase", help = "Create a UseCase skeleton with repository stubs") {
     private val scaffolder: CreateUseCaseScaffolder by inject()
 
     private val name by argument(help = "Use case name without suffix, e.g. RefreshTodo")

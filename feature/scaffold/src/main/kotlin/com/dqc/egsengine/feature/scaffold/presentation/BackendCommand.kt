@@ -15,7 +15,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import org.koin.core.component.inject
 import java.io.File
 
-class BackendCommand : EgsCliCommand(name = "backend") {
+class BackendCommand : EgsCliCommand(name = "backend", help = "Backend code generation and scaffolding") {
     override fun runCommand() = Unit
 
     companion object {
@@ -26,7 +26,7 @@ class BackendCommand : EgsCliCommand(name = "backend") {
     }
 }
 
-class BackendGenCommand : EgsCliCommand(name = "gen") {
+class BackendGenCommand : EgsCliCommand(name = "gen", help = "Generate backend code from specs") {
     override fun runCommand() = Unit
 
     companion object {
@@ -36,7 +36,7 @@ class BackendGenCommand : EgsCliCommand(name = "gen") {
     }
 }
 
-class BackendModuleCommand : EgsCliCommand(name = "module") {
+class BackendModuleCommand : EgsCliCommand(name = "module", help = "Backend module management") {
     override fun runCommand() = Unit
 
     companion object {
@@ -46,7 +46,7 @@ class BackendModuleCommand : EgsCliCommand(name = "module") {
     }
 }
 
-class BackendModuleCreateCommand : EgsCliCommand(name = "create") {
+class BackendModuleCreateCommand : EgsCliCommand(name = "create", help = "Create a new backend module") {
     private val scaffolder: ModuleScaffolder by inject()
 
     private val name by argument(help = "Name of the feature module to create")
@@ -80,7 +80,7 @@ class BackendModuleCreateCommand : EgsCliCommand(name = "create") {
     }
 }
 
-class BackendGenDatabaseCommand : EgsCliCommand(name = "database") {
+class BackendGenDatabaseCommand : EgsCliCommand(name = "database", help = "Generate JPA entities and CRUD from DDL") {
     private val scaffolder: SpringBootDatabaseScaffolder by inject()
 
     private val sqlFile by argument(help = "Path to SQL DDL file (CREATE TABLE)")

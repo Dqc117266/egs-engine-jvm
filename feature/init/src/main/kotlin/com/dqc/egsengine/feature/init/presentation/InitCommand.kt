@@ -12,7 +12,7 @@ import com.github.ajalt.clikt.parameters.arguments.default
 import org.koin.core.component.inject
 import java.io.File
 
-class InitCommand : EgsCliCommand(name = "init") {
+class InitCommand : EgsCliCommand(name = "init", help = "Initialize a new .egs project configuration") {
     private val initializer: ProjectInitializer by inject()
     private val workspaceConfigReader: WorkspaceConfigReader by inject()
 

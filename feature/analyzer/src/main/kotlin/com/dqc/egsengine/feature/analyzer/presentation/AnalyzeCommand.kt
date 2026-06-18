@@ -9,7 +9,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.inject
 
-class AnalyzeCommand : EgsCliCommand(name = "analyze") {
+class AnalyzeCommand : EgsCliCommand(name = "analyze", help = "Analyze project structure and dependencies") {
     private val analyzer: ProjectAnalyzer by inject()
 
     private val projectPath by argument().default(".")
