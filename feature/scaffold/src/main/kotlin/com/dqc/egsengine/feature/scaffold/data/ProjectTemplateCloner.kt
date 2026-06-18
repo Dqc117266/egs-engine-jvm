@@ -3,6 +3,7 @@ package com.dqc.egsengine.feature.scaffold.data
 import com.dqc.egsengine.feature.base.command.CommandExecutor
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import java.util.Base64
 
 internal class ProjectTemplateCloner(
     private val githubToken: String?,
@@ -25,14 +26,15 @@ internal class ProjectTemplateCloner(
         projectName: String,
         packageName: String? = null,
     ) {
-        val cloneUrl = GitHubCloneUrlPolicy.embedHttpsToken(canonicalUrl, githubToken, githubUsername)
         logInfo.invoke("Cloning template: $canonicalUrl")
 
         val parentDir = targetDir.parentFile ?: File(".")
+        val env = buildCloneEnvironment(canonicalUrl)
         val result =
             exec(
-                listOf("git", "clone", "--depth", "1", cloneUrl, targetDir.absolutePath),
+                listOf("git", "clone", "--depth", "1", canonicalUrl, targetDir.absolutePath),
                 parentDir,
+                env,
             )
         if (result.exitCode != 0) {
             error(
@@ -56,6 +58,23 @@ internal class ProjectTemplateCloner(
                 )
             }
         }
+    }
+
+    /**
+     * Build environment for git clone. When a GitHub token is available and the URL is HTTPS,
+     * pass credentials via GIT_HTTP_EXTRAHEADER to avoid leaking tokens in argv/ps.
+     */
+    private fun buildCloneEnvironment(url: String): Map<String, String> {
+        val token = githubToken?.trim()?.takeIf { it.isNotBlank() } ?: return emptyMap()
+        if (!url.startsWith("https://github.com/", ignoreCase = true)) return emptyMap()
+
+        val user = githubUsername.trim().ifBlank { "x-access-token" }
+        val raw = "$user:$token"
+        val encoded = Base64.getEncoder().encodeToString(raw.toByteArray())
+        return mapOf(
+            "GIT_TERMINAL_PROMPT" to "0",
+            "GIT_HTTP_EXTRAHEADER" to "Authorization: Basic $encoded",
+        )
     }
 
     private fun applyProjectNameToClonedTree(
@@ -129,9 +148,9 @@ internal class ProjectTemplateCloner(
     private fun exec(
         command: List<String>,
         workDir: File,
+        environment: Map<String, String> = emptyMap(),
     ): ProcessResult {
-        // 统一走 CommandExecutor（P0：分开消费 stdout/stderr，避免大输出死锁）。
-        val result = runBlocking { commandExecutor.execute(command, workDir) }
+        val result = runBlocking { commandExecutor.execute(command, workDir, environment) }
         val combined = listOf(result.output, result.error).filter { it.isNotBlank() }.joinToString("\n")
         return ProcessResult(result.exitCode, combined)
     }

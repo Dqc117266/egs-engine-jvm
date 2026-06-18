@@ -40,18 +40,6 @@ internal object GitHubCloneUrlPolicy {
         return url
     }
 
-    fun embedHttpsToken(
-        url: String,
-        token: String?,
-        username: String,
-    ): String {
-        val t = token?.trim()?.takeIf { it.isNotBlank() } ?: return url
-        if (!url.startsWith("https://github.com/")) return url
-        val rest = url.removePrefix("https://github.com/")
-        val user = username.trim().ifBlank { "x-access-token" }
-        return "https://$user:$t@github.com/$rest"
-    }
-
     private fun githubHttpsToSsh(httpsUrl: String): String {
         var path = httpsUrl.removePrefix("https://github.com/").trimEnd('/')
         if (path.endsWith(".git")) path = path.dropLast(4)
