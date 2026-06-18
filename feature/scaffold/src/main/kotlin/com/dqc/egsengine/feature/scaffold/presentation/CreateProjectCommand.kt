@@ -15,7 +15,11 @@ import org.koin.core.component.inject
 import java.io.File
 import java.util.Base64
 
-class CreateProjectCommand : EgsCliCommand(name = "project", help = "Create a new Android project from template") {
+class CreateProjectCommand :
+    EgsCliCommand(
+        name = "project",
+        help = "Create a new Android project from template (deprecated: prefer 'new project')",
+    ) {
     private val initializer: ProjectInitializer by inject()
     private val commandExecutor = CommandExecutor()
 
@@ -58,6 +62,7 @@ class CreateProjectCommand : EgsCliCommand(name = "project", help = "Create a ne
     ).default("x-access-token")
 
     override fun runCommand() {
+        echo(CliFormatter.formatWarning("'create project' is deprecated; consider 'new project' for multi-platform workspaces."))
         val type = resolveProjectType()
         val projectName = resolveProjectName()
         val packageName = resolvePackageName()
