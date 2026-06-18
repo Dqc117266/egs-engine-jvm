@@ -24,7 +24,7 @@ internal data class MergeResult(
 )
 
 /**
- * Idempotent string splice for KMP Contract / ViewModel ¡ª inserts only missing symbols.
+ * Idempotent string splice for KMP Contract / ViewModel — inserts only missing symbols.
  */
 internal object ViewModelMemberMerger {
     fun mergeContract(
@@ -212,7 +212,7 @@ internal object ViewModelMemberMerger {
         val closeBrace = findRegisterIntentsClosingBrace(vm, openBrace) ?: return vm
         val bodyForIndent = vm.substring(openBrace + 1, closeBrace)
         // [ \t]+ (not \s+) so the leading `\n` of `bodyForIndent` is not captured when the regex
-        // matches at the start-of-input anchor  that would have made `indent` a newline + spaces
+        // matches at the start-of-input anchor — that would have made `indent` a newline + spaces
         // and corrupted the re-indent path in [normalizeRegisterIntentBlock].
         val indent =
             Regex("""(?m)^([ \t]+)registerIntent<""").find(bodyForIndent)?.groupValues?.get(1)
@@ -289,7 +289,7 @@ internal object ViewModelMemberMerger {
      * Produce a compact, uniformly-indented `registerIntent<
 > {
      }` block. Blank lines are dropped
-     * entirely  older builds of the engine sometimes emitted snippets with stray blank lines inside
+     * entirely – older builds of the engine sometimes emitted snippets with stray blank lines inside
      * the block, and repeated merges would then carry the extra blank lines forward.
      */
     private fun normalizeRegisterIntentBlock(

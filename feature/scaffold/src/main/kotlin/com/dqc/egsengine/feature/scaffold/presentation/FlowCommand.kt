@@ -21,7 +21,7 @@ class FlowCommand : EgsCliCommand(name = "flow") {
 }
 
 /**
- * `egs flow add-feature <module>` ¡ª client module scaffold + `client api sync` for the same module name.
+ * `egs flow add-feature <module>` — client module scaffold + `client api sync` for the same module name.
  */
 class FlowAddFeatureCommand : EgsCliCommand(name = "add-feature") {
     private val moduleScaffolder: ModuleScaffolder by inject()

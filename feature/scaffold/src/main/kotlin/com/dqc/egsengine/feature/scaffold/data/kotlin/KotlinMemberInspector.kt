@@ -7,7 +7,7 @@ package com.dqc.egsengine.feature.scaffold.data.kotlin
 
 /**
  * Lightweight Kotlin source inspection for idempotent ViewModel / Contract merging.
- * Uses brace/paren depth ¡ª not a full parser.
+ * Uses brace/paren depth — not a full parser.
  */
 object KotlinMemberInspector {
     data class CtorParam(
@@ -64,7 +64,7 @@ object KotlinMemberInspector {
     }
 
     /**
-     * Property names in `data class State(` ¡­ `)`.
+     * Property names in `data class State(` … `)`.
      */
     fun dataClassPropertyNames(
         source: String,
@@ -80,7 +80,7 @@ object KotlinMemberInspector {
     }
 
     /**
-     * `registerIntent<¡­Contract.Intent.Name>` ¡ú `Name`.
+     * `registerIntent<…Contract.Intent.Name>` → `Name`.
      */
     fun registerIntentBranchNames(
         source: String,
@@ -90,7 +90,7 @@ object KotlinMemberInspector {
         return re.findAll(source).map { it.groupValues[1] }.toSet()
     }
 
-    /** `private fun handleFoo` ¡ú `handleFoo` */
+    /** `private fun handleFoo` → `handleFoo` */
     fun privateHandlerFunctionNames(source: String): Set<String> {
         val names = mutableSetOf<String>()
         Regex("""\bprivate\s+fun\s+(handle\w+)\s*\(""").findAll(source).forEach { names += it.groupValues[1] }

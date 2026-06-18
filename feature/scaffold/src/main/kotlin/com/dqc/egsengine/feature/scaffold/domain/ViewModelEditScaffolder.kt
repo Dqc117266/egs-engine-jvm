@@ -117,7 +117,7 @@ class ViewModelEditScaffolder(
         val actuallyToAdd = enriched.filter { it.name !in existingUcNames }
 
         if (actuallyToAdd.isEmpty()) {
-            logger.info("Nothing to add  all selected use cases already in ctor")
+            logger.info("Nothing to add — all selected use cases already in ctor")
             return emptyResult(pageName, moduleName, dryRun)
         }
 

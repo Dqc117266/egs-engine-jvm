@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Regression tests for [ViewModelMemberMerger.insertIntoRegisterIntents]:
- * - Newly appended `registerIntent<¡­> { ¡­ }` blocks must not contain blank lines.
+ * - Newly appended `registerIntent<…> { … }` blocks must not contain blank lines.
  * - Trailing whitespace left by prior merges is stripped so blank lines do not accumulate.
  */
 class ViewModelMemberMergerRegisterIntentFormatTest {

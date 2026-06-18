@@ -10,7 +10,7 @@ import java.io.File
 /**
  * Picks Flyway migration file name under `backend/.../db/migration/` for `sys_menu` entries for [moduleSlug].
  *
- * Stable contract: **`V?_ _sys_menu_<module>.sql` never stacks multiple versions per module ¡ª if one exists, we overwrite it
+ * Stable contract: **`V?_ _sys_menu_<module>.sql` never stacks multiple versions per module — if one exists, we overwrite it
  * when re-running codegen (Flyway checksum may then require `repair` on upgraded DBs; dev DBs rebuild often.).
  */
 internal fun resolveSysMenuMigrationFileName(

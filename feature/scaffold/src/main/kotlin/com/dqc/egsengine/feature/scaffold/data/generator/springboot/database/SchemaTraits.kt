@@ -9,7 +9,7 @@ import com.dqc.egsengine.feature.scaffold.data.ddl.model.ColumnSchema
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
 
 data class SchemaTraits(
-    /** `created_at` / `updated_at` present and enabled by options ¡ú JPA extends [BaseEntity], domain carries instants. */
+    /** `created_at` / `updated_at` present and enabled by options → JPA extends [BaseEntity], domain carries instants. */
     val hasAuditDbColumns: Boolean,
     val useJpaAuditingBase: Boolean,
     /** `status` integer column (demo-style), not a Java enum in v1. */

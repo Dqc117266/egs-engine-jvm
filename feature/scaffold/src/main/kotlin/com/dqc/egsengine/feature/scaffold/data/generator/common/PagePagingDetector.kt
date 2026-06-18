@@ -14,7 +14,7 @@ internal object PagePagingDetector {
     fun normalizePagingOption(raw: String): String = raw.lowercase().trim().ifEmpty { "auto" }
 
     /**
-     * True when [returnType] is `Result<*>` wh��>` whose inner type is generic `PageResult<Item>` **or**
+     * True when [returnType] is `Result<*>` wh**>` whose inner type is generic `PageResult<Item>` **or**
      * a concrete Swagger DTO `PageResultFoo` (e.g. `PageResultAppAiChatSessionRespVO`) with page + size params.
      */
     fun isOffsetPageResultUseCase(
@@ -40,7 +40,7 @@ internal object PagePagingDetector {
     }
 
     /**
-     * Swagger-style `PageResultSomething` (not `PageResult<��>` generic).
+     * Swagger-style `PageResultSomething` (not `PageResult<**>` generic).
      */
     fun isConcretePageResultInner(innerResultType: String): Boolean {
         val s = innerResultType.trim()
@@ -60,7 +60,7 @@ internal object PagePagingDetector {
     }
 
     /**
-     * `PageResultAppAiChatSessionRespVO` �� `AppAiChatSessionRespVO` (simple name for [resolveParamTypeString]).
+     * `PageResultAppAiChatSessionRespVO` ** `AppAiChatSessionRespVO` (simple name for [resolveParamTypeString]).
      */
     fun extractConcretePageResultItemSimpleName(innerResultType: String): String? {
         if (!isConcretePageResultInner(innerResultType)) return null
@@ -110,7 +110,7 @@ internal object PagePagingDetector {
     }
 
     /**
-     * `PageResult<��>` with a single type argument (generic), not `PageResultSomething` single identifier.
+     * `PageResult<**>` with a single type argument (generic), not `PageResultSomething` single identifier.
      */
     fun isGenericPageResultType(innerResultType: String): Boolean {
         val s = innerResultType.trim()

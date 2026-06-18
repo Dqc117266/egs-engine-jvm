@@ -115,7 +115,7 @@ class ClientEditViewModelCommand : EgsCliCommand(name = "viewmodel") {
             if (result.diffs.isEmpty()) {
                 echo(CliFormatter.formatInfo("Nothing to change (all selected use cases already wired)."))
             } else {
-                echo(CliFormatter.formatInfo("Dry run ¡ª unified diff:"))
+                echo(CliFormatter.formatInfo("Dry run — unified diff:"))
                 echo()
                 result.diffs.forEach { (path, diff) ->
                     echo(CliFormatter.formatInfo("--- $path ---"))

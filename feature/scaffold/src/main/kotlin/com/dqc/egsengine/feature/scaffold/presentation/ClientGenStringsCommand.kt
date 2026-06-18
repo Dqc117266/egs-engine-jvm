@@ -13,7 +13,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import org.koin.core.component.inject
 
 /**
- * `egs client gen strings --module=X --keys=a,b,c` ¡ª writes a small `StringKeys` object for Compose/MR wiring.
+ * `egs client gen strings --module=X --keys=a,b,c` — writes a small `StringKeys` object for Compose/MR wiring.
  */
 class ClientGenStringsCommand : EgsCliCommand(name = "strings") {
     private val configReader: EgsConfigReader by inject()

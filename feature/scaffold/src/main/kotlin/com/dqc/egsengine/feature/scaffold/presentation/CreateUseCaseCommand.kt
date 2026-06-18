@@ -12,7 +12,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import org.koin.core.component.inject
 
 /**
- * `egs create usecase <Name> -m <module>` ¡ª generates a UseCase skeleton and repository stubs.
+ * `egs create usecase <Name> -m <module>` — generates a UseCase skeleton and repository stubs.
  */
 class CreateUseCaseCommand : EgsCliCommand(name = "usecase") {
     private val scaffolder: CreateUseCaseScaffolder by inject()

@@ -51,7 +51,7 @@ class SwaggerPagingInferrer {
 
     /**
      * Strong signal A: schema name contains `PageResult` (springdoc generic expansion).
-     * Strong signal B: shape ¡ª list-like array + total + at least one page/size field.
+     * Strong signal B: shape — list-like array + total + at least one page/size field.
      */
     private fun looksLikePageSchema(schema: SwaggerSchema): Boolean {
         val nameHit = schema.name.contains("PageResult", ignoreCase = true)
