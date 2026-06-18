@@ -13,6 +13,7 @@ class CommandService(
     suspend fun executeCommand(
         command: String,
         workDir: String? = null,
+        timeoutMs: Long? = null,
     ): CommandResult {
         val dir = workDir?.let { File(it) } ?: File(System.getProperty("user.dir"))
 
@@ -20,13 +21,14 @@ class CommandService(
             return CommandResult.failure("Working directory does not exist: $dir")
         }
 
-        return shellCommandRunner.runShellCommand(command, dir)
+        return shellCommandRunner.runShellCommand(command, dir, timeoutMs)
     }
 
     suspend fun executeBatch(
         commands: List<String>,
         workDir: String? = null,
         stopOnError: Boolean = true,
+        timeoutMs: Long? = null,
     ): List<CommandResult> {
         val dir = workDir?.let { File(it) } ?: File(System.getProperty("user.dir"))
 
@@ -35,6 +37,6 @@ class CommandService(
         }
 
         logger.info("Executing batch of ${commands.size} commands")
-        return shellCommandRunner.runBatchCommands(commands, dir, stopOnError)
+        return shellCommandRunner.runBatchCommands(commands, dir, stopOnError, timeoutMs)
     }
 }

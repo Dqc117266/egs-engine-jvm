@@ -8,6 +8,7 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.int
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.inject
 
@@ -16,13 +17,18 @@ class ShellCommand : EgsCliCommand(name = "command") {
     private val commandService: CommandService by inject()
     private val workDir by option("--dir", "-d")
 
-    /** --raw：不打印成功 banner，仅输出子进程 stdout（便于脚本管道）。 */
+    /** --raw: suppress success banner, only output child process stdout (for scripting). */
     private val raw by option("--raw").flag()
+
+    /** --timeout: kill process after N seconds (exit code -1 on timeout). */
+    private val timeoutSec by option("--timeout", help = "Kill process after N seconds").int()
+
     private val shellArgs by argument().multiple(required = true)
 
     override fun runCommand() = runBlocking {
         val shellCommand = shellArgs.joinToString(" ")
-        val result = commandService.executeCommand(shellCommand, workDir)
+        val timeoutMs = timeoutSec?.toLong()?.times(1000)
+        val result = commandService.executeCommand(shellCommand, workDir, timeoutMs)
 
         if (result.isSuccess) {
             if (!raw) {

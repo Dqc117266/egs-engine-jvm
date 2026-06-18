@@ -13,6 +13,7 @@ class ShellCommandRunner(
     suspend fun runShellCommand(
         command: String,
         workDir: File = File(System.getProperty("user.dir")),
+        timeoutMs: Long? = null,
     ): CommandResult {
         logger.info("Running shell command: $command")
 
@@ -23,18 +24,19 @@ class ShellCommandRunner(
                 listOf("sh", "-c", command)
             }
 
-        return commandExecutor.execute(shellCommand, workDir)
+        return commandExecutor.execute(shellCommand, workDir, timeoutMs = timeoutMs)
     }
 
     suspend fun runBatchCommands(
         commands: List<String>,
         workDir: File = File(System.getProperty("user.dir")),
         stopOnError: Boolean = true,
+        timeoutMs: Long? = null,
     ): List<CommandResult> {
         val results = mutableListOf<CommandResult>()
 
         for (command in commands) {
-            val result = runShellCommand(command, workDir)
+            val result = runShellCommand(command, workDir, timeoutMs)
             results.add(result)
 
             if (!result.isSuccess && stopOnError) {
