@@ -30,7 +30,8 @@ import org.koin.core.logger.Level
 class EgsEngineCli : CliktCommand(name = "egs-engine") {
     private val version by option("--version", "-v").flag()
 
-    override fun commandHelp(context: com.github.ajalt.clikt.core.Context): String = "Multi-platform code scaffolding engine for Android, KMP, Spring Boot, and Vue3"
+    override fun commandHelp(context: com.github.ajalt.clikt.core.Context): String = "Multi-platform code scaffolding engine" +
+        " for Android, KMP, Spring Boot, and Vue3"
 
     override fun commandHelpEpilog(context: com.github.ajalt.clikt.core.Context): String =
         """
