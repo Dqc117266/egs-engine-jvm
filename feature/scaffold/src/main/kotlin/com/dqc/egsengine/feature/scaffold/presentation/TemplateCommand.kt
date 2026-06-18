@@ -2,9 +2,9 @@ package com.dqc.egsengine.feature.scaffold.presentation
 
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
+import com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipes
 import com.dqc.egsengine.feature.scaffold.data.template.DevProjectConfigLoader
 import com.dqc.egsengine.feature.scaffold.data.template.TemplatePromoter
-import com.dqc.egsengine.feature.scaffold.data.template.TemplateRenameRecipes
 import com.dqc.egsengine.feature.scaffold.data.template.TemplateSyncBack
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.default
@@ -111,12 +111,12 @@ class TemplateSyncBackCommand : EgsCliCommand(name = "sync-back") {
         return templateDir
     }
 
-    private fun resolveRecipe(toDir: File): com.dqc.egsengine.feature.scaffold.data.template.TemplateRenameRecipe {
+    private fun resolveRecipe(toDir: File): com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipe {
         recipeOption?.trim()?.takeIf { it.isNotEmpty() }?.let { id ->
             return when (id.lowercase()) {
-                "android" -> TemplateRenameRecipes.ANDROID
-                "kmp" -> TemplateRenameRecipes.KMP
-                "server" -> TemplateRenameRecipes.SERVER
+                "android" -> TemplateRenameRecipes.ANDROID_CLIENT
+                "kmp" -> TemplateRenameRecipes.KMP_CLIENT
+                "server" -> TemplateRenameRecipes.BACKEND
                 "admin" -> TemplateRenameRecipes.ADMIN
                 else -> throw IllegalArgumentException("Unknown --recipe: $id")
             }

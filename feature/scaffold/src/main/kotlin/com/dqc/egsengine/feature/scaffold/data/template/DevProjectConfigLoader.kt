@@ -1,5 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.data.template
 
+import com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipe
+import com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipes
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File

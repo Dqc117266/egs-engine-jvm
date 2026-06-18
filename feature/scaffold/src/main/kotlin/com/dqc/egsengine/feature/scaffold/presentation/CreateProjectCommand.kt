@@ -3,8 +3,8 @@ package com.dqc.egsengine.feature.scaffold.presentation
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.init.domain.ProjectInitializer
-import com.dqc.egsengine.feature.scaffold.data.template.TemplatePackageRewriter
-import com.dqc.egsengine.feature.scaffold.data.template.TemplateRenameRecipes
+import com.dqc.egsengine.feature.scaffold.data.TemplatePackageRewriter
+import com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipes
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.default
@@ -226,7 +226,7 @@ class CreateProjectCommand : EgsCliCommand(name = "project") {
     ) {
         TemplatePackageRewriter().rewriteForward(
             projectDir = projectDir,
-            recipe = TemplateRenameRecipes.ANDROID,
+            recipe = TemplateRenameRecipes.ANDROID_CLIENT,
             newProjectName = projectName,
             newPackage = packageName,
         )

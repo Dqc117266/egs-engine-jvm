@@ -1,5 +1,7 @@
 package com.dqc.egsengine.feature.scaffold.data.template
 
+import com.dqc.egsengine.feature.scaffold.data.TemplatePackageRewriter
+import com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipe
 import java.io.File
 
 data class TemplateSyncBackResult(

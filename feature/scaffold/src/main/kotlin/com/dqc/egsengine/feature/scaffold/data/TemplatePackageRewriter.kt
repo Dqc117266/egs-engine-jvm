@@ -6,10 +6,14 @@ import java.nio.charset.MalformedInputException
 /**
  * Recipe for renaming a cloned template's package / project-name tokens.
  * Any field left null is skipped during rewriting.
+ *
+ * 合并自原 data/ 与 data/template/ 两套实现（A-01）。
  */
 data class TemplateRenameRecipe(
-    /** Old base package, e.g. `com.example.egs_android_template`. */
-    val oldPackage: String,
+    /** 识别 id（android/kmp/server/admin），用于日志显示。 */
+    val id: String? = null,
+    /** Old base package, e.g. `com.example.egs_android_template`. Null skips package rewriting (e.g. ADMIN). */
+    val oldPackage: String? = null,
     /** Old kebab-case project name, e.g. `egs-android-template`. */
     val oldProjectName: String? = null,
     /** Old display name (PascalCase / mixed case), e.g. `EGS-Android-Template`. */
@@ -20,8 +24,6 @@ data class TemplateRenameRecipe(
      * Additional old packages that should also be rewritten (directory relocation + text replacement).
      * Each pair is (oldPackage, newPackageSuffix) — the newPackageSuffix is appended to the base
      * [newPackage] passed to [TemplatePackageRewriter.rewrite].
-     * For example, `"template.core.base"` → `"core.base"` maps `template.core.base.preferences`
-     * to `com.dqc.demo.core.base.preferences`.
      */
     val extraOldPackages: Map<String, String> = emptyMap(),
 )
@@ -29,15 +31,13 @@ data class TemplateRenameRecipe(
 /**
  * Renames package directories and rewrites textual references inside a cloned template.
  *
- * Extracted from the original `create project` flow so that `new project` can apply the same
- * transformations.
+ * 合并自原 data/（forward + extraOldPackages + dotted matches）与 data/template/（forward/reverse + SKIP_DIR）两套实现。
+ * 共享引擎由 [rewrite] / [rewriteReverse] 两个薄 API 暴露。
  */
 class TemplatePackageRewriter {
     /**
-     * @param projectDir the cloned template directory to mutate in-place.
-     * @param recipe pattern describing what textual / directory tokens to rewrite.
-     * @param newProjectName new kebab-case project name (replaces [TemplateRenameRecipe.oldProjectName] / display).
-     * @param newPackage new fully-qualified base package (replaces [TemplateRenameRecipe.oldPackage]).
+     * Forward rewrite: apply [recipe] to [projectDir], renaming to [newProjectName] / [newPackage].
+     * Used by `create project` / `new project` after cloning.
      */
     fun rewrite(
         projectDir: File,
@@ -45,39 +45,96 @@ class TemplatePackageRewriter {
         newProjectName: String,
         newPackage: String,
     ) {
-        // Relocate primary package directories
-        relocatePackageDirectories(
-            projectDir = projectDir,
-            oldPackage = recipe.oldPackage,
-            newPackage = newPackage,
-        )
-
-        // Relocate extra package directories
-        recipe.extraOldPackages.forEach { (oldPkg, newSuffix) ->
-            val fullNewPkg = if (newSuffix.isBlank()) newPackage else "$newPackage.$newSuffix"
-            relocatePackageDirectories(
-                projectDir = projectDir,
-                oldPackage = oldPkg,
-                newPackage = fullNewPkg,
-            )
+        recipe.oldPackage?.let { oldPkg ->
+            relocatePackageDirectories(projectDir, oldPkg, newPackage)
+            recipe.extraOldPackages.forEach { (extraOld, newSuffix) ->
+                val fullNewPkg = if (newSuffix.isBlank()) newPackage else "$newPackage.$newSuffix"
+                relocatePackageDirectories(projectDir, extraOld, fullNewPkg)
+            }
         }
 
+        rewriteTextFiles(projectDir, buildForwardReplacements(recipe, newProjectName, newPackage))
+    }
+
+    /**
+     * Forward rewrite — alias of [rewrite] for call-site clarity (kept for the `create project` path).
+     */
+    fun rewriteForward(
+        projectDir: File,
+        recipe: TemplateRenameRecipe,
+        newProjectName: String,
+        newPackage: String,
+    ) = rewrite(projectDir, recipe, newProjectName, newPackage)
+
+    /**
+     * Reverse rewrite: rewrite text first, then relocate package dirs.
+     * Used by template sync-back (rewriting copied files back to the template's canonical tokens).
+     */
+    fun rewriteReverse(
+        projectDir: File,
+        recipe: TemplateRenameRecipe,
+        fromProjectName: String,
+        fromPackage: String?,
+        toProjectName: String,
+        toPackage: String?,
+    ) {
+        rewriteTextFiles(
+            projectDir,
+            buildReverseReplacements(recipe, fromProjectName, fromPackage, toProjectName, toPackage),
+        )
+        if (toPackage != null && fromPackage != null && fromPackage != toPackage) {
+            relocatePackageDirectories(projectDir, fromPackage, toPackage)
+        }
+    }
+
+    private fun buildForwardReplacements(
+        recipe: TemplateRenameRecipe,
+        newProjectName: String,
+        newPackage: String,
+    ): Map<String, String> {
         val newPackageToken = newPackage.substringAfterLast('.')
         val replacements = linkedMapOf<String, String>()
-        replacements[recipe.oldPackage] = newPackage
-        replacements[recipe.oldPackage.replace('.', '/')] = newPackage.replace('.', '/')
+        recipe.oldPackage?.let { oldPkg ->
+            replacements[oldPkg] = newPackage
+            replacements[oldPkg.replace('.', '/')] = newPackage.replace('.', '/')
+        }
         recipe.oldProjectName?.let { replacements[it] = newProjectName }
         recipe.oldProjectNameDisplay?.let { replacements[it] = newProjectName }
         recipe.oldPackageToken?.let { replacements[it] = newPackageToken }
-
-        // Extra package text replacements
-        recipe.extraOldPackages.forEach { (oldPkg, newSuffix) ->
+        recipe.extraOldPackages.forEach { (extraOld, newSuffix) ->
             val fullNewPkg = if (newSuffix.isBlank()) newPackage else "$newPackage.$newSuffix"
-            replacements[oldPkg] = fullNewPkg
-            replacements[oldPkg.replace('.', '/')] = fullNewPkg.replace('.', '/')
+            replacements[extraOld] = fullNewPkg
+            replacements[extraOld.replace('.', '/')] = fullNewPkg.replace('.', '/')
         }
+        return replacements
+    }
 
-        rewriteTextFiles(projectDir, replacements)
+    private fun buildReverseReplacements(
+        recipe: TemplateRenameRecipe,
+        fromProjectName: String,
+        fromPackage: String?,
+        toProjectName: String,
+        toPackage: String?,
+    ): Map<String, String> {
+        val replacements = linkedMapOf<String, String>()
+        if (fromPackage != null && toPackage != null && fromPackage != toPackage) {
+            replacements[fromPackage] = toPackage
+            replacements[fromPackage.replace('.', '/')] = toPackage.replace('.', '/')
+            val fromToken = fromPackage.substringAfterLast('.')
+            val toToken = toPackage.substringAfterLast('.')
+            if (fromToken != toToken) {
+                replacements[fromToken] = toToken
+            }
+        }
+        if (fromProjectName != toProjectName) {
+            replacements[fromProjectName] = toProjectName
+        }
+        recipe.oldProjectNameDisplay?.let { display ->
+            if (fromProjectName != toProjectName && display != toProjectName) {
+                replacements[fromProjectName] = toProjectName
+            }
+        }
+        return replacements.filter { (from, to) -> from.isNotEmpty() && from != to }
     }
 
     private fun rewriteTextFiles(
@@ -88,6 +145,7 @@ class TemplatePackageRewriter {
 
         projectDir
             .walkTopDown()
+            .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
             .filter { it.isFile && isLikelyTextFile(it) }
             .forEach { file ->
                 val original = file.readUtf8TextOrNull() ?: return@forEach
@@ -143,6 +201,7 @@ class TemplatePackageRewriter {
         val nestedMatches =
             projectDir
                 .walkTopDown()
+                .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
                 .filter { it.isDirectory }
                 .filter { directory ->
                     val relativePath = directory.relativeTo(projectDir).path.replace(File.separatorChar, '/')
@@ -150,12 +209,11 @@ class TemplatePackageRewriter {
                 }.toList()
 
         // Match dot-separated directory names (e.g. template.core.base.analytics as a single dir)
-        // Some source sets use flat directory names that don't match the package nesting convention.
-        // Match both exact name and names that start with the old package followed by a dot (sub-packages).
         val dottedMatches =
             if (oldPackage.contains('.')) {
                 projectDir
                     .walkTopDown()
+                    .onEnter { dir -> dir.name !in SKIP_DIR_NAMES }
                     .filter { it.isDirectory }
                     .filter { directory ->
                         directory.name == oldPackage || directory.name.startsWith(oldPackage + ".")
@@ -183,14 +241,12 @@ class TemplatePackageRewriter {
                 }
             val dottedSuffixExtra =
                 if (isDottedMatch && sourceDir.name != oldPackage) {
-                    // e.g. for "template.core.base.analytics", the extra part beyond oldPackage is ".analytics"
                     sourceDir.name.removePrefix(oldPackage)
                 } else {
                     ""
                 }
             val targetPkgPath =
                 if (dottedSuffixExtra.isNotEmpty()) {
-                    // Map the dotted suffix to nested dirs: ".analytics" -> "/analytics"
                     newPackagePath + dottedSuffixExtra.replace('.', '/')
                 } else {
                     newPackagePath
@@ -260,6 +316,8 @@ class TemplatePackageRewriter {
     }
 
     private companion object {
+        val SKIP_DIR_NAMES = setOf(".git", "build", ".gradle", "node_modules", ".idea")
+
         val BINARY_EXTENSIONS =
             setOf(
                 "png",
@@ -284,12 +342,14 @@ class TemplatePackageRewriter {
 }
 
 /**
- * Built-in rename recipes keyed by template canonical URL (scheme/auth-agnostic match).
+ * Built-in rename recipes keyed by template canonical URL / path (scheme/auth-agnostic match).
+ * 合并自原 data/ 与 data/template/ 两套 recipes。
  */
 internal object TemplateRenameRecipes {
     /** Shared instance for the default Android client template. */
     val ANDROID_CLIENT: TemplateRenameRecipe =
         TemplateRenameRecipe(
+            id = "android",
             oldPackage = "com.example.egs_android_template",
             oldProjectName = "egs-android-template",
             oldProjectNameDisplay = "EGS-Android-Template",
@@ -304,6 +364,7 @@ internal object TemplateRenameRecipes {
     /** Recipe for the KMP (Compose Multiplatform) client template. */
     val KMP_CLIENT: TemplateRenameRecipe =
         TemplateRenameRecipe(
+            id = "kmp",
             oldPackage = "org.mifos",
             oldProjectName = "egs-kmp-template",
             oldProjectNameDisplay = "egs-kmp-template",
@@ -319,8 +380,17 @@ internal object TemplateRenameRecipes {
     /** Recipe for the Spring Boot backend template. */
     val BACKEND: TemplateRenameRecipe =
         TemplateRenameRecipe(
+            id = "server",
             oldPackage = "com.egs.server",
             oldProjectName = "egs-server-template",
+        )
+
+    /** Recipe for the Vue3 admin template (no package dir, only project-name tokens). */
+    val ADMIN: TemplateRenameRecipe =
+        TemplateRenameRecipe(
+            id = "admin",
+            oldProjectName = "egs-admin-template",
+            oldProjectNameDisplay = "egs-admin-template",
         )
 
     /**
@@ -329,10 +399,17 @@ internal object TemplateRenameRecipes {
      */
     fun recipeFor(canonicalUrl: String?): TemplateRenameRecipe? {
         val url = canonicalUrl?.lowercase() ?: return null
+        return detectFromPath(url)
+    }
+
+    /** Detect a recipe from a local path / URL (case-insensitive, path-separator normalized). */
+    fun detectFromPath(path: String): TemplateRenameRecipe? {
+        val normalized = path.lowercase().replace('\\', '/')
         return when {
-            url.contains("egs-android-template") -> ANDROID_CLIENT
-            url.contains("egs-kmp-template") -> KMP_CLIENT
-            url.contains("egs-server-template") -> BACKEND
+            "egs-android-template" in normalized -> ANDROID_CLIENT
+            "egs-kmp-template" in normalized -> KMP_CLIENT
+            "egs-server-template" in normalized -> BACKEND
+            "egs-admin-template" in normalized -> ADMIN
             else -> null
         }
     }

@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.data.template
 
+import com.dqc.egsengine.feature.scaffold.data.TemplateRenameRecipes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -25,7 +26,7 @@ class TemplateSyncBackTest {
             TemplateSyncBack().sync(
                 fromDir = from,
                 toDir = to,
-                recipe = TemplateRenameRecipes.KMP,
+                recipe = TemplateRenameRecipes.KMP_CLIENT,
                 fromProjectName = "demo-app-client",
                 fromPackage = null,
                 toProjectName = "egs-kmp-template",
@@ -51,7 +52,7 @@ class TemplateSyncBackTest {
             TemplateSyncBack().sync(
                 fromDir = from,
                 toDir = to,
-                recipe = TemplateRenameRecipes.KMP,
+                recipe = TemplateRenameRecipes.KMP_CLIENT,
                 fromProjectName = "demo",
                 fromPackage = null,
                 toProjectName = "egs-kmp-template",
