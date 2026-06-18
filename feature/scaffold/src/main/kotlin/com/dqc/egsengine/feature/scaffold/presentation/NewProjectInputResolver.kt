@@ -5,33 +5,54 @@ import com.dqc.egsengine.feature.scaffold.data.NewProjectTemplateUrls
 import java.io.File
 
 internal object NewProjectInputResolver {
-    fun resolveProjectName(projectNameArg: String?): String = projectNameArg?.trim()?.takeIf { it.isNotBlank() }
-        ?: run {
+    fun resolveProjectName(
+        projectNameArg: String?,
+        nonInteractive: Boolean = false,
+    ): String = projectNameArg?.trim()?.takeIf { it.isNotBlank() }
+        ?: if (nonInteractive) {
+            File(System.getProperty("user.dir")).name
+        } else {
             print("? Project Name: ")
             val value = readlnOrNull()?.trim().orEmpty()
             require(value.isNotBlank()) { "Project name cannot be empty" }
             value
         }
 
-    fun resolvePackageName(packageNameOption: String?): String = packageNameOption?.trim()?.takeIf { it.isNotBlank() }
-        ?: run {
+    fun resolvePackageName(
+        packageNameOption: String?,
+        nonInteractive: Boolean = false,
+    ): String = packageNameOption?.trim()?.takeIf { it.isNotBlank() }
+        ?: if (nonInteractive) {
+            "com.dqc.example"
+        } else {
             val defaultPkg = "com.dqc.example"
             print("? Package Name [$defaultPkg]: ")
             val value = readlnOrNull()?.trim().orEmpty()
             value.ifBlank { defaultPkg }
         }
 
-    fun resolveClientRaw(clientOption: String?): String = clientOption?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
-        ?: run {
+    fun resolveClientRaw(
+        clientOption: String?,
+        nonInteractive: Boolean = false,
+    ): String = clientOption?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
+        ?: if (nonInteractive) {
+            "kmp"
+        } else {
             print("? Client Platform (kmp/android/none) [kmp]: ")
             readlnOrNull()?.trim()?.lowercase()?.ifBlank { "kmp" } ?: "kmp"
         }
 
-    fun resolveIncludeBackend(backendOption: String?): Boolean = backendOption?.trim()?.takeIf { it.isNotBlank() }?.let { parseBoolFlag(it) }
-        ?: promptYesNo("? Include Backend", defaultYes = true)
+    fun resolveIncludeBackend(
+        backendOption: String?,
+        nonInteractive: Boolean = false,
+    ): Boolean = backendOption?.trim()?.takeIf { it.isNotBlank() }?.let { parseBoolFlag(it) }
+        ?: if (nonInteractive) true else promptYesNo("? Include Backend", defaultYes = true)
 
-    fun resolveIncludeWeb(webOption: String?): Boolean = webOption?.trim()?.takeIf { it.isNotBlank() }?.let { parseBoolFlag(it) }
-        ?: promptYesNo("? Include Web Admin", defaultYes = true)
+    fun resolveIncludeWeb(
+        webOption: String?,
+        nonInteractive: Boolean = false,
+    ): Boolean = webOption?.trim()?.takeIf { it.isNotBlank() }?.let { parseBoolFlag(it) }
+        ?: if (nonInteractive) true else promptYesNo("? Include Web Admin", defaultYes = true)
 
     fun resolveClientPlatform(clientRaw: String): Platform? = when (clientRaw) {
         "kmp" -> Platform.KMP

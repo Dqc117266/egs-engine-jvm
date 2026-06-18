@@ -80,16 +80,22 @@ class NewProjectCommand : EgsCliCommand(name = "project", help = "Create a new p
 
     private val dryRun by option("--dry-run", help = "Preview without creating files").flag()
 
+    private val nonInteractive by option(
+        "--yes",
+        "-y",
+        help = "Non-interactive mode: use defaults for all prompts (CI-friendly)",
+    ).flag()
+
     override fun runCommand() {
-        val projectName = NewProjectInputResolver.resolveProjectName(projectNameArg)
-        val packageName = NewProjectInputResolver.resolvePackageName(packageNameOption)
+        val projectName = NewProjectInputResolver.resolveProjectName(projectNameArg, nonInteractive)
+        val packageName = NewProjectInputResolver.resolvePackageName(packageNameOption, nonInteractive)
 
         NewProjectInputResolver.validateProjectName(projectName)
         NewProjectInputResolver.validatePackageName(packageName)
 
-        val clientRaw = NewProjectInputResolver.resolveClientRaw(clientOption)
-        val includeBackend = NewProjectInputResolver.resolveIncludeBackend(backendOption)
-        val includeWeb = NewProjectInputResolver.resolveIncludeWeb(webOption)
+        val clientRaw = NewProjectInputResolver.resolveClientRaw(clientOption, nonInteractive)
+        val includeBackend = NewProjectInputResolver.resolveIncludeBackend(backendOption, nonInteractive)
+        val includeWeb = NewProjectInputResolver.resolveIncludeWeb(webOption, nonInteractive)
         val includeClient = clientRaw != "none"
         val clientPlatform = NewProjectInputResolver.resolveClientPlatform(clientRaw)
         val gitProtocol = GitHubCloneUrlPolicy.resolveProtocol(gitProtocolOption)
