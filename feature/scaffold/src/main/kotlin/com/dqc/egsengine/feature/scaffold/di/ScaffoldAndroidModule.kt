@@ -15,6 +15,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidFeatureB
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsGeneratedDataModuleUpdater
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidPrefsUseCaseGenerator
+import com.dqc.egsengine.feature.scaffold.domain.AndroidDatabaseGenerators
 import com.dqc.egsengine.feature.scaffold.domain.AndroidDatabaseScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.AndroidPreferencesScaffolder
 import org.koin.dsl.module
@@ -22,7 +23,6 @@ import org.koin.dsl.module
 /** Android platform bindings. */
 val scaffoldAndroidModule =
     module {
-        // Data generators
         single { AndroidDatabaseCodeGenerator(get()) }
         single { AndroidDatabaseRepositoryGenerator(get()) }
         single { AndroidDatabaseGeneratedDataModuleUpdater() }
@@ -39,22 +39,27 @@ val scaffoldAndroidModule =
         single { AndroidModuleGenerator(settingsUpdater = get(), templateEngine = get()) }
         single { AndroidApiGenerator(get()) }
 
-        // Domain
+        single {
+            AndroidDatabaseGenerators(
+                codeGenerator = get(),
+                entityMapperGenerator = get(),
+                repositoryGenerator = get(),
+                useCaseGenerator = get(),
+                combinedRepositoryGenerator = get(),
+                dbOnlyRepositoryImplGenerator = get(),
+                apiDbRepositoryImplGenerator = get(),
+            )
+        }
+
         single {
             AndroidDatabaseScaffolder(
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
-                get(),
+                ddlParser = get(),
+                workspaceConfigResolver = get(),
+                swaggerParser = get(),
+                generators = get(),
+                generatedDataModuleUpdater = get(),
+                dbOnlyDataModuleUpdater = get(),
+                featureBuildGradleUpdater = get(),
             )
         }
         single {

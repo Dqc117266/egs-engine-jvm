@@ -8,38 +8,25 @@ package com.dqc.egsengine.feature.scaffold.domain
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidApiDbRepositoryImplGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidCombinedRepositoryGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseDbOnlyDataModuleUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseEntityMapperGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseGeneratedDataModuleUpdater
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseRepositoryGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDatabaseUseCaseGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidDbOnlyRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidFeatureBuildGradleUpdater
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
- * Android client: DDL → Room + optional DB repository / use cases (`src/main/kotlin`).
+ * Android client: DDL to Room + optional DB repository / use cases (`src/main/kotlin`).
  * Independent from [KmpDatabaseScaffolder].
  */
 class AndroidDatabaseScaffolder(
     private val ddlParser: DdlParser,
-    private val androidDatabaseCodeGenerator: AndroidDatabaseCodeGenerator,
     private val workspaceConfigResolver: WorkspaceConfigResolver,
-    private val androidDatabaseGeneratedDataModuleUpdater: AndroidDatabaseGeneratedDataModuleUpdater,
-    private val androidDatabaseRepositoryGenerator: AndroidDatabaseRepositoryGenerator,
-    private val androidDatabaseDbOnlyDataModuleUpdater: AndroidDatabaseDbOnlyDataModuleUpdater,
-    private val androidDatabaseEntityMapperGenerator: AndroidDatabaseEntityMapperGenerator,
-    private val androidDatabaseUseCaseGenerator: AndroidDatabaseUseCaseGenerator,
     private val swaggerParser: SwaggerParser,
-    private val androidCombinedRepositoryGenerator: AndroidCombinedRepositoryGenerator,
-    private val androidDbOnlyRepositoryImplGenerator: AndroidDbOnlyRepositoryImplGenerator,
-    private val androidApiDbRepositoryImplGenerator: AndroidApiDbRepositoryImplGenerator,
-    private val androidFeatureBuildGradleUpdater: AndroidFeatureBuildGradleUpdater,
+    private val generators: AndroidDatabaseGenerators,
+    private val generatedDataModuleUpdater: AndroidDatabaseGeneratedDataModuleUpdater,
+    private val dbOnlyDataModuleUpdater: AndroidDatabaseDbOnlyDataModuleUpdater,
+    private val featureBuildGradleUpdater: AndroidFeatureBuildGradleUpdater,
 ) {
     private val logger = LoggerFactory.getLogger(AndroidDatabaseScaffolder::class.java)
 
@@ -56,7 +43,7 @@ class AndroidDatabaseScaffolder(
             workspaceConfigResolver.resolveClient(projectRoot).let { cfg ->
                 cfg.toModuleTemplate(moduleName)
             }
-        val generated = androidDatabaseCodeGenerator.generate(template, tables, projectRoot).toMutableList()
+        val generated = generators.codeGenerator.generate(template, tables, projectRoot).toMutableList()
 
         val clientConfig = workspaceConfigResolver.resolveClient(projectRoot)
         val subProjectRoot = projectRoot.resolve(clientConfig.path)
@@ -75,7 +62,7 @@ class AndroidDatabaseScaffolder(
                 .getOrNull()
 
         if (swaggerSpec != null) {
-            generated += androidDatabaseEntityMapperGenerator.generate(template, tables, swaggerSpec, projectRoot)
+            generated += generators.entityMapperGenerator.generate(template, tables, swaggerSpec, projectRoot)
         }
 
         val effectiveRepo = repo || cached
@@ -96,14 +83,14 @@ class AndroidDatabaseScaffolder(
             when {
                 !cached && hasApi -> {
                     generated +=
-                        androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                        generators.repositoryGenerator.generateDbOnlyRepository(
                             template,
                             tables,
                             projectRoot,
                             swaggerSpec,
                         )
                     generated +=
-                        androidDatabaseUseCaseGenerator.generate(
+                        generators.useCaseGenerator.generate(
                             template = template,
                             tables = tables,
                             projectRoot = projectRoot,
@@ -111,18 +98,18 @@ class AndroidDatabaseScaffolder(
                             useCaseRepositorySimpleName = "${modulePascal}DbRepository",
                             spec = swaggerSpec,
                         )
-                    androidApiDbRepositoryImplGenerator.generateOrMerge(template, subProjectRoot)?.let { generated += it }
+                    generators.apiDbRepositoryImplGenerator.generateOrMerge(template, subProjectRoot)?.let { generated += it }
                 }
                 !cached && !hasApi -> {
                     generated +=
-                        androidDatabaseRepositoryGenerator.generateDbOnlyRepository(
+                        generators.repositoryGenerator.generateDbOnlyRepository(
                             template,
                             tables,
                             projectRoot,
                             swaggerSpec,
                         )
                     generated +=
-                        androidDatabaseUseCaseGenerator.generate(
+                        generators.useCaseGenerator.generate(
                             template = template,
                             tables = tables,
                             projectRoot = projectRoot,
@@ -130,13 +117,13 @@ class AndroidDatabaseScaffolder(
                             spec = swaggerSpec,
                         )
                     val prefsSlice =
-                        androidCombinedRepositoryGenerator
+                        generators.combinedRepositoryGenerator
                             .detectSlices(
                                 subProjectRoot,
                                 moduleName,
                                 template,
                             ).hasPrefs
-                    androidCombinedRepositoryGenerator
+                    generators.combinedRepositoryGenerator
                         .generate(
                             template = template,
                             subProjectRoot = subProjectRoot,
@@ -144,7 +131,7 @@ class AndroidDatabaseScaffolder(
                             includeDb = true,
                             includePrefs = prefsSlice,
                         )?.let { generated += it }
-                    androidDbOnlyRepositoryImplGenerator
+                    generators.dbOnlyRepositoryImplGenerator
                         .generateOrMerge(
                             template = template,
                             subProjectRoot = subProjectRoot,
@@ -163,9 +150,9 @@ class AndroidDatabaseScaffolder(
                 file.content?.let { target.writeText(it) }
                 logger.debug("Wrote {}", file.path)
             }
-            androidFeatureBuildGradleUpdater.applyAfterDatabaseGen(subProjectRoot, moduleName)
+            featureBuildGradleUpdater.applyAfterDatabaseGen(subProjectRoot, moduleName)
             val includeDbRepositorySupport = effectiveRepo && !cached
-            androidDatabaseGeneratedDataModuleUpdater.apply(
+            generatedDataModuleUpdater.apply(
                 subProjectRoot,
                 moduleName,
                 template,
@@ -173,7 +160,7 @@ class AndroidDatabaseScaffolder(
                 includeDbRepositorySupport = includeDbRepositorySupport,
             )
             if (effectiveRepo && !hasApi) {
-                androidDatabaseDbOnlyDataModuleUpdater.apply(subProjectRoot, moduleName, template)
+                dbOnlyDataModuleUpdater.apply(subProjectRoot, moduleName, template)
             }
             logger.info(
                 "Android database scaffold: {} table(s) -> module '{}' ({} files)",
