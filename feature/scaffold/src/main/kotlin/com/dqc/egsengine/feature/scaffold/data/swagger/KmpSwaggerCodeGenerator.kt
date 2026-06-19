@@ -35,7 +35,7 @@ class KmpSwaggerCodeGenerator(
      * Applies the same wrapper unwrap and header filtering as [generate].
      */
     fun adjustSpecForKmp(spec: SwaggerSpec): SwaggerSpec {
-        val (wrapperSchemas, _) = spec.schemas.partition { isCommonResultWrapper(it) }
+        val (wrapperSchemas, _) = spec.schemas.partition { SwaggerTypeMapping.isCommonResultWrapper(it) }
         val wrapperUnwrapMap =
             wrapperSchemas.associate { schema ->
                 schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
@@ -45,7 +45,7 @@ class KmpSwaggerCodeGenerator(
             spec.operations.map { op ->
                 op.copy(
                     params = op.params.filter { it.location.lowercase() != "header" },
-                    responseBody = unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
+                    responseBody = SwaggerTypeMapping.unwrapResponseBody(op.responseBody, wrapperUnwrapMap),
                 )
             },
         )
@@ -62,12 +62,12 @@ class KmpSwaggerCodeGenerator(
 
         val adjustedSpec = adjustSpecForKmp(spec)
         val specForGen = pagingInferrer.enrich(adjustedSpec)
-        val (wrapperSchemas, dataSchemas) = spec.schemas.partition { isCommonResultWrapper(it) }
+        val (wrapperSchemas, dataSchemas) = spec.schemas.partition { SwaggerTypeMapping.isCommonResultWrapper(it) }
         val wrapperUnwrapMap =
             wrapperSchemas.associate { schema ->
                 schema.name to schema.properties.firstOrNull { it.originalName == "data" }?.type
             }
-        val requestSchemaNames = collectRequestSchemaNames(spec)
+        val requestSchemaNames = SwaggerTypeMapping.collectRequestSchemaNames(spec)
 
         for (schema in dataSchemas) {
             files.addCommonMain(
@@ -171,36 +171,6 @@ class KmpSwaggerCodeGenerator(
 
         logger.info("Generated ${files.size} KMP swagger scaffold files for module ${template.name}")
         return files
-    }
-
-    private fun isCommonResultWrapper(schema: SwaggerSchema): Boolean {
-        val originalNames = schema.properties.map { it.originalName }.toSet()
-        return originalNames.contains("code") && originalNames.contains("msg") && originalNames.contains("data")
-    }
-
-    private fun collectRequestSchemaNames(spec: SwaggerSpec): Set<String> {
-        val names = mutableSetOf<String>()
-
-        fun collectFromType(type: SwaggerType?) {
-            when (type) {
-                is SwaggerType.ModelRef -> names.add(type.name)
-                is SwaggerType.ListType -> collectFromType(type.elementType)
-                is SwaggerType.MapType -> collectFromType(type.valueType)
-                else -> {}
-            }
-        }
-        spec.operations.forEach { op -> collectFromType(op.requestBody) }
-        return names
-    }
-
-    private fun unwrapResponseBody(
-        responseType: SwaggerType?,
-        wrapperMap: Map<String, SwaggerType?>,
-    ): SwaggerType? {
-        if (responseType is SwaggerType.ModelRef && responseType.name in wrapperMap) {
-            return wrapperMap[responseType.name] ?: responseType
-        }
-        return responseType
     }
 
     private fun MutableList<ModuleGenerator.GeneratedFile>.addCommonMain(

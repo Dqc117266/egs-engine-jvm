@@ -87,4 +87,34 @@ internal object SwaggerTypeMapping {
             is SwaggerType.MapType -> "$sourceExpr?.mapValues { (_, value) -> ${mapExpressionNonNull(type.valueType, "value", method)} }"
         }
     }
+
+    fun isCommonResultWrapper(schema: SwaggerSchema): Boolean {
+        val originalNames = schema.properties.map { it.originalName }.toSet()
+        return originalNames.contains("code") && originalNames.contains("msg") && originalNames.contains("data")
+    }
+
+    fun collectRequestSchemaNames(spec: SwaggerSpec): Set<String> {
+        val names = mutableSetOf<String>()
+
+        fun collectFromType(type: SwaggerType?) {
+            when (type) {
+                is SwaggerType.ModelRef -> names.add(type.name)
+                is SwaggerType.ListType -> collectFromType(type.elementType)
+                is SwaggerType.MapType -> collectFromType(type.valueType)
+                else -> {}
+            }
+        }
+        spec.operations.forEach { op -> collectFromType(op.requestBody) }
+        return names
+    }
+
+    fun unwrapResponseBody(
+        responseType: SwaggerType?,
+        wrapperMap: Map<String, SwaggerType?>,
+    ): SwaggerType? {
+        if (responseType is SwaggerType.ModelRef && responseType.name in wrapperMap) {
+            return wrapperMap[responseType.name] ?: responseType
+        }
+        return responseType
+    }
 }
