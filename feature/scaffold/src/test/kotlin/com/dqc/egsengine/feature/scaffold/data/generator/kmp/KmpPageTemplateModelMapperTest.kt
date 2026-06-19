@@ -5,8 +5,8 @@ import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.TemplateRegistry
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

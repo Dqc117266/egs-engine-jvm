@@ -1,4 +1,4 @@
-package com.dqc.egsengine.template
+package com.dqc.egsengine.feature.templateengine
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

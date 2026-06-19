@@ -11,7 +11,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifest
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.BackendCodegenManifestColumn
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.FormControl
-import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.Locale

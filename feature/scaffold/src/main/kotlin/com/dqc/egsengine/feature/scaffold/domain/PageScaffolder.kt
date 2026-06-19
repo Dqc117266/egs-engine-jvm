@@ -13,7 +13,7 @@ import com.dqc.egsengine.feature.scaffold.domain.model.PageScaffoldResult
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.feature.scaffold.domain.resolveScaffoldBaseClasses
-import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
 

@@ -4,8 +4,8 @@ import com.dqc.egsengine.feature.scaffold.data.ddl.model.ColumnSchema
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
 import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.TemplateRegistry
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateRegistry
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.file.Files

@@ -57,4 +57,4 @@ internal fun importLinesForKotlinTypeFqns(fqns: Iterable<String>): List<String> 
     return out.sorted()
 }
 
-internal fun importLinesForUseCaseHandlerParams(parameters: List<com.dqc.egsengine.template.model.PageUseCaseParamModel>): List<String> = importLinesForKotlinTypeFqns(parameters.map { it.kotlinType })
+internal fun importLinesForUseCaseHandlerParams(parameters: List<com.dqc.egsengine.feature.templateengine.model.PageUseCaseParamModel>): List<String> = importLinesForKotlinTypeFqns(parameters.map { it.kotlinType })

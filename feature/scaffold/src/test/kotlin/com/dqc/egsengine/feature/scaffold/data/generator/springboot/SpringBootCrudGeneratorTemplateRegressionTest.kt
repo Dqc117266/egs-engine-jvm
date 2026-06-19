@@ -4,8 +4,8 @@ import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
 import com.dqc.egsengine.feature.scaffold.data.ddl.DdlParser
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootOpinionatedOptions
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.TemplateRegistry
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateRegistry
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

@@ -6,7 +6,7 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
-import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
 import java.io.File
 
 /**

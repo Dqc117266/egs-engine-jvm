@@ -9,7 +9,7 @@ import com.dqc.egsengine.feature.scaffold.data.ddl.SqlNaming
 import com.dqc.egsengine.feature.scaffold.data.ddl.model.TableSchema
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
 

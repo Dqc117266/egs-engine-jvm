@@ -3,11 +3,11 @@
  *
  * SPDX-License-Identifier: MPL-2.0
  */
-package com.dqc.egsengine.template.di
+package com.dqc.egsengine.feature.templateengine.di
 
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.TemplateRegistry
-import com.dqc.egsengine.template.prefs.PrefsTemplateRenderer
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateRegistry
+import com.dqc.egsengine.feature.templateengine.prefs.PrefsTemplateRenderer
 import org.koin.dsl.module
 
 val featureTemplateEngineModule =

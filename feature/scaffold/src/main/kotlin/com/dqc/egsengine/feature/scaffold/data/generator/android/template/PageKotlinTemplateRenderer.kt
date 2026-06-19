@@ -6,8 +6,8 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.model.PageTemplateModel
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.model.PageTemplateModel
 import java.io.File
 
 class PageKotlinTemplateRenderer(

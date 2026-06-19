@@ -6,8 +6,8 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.dqc.egsengine.template.model.BaseClassPackagesModel
-import com.dqc.egsengine.template.model.ModuleTemplateModel
+import com.dqc.egsengine.feature.templateengine.model.BaseClassPackagesModel
+import com.dqc.egsengine.feature.templateengine.model.ModuleTemplateModel
 
 internal fun ModuleTemplate.toModuleTemplateModel(): ModuleTemplateModel {
     val pascal = name.toPascalCase()

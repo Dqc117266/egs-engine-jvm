@@ -11,7 +11,7 @@ import com.dqc.egsengine.feature.scaffold.data.swagger.FtlSwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerCodeGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerTemplateRenderer
-import com.dqc.egsengine.template.di.featureTemplateEngineModule
+import com.dqc.egsengine.feature.templateengine.di.featureTemplateEngineModule
 import org.koin.dsl.module
 
 /** Shared bindings used across all platforms. */

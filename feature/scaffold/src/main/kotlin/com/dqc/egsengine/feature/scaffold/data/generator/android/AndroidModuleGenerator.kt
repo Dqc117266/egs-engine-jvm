@@ -8,7 +8,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.common.PlatformModuleGenerator
 import com.dqc.egsengine.feature.scaffold.domain.model.BaseClassPackages
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
 

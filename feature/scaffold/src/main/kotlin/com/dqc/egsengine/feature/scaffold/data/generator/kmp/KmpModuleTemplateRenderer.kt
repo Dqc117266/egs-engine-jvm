@@ -5,8 +5,8 @@
  */
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.model.KmpModuleTemplateModel
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.model.KmpModuleTemplateModel
 import java.io.File
 
 /**

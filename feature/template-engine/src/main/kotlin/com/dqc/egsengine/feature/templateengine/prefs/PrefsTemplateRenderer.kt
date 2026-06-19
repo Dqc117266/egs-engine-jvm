@@ -3,10 +3,10 @@
  *
  * SPDX-License-Identifier: MPL-2.0
  */
-package com.dqc.egsengine.template.prefs
+package com.dqc.egsengine.feature.templateengine.prefs
 
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.model.PrefsTemplateModel
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.model.PrefsTemplateModel
 import java.io.File
 
 /** Freemarker prefs templates for future egs client prefs codegen. */

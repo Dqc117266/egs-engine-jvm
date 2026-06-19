@@ -12,8 +12,8 @@ import com.dqc.egsengine.feature.scaffold.data.generator.android.AndroidModuleGe
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpModuleGenerator
 import com.dqc.egsengine.feature.scaffold.domain.PageScaffolder
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.TemplateRegistry
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateRegistry
 import java.io.File
 
 internal object ScaffoldTestFixtures {

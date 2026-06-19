@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MPL-2.0
  */
-package com.dqc.egsengine.template.model
+package com.dqc.egsengine.feature.templateengine.model
 
 /**
  * Root model for KMP feature module FreeMarker templates (`templates/kmp/module/`).

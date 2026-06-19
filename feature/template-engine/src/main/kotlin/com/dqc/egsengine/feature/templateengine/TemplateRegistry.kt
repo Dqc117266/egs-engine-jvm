@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MPL-2.0
  */
-package com.dqc.egsengine.template
+package com.dqc.egsengine.feature.templateengine
 
 import freemarker.cache.ClassTemplateLoader
 import freemarker.cache.FileTemplateLoader

@@ -22,13 +22,13 @@ import com.dqc.egsengine.feature.scaffold.data.generator.common.unitEchoStatePro
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseParam
-import com.dqc.egsengine.template.model.BaseClassPackagesModel
-import com.dqc.egsengine.template.model.PageIntentInnerModel
-import com.dqc.egsengine.template.model.PageStateFieldModel
-import com.dqc.egsengine.template.model.PageTemplateModel
-import com.dqc.egsengine.template.model.PageUseCaseHandlerModel
-import com.dqc.egsengine.template.model.PageUseCaseModel
-import com.dqc.egsengine.template.model.PageUseCaseParamModel
+import com.dqc.egsengine.feature.templateengine.model.BaseClassPackagesModel
+import com.dqc.egsengine.feature.templateengine.model.PageIntentInnerModel
+import com.dqc.egsengine.feature.templateengine.model.PageStateFieldModel
+import com.dqc.egsengine.feature.templateengine.model.PageTemplateModel
+import com.dqc.egsengine.feature.templateengine.model.PageUseCaseHandlerModel
+import com.dqc.egsengine.feature.templateengine.model.PageUseCaseModel
+import com.dqc.egsengine.feature.templateengine.model.PageUseCaseParamModel
 
 internal fun PageTemplate.toPageTemplateModel(): PageTemplateModel {
     val pascalName = pageName

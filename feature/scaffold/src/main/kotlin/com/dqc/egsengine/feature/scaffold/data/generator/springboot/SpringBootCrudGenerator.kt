@@ -12,7 +12,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.Sch
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootCodegenModelBuilder
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootCrudTemplateRenderer
 import com.dqc.egsengine.feature.scaffold.data.generator.springboot.database.SpringBootOpinionatedOptions
-import com.dqc.egsengine.template.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
 import org.slf4j.LoggerFactory
 import java.io.File
 

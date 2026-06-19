@@ -6,7 +6,7 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.kmp
 
 import com.dqc.egsengine.feature.init.domain.model.SubProjectConfig
-import com.dqc.egsengine.template.model.KmpModuleTemplateModel
+import com.dqc.egsengine.feature.templateengine.model.KmpModuleTemplateModel
 
 /**
  * Builds [KmpModuleTemplateModel] for egs-kmp-template style feature modules (commonMain).

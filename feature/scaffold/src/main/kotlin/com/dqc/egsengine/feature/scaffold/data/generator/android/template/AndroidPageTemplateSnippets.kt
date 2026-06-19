@@ -9,11 +9,11 @@ import com.dqc.egsengine.feature.scaffold.data.generator.common.ViewModelMergeSn
 import com.dqc.egsengine.feature.scaffold.data.generator.common.importLinesForUseCaseHandlerParams
 import com.dqc.egsengine.feature.scaffold.domain.model.PageTemplate
 import com.dqc.egsengine.feature.scaffold.domain.model.UseCaseInfo
-import com.dqc.egsengine.template.model.PageIntentInnerModel
-import com.dqc.egsengine.template.model.PageStateFieldModel
-import com.dqc.egsengine.template.model.PageTemplateModel
-import com.dqc.egsengine.template.model.PageUseCaseHandlerModel
-import com.dqc.egsengine.template.model.PageUseCaseModel
+import com.dqc.egsengine.feature.templateengine.model.PageIntentInnerModel
+import com.dqc.egsengine.feature.templateengine.model.PageStateFieldModel
+import com.dqc.egsengine.feature.templateengine.model.PageTemplateModel
+import com.dqc.egsengine.feature.templateengine.model.PageUseCaseHandlerModel
+import com.dqc.egsengine.feature.templateengine.model.PageUseCaseModel
 
 /**
  * Incremental snippets aligned with [android/page/PageContract.kt.ftl] and [android/page/PageViewModel.kt.ftl].

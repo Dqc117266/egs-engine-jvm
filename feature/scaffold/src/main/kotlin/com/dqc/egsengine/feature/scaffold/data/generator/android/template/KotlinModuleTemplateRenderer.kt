@@ -6,8 +6,8 @@
 package com.dqc.egsengine.feature.scaffold.data.generator.android.template
 
 import com.dqc.egsengine.feature.scaffold.domain.model.ModuleTemplate
-import com.dqc.egsengine.template.TemplateEngine
-import com.dqc.egsengine.template.model.ModuleTemplateModel
+import com.dqc.egsengine.feature.templateengine.TemplateEngine
+import com.dqc.egsengine.feature.templateengine.model.ModuleTemplateModel
 import java.io.File
 
 /**
