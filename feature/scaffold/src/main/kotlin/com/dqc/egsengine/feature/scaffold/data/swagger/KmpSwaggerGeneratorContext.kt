@@ -84,50 +84,9 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
 
     private fun pageResultShortName(): String = template.baseClassPackages.pageResultClass?.substringAfterLast('.') ?: "PageResult"
 
-    /**
-     * Short Kotlin type names (imports via [importsForType] / [importsForServiceReturnType]).
-     */
-    fun resolveType(type: SwaggerType, forDomain: Boolean): String = when (type) {
-        is SwaggerType.Primitive -> when (type.kind) {
-            PrimitiveKind.STRING -> "String"
-            PrimitiveKind.INT -> "Int"
-            PrimitiveKind.LONG -> "Long"
-            PrimitiveKind.DOUBLE -> "Double"
-            PrimitiveKind.BOOLEAN -> "Boolean"
-        }
+    fun resolveType(type: SwaggerType, forDomain: Boolean): String = SwaggerTypeMapping.resolveType(type, forDomain, ::dataModelName, ::domainModelName)
 
-        is SwaggerType.ModelRef -> {
-            if (forDomain) domainModelName(type.name) else dataModelName(type.name)
-        }
-
-        is SwaggerType.ListType ->
-            "List<${resolveType(type.elementType, forDomain)}>"
-
-        is SwaggerType.MapType ->
-            "Map<String, ${resolveType(type.valueType, forDomain)}>"
-
-        SwaggerType.Unknown -> "JsonElement"
-    }
-
-    /**
-     * Import lines (FQNs) required for [resolveType] when used in a file in [currentPackage].
-     * Same-package model refs omit imports.
-     */
-    fun importsForType(type: SwaggerType, forDomain: Boolean, currentPackage: String? = null): Set<String> = when (type) {
-        is SwaggerType.Primitive -> emptySet()
-        is SwaggerType.ModelRef -> {
-            val pkg = if (forDomain) domainModelPackage else dataModelPackage
-            val simple = if (forDomain) domainModelName(type.name) else dataModelName(type.name)
-            if (currentPackage != null && pkg == currentPackage) {
-                emptySet()
-            } else {
-                setOf("$pkg.$simple")
-            }
-        }
-        is SwaggerType.ListType -> importsForType(type.elementType, forDomain, currentPackage)
-        is SwaggerType.MapType -> importsForType(type.valueType, forDomain, currentPackage)
-        SwaggerType.Unknown -> setOf("kotlinx.serialization.json.JsonElement")
-    }
+    fun importsForType(type: SwaggerType, forDomain: Boolean, currentPackage: String? = null): Set<String> = SwaggerTypeMapping.importsForType(type, forDomain, currentPackage, dataModelPackage, domainModelPackage, ::dataModelName, ::domainModelName)
 
     /** Imports for Ktorfit return type (NetworkResult / CommonResult + body). */
     fun importsForServiceReturnType(responseBody: SwaggerType?): Set<String> {
@@ -165,7 +124,7 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
     fun pagingRepositoryMapExpression(op: SwaggerOperation, sourceExpr: String): String {
         val p = op.paging ?: error("Expected paging for ${op.operationId}")
         val pr = pageResultShortName()
-        val rowMapping = mapExpressionNonNull(p.itemType, "row", "toDomain")
+        val rowMapping = SwaggerTypeMapping.mapExpressionNonNull(p.itemType, "row", "toDomain")
         return "$pr(list = $sourceExpr.${p.listPropertyName}.map { row -> $rowMapping }, total = $sourceExpr.total, page = $sourceExpr.page, pageSize = $sourceExpr.pageSize, totalPages = $sourceExpr.totalPages)"
     }
 
@@ -192,92 +151,18 @@ class KmpSwaggerGeneratorContext(val template: ModuleTemplate) {
         else -> "GET"
     }
 
-    fun toDomainExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String = mapExpression(type, sourceExpr, nullableContainer, "toDomain")
+    fun requiresToDomainImport(type: SwaggerType?): Boolean = SwaggerTypeMapping.requiresToDomainImport(type)
+
+    fun toDataExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String = SwaggerTypeMapping.mapExpression(type, sourceExpr, nullableContainer, "toData")
+
+    fun toDomainExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String = SwaggerTypeMapping.mapExpression(type, sourceExpr, nullableContainer, "toDomain")
 
     fun repositoryResponseMapExpression(type: SwaggerType?, sourceExpr: String): String? {
         val t = type ?: return null
         return when (t) {
-            is SwaggerType.Primitive,
-            SwaggerType.Unknown,
-            -> null
-
-            is SwaggerType.ModelRef,
-            is SwaggerType.ListType,
-            is SwaggerType.MapType,
-            -> mapExpressionNonNull(t, sourceExpr, "toDomain")
-        }
-    }
-
-    fun requiresToDomainImport(type: SwaggerType?): Boolean {
-        val t = type ?: return false
-        return when (t) {
-            is SwaggerType.ModelRef -> true
-            is SwaggerType.ListType -> requiresToDomainImport(t.elementType)
-            is SwaggerType.MapType -> requiresToDomainImport(t.valueType)
-            is SwaggerType.Primitive,
-            SwaggerType.Unknown,
-            -> false
-        }
-    }
-
-    fun toDataExpression(type: SwaggerType, sourceExpr: String, nullableContainer: Boolean): String = mapExpression(type, sourceExpr, nullableContainer, "toData")
-
-    private fun mapExpressionNonNull(type: SwaggerType, sourceExpr: String, method: String): String = when (type) {
-        is SwaggerType.Primitive,
-        SwaggerType.Unknown,
-        -> sourceExpr
-
-        is SwaggerType.ModelRef -> "$sourceExpr.$method()"
-        is SwaggerType.ListType ->
-            "$sourceExpr.map { ${
-                mapExpressionNonNull(
-                    type.elementType,
-                    "it",
-                    method,
-                )
-            } }"
-
-        is SwaggerType.MapType ->
-            "$sourceExpr.mapValues { (_, value) -> ${
-                mapExpressionNonNull(
-                    type.valueType,
-                    "value",
-                    method,
-                )
-            } }"
-    }
-
-    private fun mapExpression(
-        type: SwaggerType,
-        sourceExpr: String,
-        nullableContainer: Boolean,
-        method: String,
-    ): String {
-        val mappedExpr = mapExpressionNonNull(type, sourceExpr, method)
-        if (!nullableContainer) return mappedExpr
-        return when (type) {
-            is SwaggerType.Primitive,
-            SwaggerType.Unknown,
-            -> sourceExpr
-
-            is SwaggerType.ModelRef -> "$sourceExpr?.$method()"
-            is SwaggerType.ListType ->
-                "$sourceExpr?.map { ${
-                    mapExpressionNonNull(
-                        type.elementType,
-                        "it",
-                        method,
-                    )
-                } }"
-
-            is SwaggerType.MapType ->
-                "$sourceExpr?.mapValues { (_, value) -> ${
-                    mapExpressionNonNull(
-                        type.valueType,
-                        "value",
-                        method,
-                    )
-                } }"
+            is SwaggerType.Primitive, SwaggerType.Unknown -> null
+            is SwaggerType.ModelRef, is SwaggerType.ListType, is SwaggerType.MapType ->
+                SwaggerTypeMapping.mapExpressionNonNull(t, sourceExpr, "toDomain")
         }
     }
 }

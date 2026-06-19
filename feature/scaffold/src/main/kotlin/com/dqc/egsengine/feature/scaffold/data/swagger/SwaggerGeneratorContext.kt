@@ -78,51 +78,21 @@ open class SwaggerGeneratorContext(
     fun resolveType(
         type: SwaggerType,
         forDomain: Boolean,
-    ): String = when (type) {
-        is SwaggerType.Primitive ->
-            when (type.kind) {
-                PrimitiveKind.STRING -> "String"
-                PrimitiveKind.INT -> "Int"
-                PrimitiveKind.LONG -> "Long"
-                PrimitiveKind.DOUBLE -> "Double"
-                PrimitiveKind.BOOLEAN -> "Boolean"
-            }
+    ): String = SwaggerTypeMapping.resolveType(type, forDomain, ::dataModelName, ::domainModelName)
 
-        is SwaggerType.ModelRef ->
-            if (forDomain) domainModelName(type.name) else dataModelName(type.name)
-
-        is SwaggerType.ListType ->
-            "List<${resolveType(type.elementType, forDomain)}>"
-
-        is SwaggerType.MapType ->
-            "Map<String, ${resolveType(type.valueType, forDomain)}>"
-
-        SwaggerType.Unknown -> "JsonElement"
-    }
-
-    /**
-     * Import lines (FQNs) required for [resolveType] when used in a file in [currentPackage].
-     * Same-package model refs omit imports.
-     */
     fun importsForType(
         type: SwaggerType,
         forDomain: Boolean,
         currentPackage: String? = null,
-    ): Set<String> = when (type) {
-        is SwaggerType.Primitive -> emptySet()
-        is SwaggerType.ModelRef -> {
-            val pkg = if (forDomain) domainModelPackage else dataModelPackage
-            val simple = if (forDomain) domainModelName(type.name) else dataModelName(type.name)
-            if (currentPackage != null && pkg == currentPackage) {
-                emptySet()
-            } else {
-                setOf("$pkg.$simple")
-            }
-        }
-        is SwaggerType.ListType -> importsForType(type.elementType, forDomain, currentPackage)
-        is SwaggerType.MapType -> importsForType(type.valueType, forDomain, currentPackage)
-        SwaggerType.Unknown -> setOf("kotlinx.serialization.json.JsonElement")
-    }
+    ): Set<String> = SwaggerTypeMapping.importsForType(
+        type,
+        forDomain,
+        currentPackage,
+        dataModelPackage,
+        domainModelPackage,
+        ::dataModelName,
+        ::domainModelName,
+    )
 
     /** Imports for Retrofit return type (API result wrappers + body). */
     fun importsForServiceReturnType(responseBody: SwaggerType?): Set<String> {
@@ -169,7 +139,7 @@ open class SwaggerGeneratorContext(
         type: SwaggerType,
         sourceExpr: String,
         nullableContainer: Boolean,
-    ): String = mapExpression(type, sourceExpr, nullableContainer, "toDomain")
+    ): String = SwaggerTypeMapping.mapExpression(type, sourceExpr, nullableContainer, "toDomain")
 
     fun repositoryResponseMapExpression(
         type: SwaggerType?,
@@ -184,90 +154,17 @@ open class SwaggerGeneratorContext(
             is SwaggerType.ModelRef,
             is SwaggerType.ListType,
             is SwaggerType.MapType,
-            -> mapExpressionNonNull(t, sourceExpr, "toDomain")
+            -> SwaggerTypeMapping.mapExpressionNonNull(t, sourceExpr, "toDomain")
         }
     }
 
-    fun requiresToDomainImport(type: SwaggerType?): Boolean {
-        val t = type ?: return false
-        return when (t) {
-            is SwaggerType.ModelRef -> true
-            is SwaggerType.ListType -> requiresToDomainImport(t.elementType)
-            is SwaggerType.MapType -> requiresToDomainImport(t.valueType)
-            is SwaggerType.Primitive,
-            SwaggerType.Unknown,
-            -> false
-        }
-    }
+    fun requiresToDomainImport(type: SwaggerType?): Boolean = SwaggerTypeMapping.requiresToDomainImport(type)
 
     fun toDataExpression(
         type: SwaggerType,
         sourceExpr: String,
         nullableContainer: Boolean,
-    ): String = mapExpression(type, sourceExpr, nullableContainer, "toData")
-
-    private fun mapExpressionNonNull(
-        type: SwaggerType,
-        sourceExpr: String,
-        method: String,
-    ): String = when (type) {
-        is SwaggerType.Primitive,
-        SwaggerType.Unknown,
-        -> sourceExpr
-
-        is SwaggerType.ModelRef -> "$sourceExpr.$method()"
-        is SwaggerType.ListType ->
-            "$sourceExpr.map { ${
-                mapExpressionNonNull(
-                    type.elementType,
-                    "it",
-                    method,
-                )
-            } }"
-
-        is SwaggerType.MapType ->
-            "$sourceExpr.mapValues { (_, value) -> ${
-                mapExpressionNonNull(
-                    type.valueType,
-                    "value",
-                    method,
-                )
-            } }"
-    }
-
-    private fun mapExpression(
-        type: SwaggerType,
-        sourceExpr: String,
-        nullableContainer: Boolean,
-        method: String,
-    ): String {
-        val mappedExpr = mapExpressionNonNull(type, sourceExpr, method)
-        if (!nullableContainer) return mappedExpr
-        return when (type) {
-            is SwaggerType.Primitive,
-            SwaggerType.Unknown,
-            -> sourceExpr
-
-            is SwaggerType.ModelRef -> "$sourceExpr?.$method()"
-            is SwaggerType.ListType ->
-                "$sourceExpr?.map { ${
-                    mapExpressionNonNull(
-                        type.elementType,
-                        "it",
-                        method,
-                    )
-                } }"
-
-            is SwaggerType.MapType ->
-                "$sourceExpr?.mapValues { (_, value) -> ${
-                    mapExpressionNonNull(
-                        type.valueType,
-                        "value",
-                        method,
-                    )
-                } }"
-        }
-    }
+    ): String = SwaggerTypeMapping.mapExpression(type, sourceExpr, nullableContainer, "toData")
 }
 
 internal fun String.toSafePascal(): String = replace(Regex("[^A-Za-z0-9]"), " ")
