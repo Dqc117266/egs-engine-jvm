@@ -45,7 +45,7 @@ plugins {
             """.trimIndent()
         val after = updater.replaceCmpConventionWithNoJsAndRoom(before)
         assertTrue(after.contains("cmp.feature.no.js.convention"))
-        assertTrue(after.contains("mifos.kmp.room"))
+        assertTrue(after.contains("org.convention.kmp.room"))
         assertTrue(!after.contains("alias(libs.plugins.cmp.feature.convention)"))
     }
 

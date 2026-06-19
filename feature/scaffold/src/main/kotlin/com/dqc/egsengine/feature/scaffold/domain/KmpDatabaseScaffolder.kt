@@ -18,6 +18,7 @@ import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseGenerate
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseRepositoryGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpDatabaseUseCaseGenerator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureBuildGradleUpdater
+import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpFeatureModuleAggregator
 import com.dqc.egsengine.feature.scaffold.data.generator.kmp.KmpRepositoryImplGenerator
 import com.dqc.egsengine.feature.scaffold.data.swagger.SwaggerParser
 import org.slf4j.LoggerFactory
@@ -39,6 +40,7 @@ class KmpDatabaseScaffolder(
     private val swaggerParser: SwaggerParser,
     private val kmpCombinedRepositoryGenerator: KmpCombinedRepositoryGenerator,
     private val kmpRepositoryImplGenerator: KmpRepositoryImplGenerator,
+    private val kmpFeatureModuleAggregator: KmpFeatureModuleAggregator,
 ) {
     private val logger = LoggerFactory.getLogger(KmpDatabaseScaffolder::class.java)
 
@@ -199,6 +201,9 @@ class KmpDatabaseScaffolder(
             if (effectiveRepo && !hasApi) {
                 kmpDatabaseDbOnlyDataModuleUpdater.apply(subProjectRoot, moduleName, template)
             }
+            // Wire generated DI modules into the hand-written aggregation entry point and align
+            // the DataModule repository binding with the generated contract. Idempotent.
+            kmpFeatureModuleAggregator.apply(subProjectRoot, moduleName, template)
             logger.info(
                 "KMP database scaffold: {} table(s) -> module '{}' ({} files)",
                 tables.size,

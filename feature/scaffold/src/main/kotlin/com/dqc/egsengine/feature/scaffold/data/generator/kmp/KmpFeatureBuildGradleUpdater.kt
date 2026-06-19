@@ -159,17 +159,17 @@ $indentedDep
                 "    alias(libs.plugins.cmp.feature.convention)",
             )
         val replacement = """    alias(libs.plugins.cmp.feature.no.js.convention)
-    alias(libs.plugins.mifos.kmp.room)"""
+    alias(libs.plugins.org.convention.kmp.room)"""
         val matchedLine = featureConventionLines.firstOrNull { t.contains(it) }
         if (matchedLine != null) {
             t = t.replace(matchedLine, replacement)
-        } else if (!t.contains("libs.plugins.mifos.kmp.room") && t.contains("cmp.feature.no.js.convention")) {
+        } else if (!t.contains("libs.plugins.org.convention.kmp.room") && t.contains("cmp.feature.no.js.convention")) {
             val search = "alias(libs.plugins.cmp.feature.no.js.convention)"
             val i = t.indexOf(search)
             if (i >= 0) {
                 val lineEnd = t.indexOf('\n', i)
                 if (lineEnd > i) {
-                    t = t.substring(0, lineEnd + 1) + "    alias(libs.plugins.mifos.kmp.room)\n" + t.substring(lineEnd + 1)
+                    t = t.substring(0, lineEnd + 1) + "    alias(libs.plugins.org.convention.kmp.room)\n" + t.substring(lineEnd + 1)
                 }
             }
         }
