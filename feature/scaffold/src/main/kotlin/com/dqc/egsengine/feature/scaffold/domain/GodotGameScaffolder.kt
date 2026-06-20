@@ -110,7 +110,7 @@ class GodotGameScaffolder(
             return
         }
         val text = projectFile.readText()
-        val replaced = CONFIG_NAME_REGEX.replace(text) { "config/name=\"$gameName\"" }
+        val replaced = rewriteConfigName(text, gameName)
         if (text != replaced) {
             projectFile.writeText(replaced)
         }
@@ -118,6 +118,12 @@ class GodotGameScaffolder(
 
     companion object {
         private val CONFIG_NAME_REGEX = Regex("""config/name\s*=\s*"[^"]*"""")
+
+        /**
+         * Pure rewrite of the `config/name` line in a `project.godot` body.
+         * Only the name value changes; every other line is returned verbatim.
+         */
+        fun rewriteConfigName(projectGodotBody: String, gameName: String): String = CONFIG_NAME_REGEX.replace(projectGodotBody) { "config/name=\"$gameName\"" }
     }
 }
 

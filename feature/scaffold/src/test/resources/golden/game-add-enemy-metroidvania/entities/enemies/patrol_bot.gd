@@ -8,7 +8,7 @@ class_name PatrolBot
 
 func _ready() -> void:
     super._ready()
-    display_name = "PatrolBot"
+    display_name = "Patrol Bot"
     max_hp = 20.0
     contact_damage = 8.0
     knockback_resist = 0.0

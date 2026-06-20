@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_double_jump")
-display_name = "DoubleJump"
+display_name = "Double Jump"
 mana_cost = 0.0
 cooldown = 1.0
 unlock_level = 1

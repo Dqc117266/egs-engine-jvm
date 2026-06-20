@@ -4,5 +4,5 @@
 
 [node name="PatrolBot" type="CharacterBody2D"]
 script = ExtResource("1_patrol_bot")
-display_name = "PatrolBot"
+display_name = "Patrol Bot"
 max_hp = 20.0

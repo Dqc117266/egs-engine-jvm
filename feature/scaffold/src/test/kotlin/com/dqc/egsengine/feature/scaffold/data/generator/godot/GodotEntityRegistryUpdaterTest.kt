@@ -46,6 +46,9 @@ class GodotEntityRegistryUpdaterTest {
         // Markers and surrounding code are preserved.
         update.after `should contain` GodotEntityRegistryUpdater.BEGIN_MARKER
         update.after `should contain` GodotEntityRegistryUpdater.END_MARKER
+        // Each marker appears exactly once (no duplication from the rewrite).
+        markerCount(update.after, GodotEntityRegistryUpdater.BEGIN_MARKER) `should be equal to` 1
+        markerCount(update.after, GodotEntityRegistryUpdater.END_MARKER) `should be equal to` 1
         update.after `should contain` "func _ready() -> void:"
         update.after `should contain` "ServiceLocator.register(\"EntityRegistry\", self)"
         // Outside-region header text unchanged.
@@ -59,9 +62,17 @@ class GodotEntityRegistryUpdaterTest {
 
         second `should contain` "const Slime = preload(\"res://entities/enemies/slime.gd\")"
         second `should contain` "const Bat = preload(\"res://entities/enemies/bat.gd\")"
+        // Markers still appear exactly once after the second rewrite.
+        markerCount(second, GodotEntityRegistryUpdater.BEGIN_MARKER) `should be equal to` 1
+        markerCount(second, GodotEntityRegistryUpdater.END_MARKER) `should be equal to` 1
         // Header/footer untouched across both writes.
         second `should contain` "ServiceLocator.register(\"EntityRegistry\", self)"
     }
+
+    private fun markerCount(
+        text: String,
+        marker: String,
+    ): Int = text.split(marker).size - 1
 
     @Test
     fun `rejects duplicate className`() {

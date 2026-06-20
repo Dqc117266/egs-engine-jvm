@@ -4,6 +4,7 @@ import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
 import com.dqc.egsengine.feature.scaffold.domain.GodotEntityScaffolder
+import com.dqc.egsengine.feature.scaffold.domain.GodotScaffoldResult
 import com.dqc.egsengine.feature.scaffold.domain.model.GodotEntityKind
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -12,11 +13,27 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import org.koin.core.component.inject
 
+/**
+ * `egs game` — entry point for Godot game entity commands.
+ *
+ * Command tree: `egs game add {enemy,skill,room} <name>`.
+ */
 class GameCommand : EgsCliCommand(name = "game", help = "Add entities (enemy/skill/room) to a Godot game project") {
     override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): GameCommand = GameCommand().subcommands(
+            GameAddGroupCommand.withSubcommands(),
+        )
+    }
+}
+
+/** `egs game add` — groups the per-kind entity add subcommands. */
+class GameAddGroupCommand : EgsCliCommand(name = "add", help = "Add an enemy, skill, or room entity to a Godot game") {
+    override fun runCommand() = Unit
+
+    companion object {
+        fun withSubcommands(): GameAddGroupCommand = GameAddGroupCommand().subcommands(
             GameAddEnemyCommand(),
             GameAddSkillCommand(),
             GameAddRoomCommand(),
@@ -47,8 +64,8 @@ abstract class GameAddCommand(
             echo("  Files:")
             result.files.forEach { echo("    ${it.path}") }
             echo()
-            echo("  Registry (${result.registryFile}):")
-            echo("    + ${result.className} (preload added inside EGS-AUTOGEN region)")
+            echo("  Registry diff (${result.registryFile}):")
+            registryAddedLines(result).forEach { echo("    + $it") }
         } else {
             echo(CliFormatter.formatSuccess("Generated ${kind.id} '${result.className}' (template=${result.gameTemplate.id})"))
             echo()
@@ -57,6 +74,16 @@ abstract class GameAddCommand(
             echo()
             echo("  Registered in ${result.registryFile}: EntityRegistry.${result.className}")
         }
+    }
+
+    /** Lines present in the registry `after` but not `before` (the added preload() const). */
+    private fun registryAddedLines(result: GodotScaffoldResult): List<String> {
+        val before = result.registryDiff.before.lineSequence().map { it.trim() }.toSet()
+        return result.registryDiff.after
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it.startsWith("const ") && it !in before }
+            .toList()
     }
 }
 

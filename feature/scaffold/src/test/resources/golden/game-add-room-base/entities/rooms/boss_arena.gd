@@ -8,5 +8,5 @@ class_name BossArena
 func _ready() -> void:
     super._ready()
     room_id = "boss_arena"
-    display_name = "BossArena"
+    display_name = "Boss Arena"
     exits = {}

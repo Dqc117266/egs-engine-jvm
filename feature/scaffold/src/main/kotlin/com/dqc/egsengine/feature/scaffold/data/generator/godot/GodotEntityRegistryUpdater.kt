@@ -60,6 +60,8 @@ class GodotEntityRegistryUpdater {
         val endIdx = content.indexOf(END_MARKER)
         require(beginIdx in 0..<endIdx) { "EGS markers out of order in EntityRegistry.gd" }
 
+        // `afterBegin` indexes the newline that terminates the BEGIN marker line;
+        // `beforeEnd` indexes the start of the END marker line.
         val afterBegin = content.indexOf('\n', beginIdx).let { if (it < 0) content.length else it }
         val beforeEnd = endIdx
         val regionBody = content.substring(afterBegin + 1, beforeEnd)
@@ -72,18 +74,18 @@ class GodotEntityRegistryUpdater {
                 .toMutableList()
         existingLines += constLine
 
-        val rebuiltRegion =
-            buildString {
-                append(BEGIN_MARKER).append('\n')
-                if (existingLines.isEmpty()) {
-                    append(PLACEHOLDER).append('\n')
-                } else {
-                    existingLines.forEach { append(it).append('\n') }
-                }
-            }.trimEnd('\n')
+        // Rebuild ONLY the body between the markers. The BEGIN marker (with its newline)
+        // is already retained by `prefix`; the END marker is retained by `suffix`.
+        val rebuiltBody =
+            if (existingLines.isEmpty()) {
+                PLACEHOLDER
+            } else {
+                existingLines.joinToString("\n")
+            }
 
-        return content.substring(0, afterBegin + 1) + rebuiltRegion + "\n" +
-            content.substring(beforeEnd)
+        val prefix = content.substring(0, afterBegin + 1) // up to & incl. BEGIN marker's newline
+        val suffix = content.substring(beforeEnd) // from the END marker onward
+        return "$prefix$rebuiltBody\n$suffix"
     }
 
     private fun buildConstLine(model: GodotEntityTemplateModel): String = "const ${model.className} = preload(\"${model.generatedScriptResPath}\")"

@@ -5,7 +5,6 @@ import com.dqc.egsengine.feature.init.domain.model.Platform
 import com.dqc.egsengine.feature.scaffold.data.config.WorkspaceConfigResolver
 import com.dqc.egsengine.feature.scaffold.data.generator.common.GeneratedFile
 import com.dqc.egsengine.feature.scaffold.data.generator.godot.GodotEntityGenerator
-import com.dqc.egsengine.feature.scaffold.data.generator.godot.GodotEntityPreview
 import com.dqc.egsengine.feature.scaffold.data.generator.godot.GodotEntityRegistryUpdater
 import com.dqc.egsengine.feature.scaffold.domain.model.GodotEntityKind
 import org.slf4j.LoggerFactory
@@ -113,6 +112,3 @@ data class RegistryDiff(
     val before: String,
     val after: String,
 )
-
-/** Re-export for presentation-layer convenience. */
-typealias GodotPreview = GodotEntityPreview

@@ -5,9 +5,10 @@ import com.dqc.egsengine.feature.init.data.WorkspaceConfigWriter
 import com.dqc.egsengine.feature.init.domain.model.GameTemplate
 import com.dqc.egsengine.feature.init.domain.model.Platform
 import org.amshove.kluent.`should be equal to`
+import org.amshove.kluent.`should contain`
+import org.amshove.kluent.`should not contain`
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import java.io.File
 import java.nio.file.Path
 
 class GodotGameScaffolderTest {
@@ -35,13 +36,12 @@ class GodotGameScaffolderTest {
         game.engine `should be equal to` "godot"
         game.gameTemplate `should be equal to` "metroidvania"
         // Nothing on disk in dry-run mode.
-        File(out, "mygame").exists() `should be equal to` false
+        check(!java.io.File(out, "mygame").exists())
     }
 
     @Test
     fun `project godot config name rewrite updates only the name line`() {
-        val projectFile = File(tmp.toFile().also { File(it, ".egs").mkdirs() }, "project.godot")
-        projectFile.writeText(
+        val original =
             """
             ; Engine configuration file.
             config_version=5
@@ -51,23 +51,19 @@ class GodotGameScaffolderTest {
             config/name="EGS Godot Template"
             config/description="Enterprise-grade EGS Godot game scaffold."
             run/main_scene="res://scenes/main.tscn"
-            """.trimIndent(),
-        )
+            """.trimIndent()
 
-        val scaffolder = scaffolder()
-        // Rewrite via reflection-free path: call the documented behaviour by re-running
-        // the same regex the scaffolder uses, against an in-memory clone.
-        val rewritten = projectFile.readText().replace(Regex("""config/name\s*=\s*"[^"]*"""")) {
-            "config/name=\"My Game\""
-        }
-        check(rewritten.contains("config/name=\"My Game\"")) {
-            "expected rewritten config/name line; got:\n$rewritten"
-        }
-        // Other project.godot lines are untouched by the name rewrite.
-        check(rewritten.contains("config/description=\"Enterprise-grade EGS Godot game scaffold.\""))
+        // Drive the real code path used by GodotGameScaffolder.rewriteGodotProjectName().
+        val rewritten = GodotGameScaffolder.rewriteConfigName(original, "My Game")
 
-        // And the round-trip via workspace writer proves the Godot sub-project serializes
-        // the engine/gameTemplate fields a later `game add` will read back.
+        rewritten `should contain` "config/name=\"My Game\""
+        // Only the name line changes; every other line is returned verbatim.
+        rewritten `should contain` "config/description=\"Enterprise-grade EGS Godot game scaffold.\""
+        rewritten `should contain` "run/main_scene=\"res://scenes/main.tscn\""
+        rewritten `should not contain` "EGS Godot Template"
+
+        // The workspace round-trip proves the Godot sub-project serializes the
+        // engine/gameTemplate fields a later `game add` will read back.
         val writer = WorkspaceConfigWriter()
         writer.write(
             com.dqc.egsengine.feature.init.domain.model.WorkspaceConfig(

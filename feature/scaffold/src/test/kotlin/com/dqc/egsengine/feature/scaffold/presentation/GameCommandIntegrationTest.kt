@@ -32,7 +32,7 @@ class GameCommandIntegrationTest {
         val root = seedGodotProject()
 
         GameCommand.withSubcommands().main(
-            listOf("enemy", "slime", "--project", root.absolutePath),
+            listOf("add", "enemy", "slime", "--project", root.absolutePath),
         )
 
         assertTrue(root.resolve("entities/enemies/slime.gd").exists())
@@ -48,7 +48,7 @@ class GameCommandIntegrationTest {
         val root = seedGodotProject()
 
         GameCommand.withSubcommands().main(
-            listOf("enemy", "bat", "--project", root.absolutePath, "--dry-run"),
+            listOf("add", "enemy", "bat", "--project", root.absolutePath, "--dry-run"),
         )
 
         assertFalse(root.resolve("entities/enemies/bat.gd").exists())

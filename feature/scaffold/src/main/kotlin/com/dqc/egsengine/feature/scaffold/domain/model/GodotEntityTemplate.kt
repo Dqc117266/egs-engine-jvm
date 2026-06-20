@@ -60,9 +60,12 @@ data class GodotEntityTemplateModel(
     /** `res://` path of the generated script, e.g. `res://entities/enemies/slime.gd`. */
     val generatedScriptResPath: String,
 ) {
-    /** Human label used as the default `display_name` value (e.g. `Boss Arena`). */
+    /** Human label used as the default `display_name` value (e.g. `Boss Arena`, `Double Jump`). */
     val displayLabel: String
-        get() = className
+        get() = snakeName
+            .split("_")
+            .filter { it.isNotEmpty() }
+            .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
 
     /** Stable lower-case id consumed by FTL `<#if templateId == "metroidvania">` branches. */
     val templateId: String
