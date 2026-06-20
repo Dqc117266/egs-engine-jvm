@@ -10,4 +10,5 @@ enum class Platform {
     SPRING_BOOT,
     VUE3,
     KOTLIN_JVM,
+    GODOT,
 }

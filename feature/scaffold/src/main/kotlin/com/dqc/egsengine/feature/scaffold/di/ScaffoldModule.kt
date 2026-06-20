@@ -9,5 +9,6 @@ val featureScaffoldModule =
             scaffoldKmpModule,
             scaffoldAndroidModule,
             scaffoldServerModule,
+            scaffoldGodotModule,
         )
     }
