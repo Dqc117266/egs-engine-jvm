@@ -86,4 +86,50 @@ class GodotGameScaffolderTest {
         readBack.engine `should be equal to` "godot"
         readBack.gameTemplate `should be equal to` "base"
     }
+
+    /**
+     * Regression: the cloned egs-godot-template ships a rich workspace.json whose
+     * `moduleStructure` (no `hasRes`, has `moduleDirs`) and `baseClasses` (Godot
+     * className/scriptPath/type, not Android name/packageName/module/filePath)
+     * must round-trip through the engine without deserialization errors.
+     */
+    @Test
+    fun `tolerates the cloned godot template rich workspace shape`() {
+        val root = tmp.toFile()
+        java.io.File(root, ".egs").mkdirs()
+        java.io.File(root, ".egs/workspace.json").writeText(
+            """
+            {
+              "name": "egs-godot-template",
+              "version": "3",
+              "projects": {
+                "game": {
+                  "platform": "GODOT",
+                  "path": ".",
+                  "basePackage": "",
+                  "engine": "godot",
+                  "gameTemplate": "base",
+                  "moduleStructure": {
+                    "layers": ["app", "foundation", "modules"],
+                    "moduleDirs": ["api", "generated", "src", "scenes", "resources", "tests"]
+                  },
+                  "baseClasses": [
+                    { "className": "Enemy", "scriptPath": "res://modules/combat/api/Enemy.gd", "type": "CharacterBody2D", "kind": "OPEN_CLASS" }
+                  ]
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+
+        val game = WorkspaceConfigReader().read(root).projects.getValue("game")
+        game.platform `should be equal to` Platform.GODOT
+        game.moduleStructure?.moduleDirs `should be equal to`
+            listOf("api", "generated", "src", "scenes", "resources", "tests")
+        game.baseClasses.size `should be equal to` 1
+        game.baseClasses.first().godotClassName `should be equal to` "Enemy"
+        game.baseClasses.first().godotScriptPath `should be equal to` "res://modules/combat/api/Enemy.gd"
+        game.baseClasses.first().kind `should be equal to`
+            com.dqc.egsengine.feature.init.domain.model.BaseClassKind.OPEN_CLASS
+    }
 }
