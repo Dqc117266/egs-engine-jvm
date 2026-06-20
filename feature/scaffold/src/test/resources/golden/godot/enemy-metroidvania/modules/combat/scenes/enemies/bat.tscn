@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://egs_bat"]
+
+[ext_resource type="Script" path="res://modules/combat/src/entities/enemies/bat/Bat.gd" id="1_stub"]
+
+[node name="Bat" type="CharacterBody2D"]
+script = ExtResource("1_stub")

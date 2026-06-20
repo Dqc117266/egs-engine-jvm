@@ -3,32 +3,26 @@ package com.dqc.egsengine.feature.scaffold.data.generator.godot
 /**
  * Kotlin-native identifier conversion for Godot entity generation.
  *
- * Mirrors the intent of `egs-godot-template/core/util/NameUtil.gd`, but lives in the engine
- * so generation never depends on the Godot runtime (the template's `String.matches` regex
- * is unreliable at runtime; this is the authoritative implementation).
- *
- * Contract (see `docs/GENERATOR.md`):
- * - valid entity name: `^[A-Za-z][A-Za-z0-9_]*$`
- * - file stem: snake_case
- * - `class_name`: PascalCase
+ * Lives in the engine so generation never depends on the Godot runtime. The
+ * authoritative valid-name rule comes from `.egs/generator.json`
+ * (`naming.inputPattern`, default `^[A-Za-z][A-Za-z0-9_]*$`).
  */
 internal object GodotNameUtil {
-    private val VALID_NAME = Regex("^[A-Za-z][A-Za-z0-9_]*$")
+    const val DEFAULT_INPUT_PATTERN = "^[A-Za-z][A-Za-z0-9_]*\$"
 
-    /** `^[A-Za-z][A-Za-z0-9_]*$` — the only names `egs game add` accepts. */
-    fun isValidEntityName(name: String): Boolean = VALID_NAME.matches(name)
+    /** True when [name] matches [pattern] (default the contract pattern). */
+    fun isValidEntityName(
+        name: String,
+        pattern: String = DEFAULT_INPUT_PATTERN,
+    ): Boolean = Regex(pattern).matches(name)
 
     /**
-     * Normalize to a snake_case stem. Accepts snake_case, PascalCase, or camelCase input
-     * (already validated to be `[A-Za-z0-9_]`).
+     * Normalize to a snake_case stem. Accepts snake_case, PascalCase, or camelCase input.
+     * For contract-supplied (already snake_case) names this is a no-op split/lower.
      *  - `"boss_arena"` -> `"boss_arena"`
      *  - `"BossArena"`  -> `"boss_arena"`
-     *  - `"Fire__Ball"` -> `"fire_ball"`
-     *  - `"HPMax"`      -> `"hp_max"` (runs of capitals are treated as one word)
      */
     fun toSnakeCase(name: String): String {
-        // Insert a boundary before an uppercase letter that follows a lowercase letter or digit,
-        // e.g. "BossArena" -> "Boss_Arena", "hp2Go" -> "hp2_Go". Acronyms (HPM) stay glued.
         val withBoundaries = name.replace(BOUNDARY_REGEX) { match ->
             "${match.groupValues[1]}_${match.groupValues[2]}"
         }
@@ -49,9 +43,12 @@ internal object GodotNameUtil {
         }
 
     /** Throw a usage error for an invalid entity name, listing the rule. */
-    fun requireValidEntityName(name: String) {
-        require(isValidEntityName(name)) {
-            "Invalid entity name '$name'. Must match ^[A-Za-z][A-Za-z0-9_]*\$ (letters, digits, underscore; must start with a letter)."
+    fun requireValidEntityName(
+        name: String,
+        pattern: String = DEFAULT_INPUT_PATTERN,
+    ) {
+        require(isValidEntityName(name, pattern)) {
+            "Invalid entity name '$name'. Must match $pattern (letters, digits, underscore; must start with a letter)."
         }
     }
 

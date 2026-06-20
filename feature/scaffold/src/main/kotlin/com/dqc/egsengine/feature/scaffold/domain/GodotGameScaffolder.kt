@@ -1,5 +1,6 @@
 package com.dqc.egsengine.feature.scaffold.domain
 
+import com.dqc.egsengine.feature.init.data.WorkspaceConfigReader
 import com.dqc.egsengine.feature.init.data.WorkspaceConfigWriter
 import com.dqc.egsengine.feature.init.domain.model.GameTemplate
 import com.dqc.egsengine.feature.init.domain.model.Platform
@@ -14,14 +15,18 @@ import java.io.File
 /**
  * Backs `egs new game <name> --engine godot --template <flavour>`:
  * clones the egs-godot-template, rewrites `config/name` in `project.godot`,
- * and writes a `.egs/workspace.json` recording `platform=GODOT`,
- * `engine=godot`, and the chosen [GameTemplate].
+ * and rewrites the `game` entry of the cloned `.egs/workspace.json` (preserving its
+ * `moduleStructure`/`baseClasses`) to record `gameTemplate` and the resolved template URL.
  *
- * Unlike the multi-project `new project` flow, a Godot game is a single
- * self-contained project rooted at `<output>/<name>/`.
+ * The cloned `.egs/generator.json` and `.egs/templates/` are NEVER overwritten — they
+ * are the authoritative contract the new `egs game add` commands read from.
+ *
+ * Post-clone, editor caches and build artifacts (`.godot/`, `.idea/`, `__pycache__/`,
+ * `*.import`) are stripped as a safety net even though the upstream template ships clean.
  */
 class GodotGameScaffolder(
     private val workspaceConfigWriter: WorkspaceConfigWriter,
+    private val workspaceConfigReader: WorkspaceConfigReader = WorkspaceConfigReader(),
 ) {
     private val logger = LoggerFactory.getLogger(GodotGameScaffolder::class.java)
 
@@ -44,22 +49,7 @@ class GodotGameScaffolder(
         )
 
         val targetDir = outputDir.absoluteFile.resolve(gameName)
-
-        val gameProject =
-            SubProjectConfig(
-                platform = Platform.GODOT,
-                path = ".",
-                basePackage = "",
-                engine = "godot",
-                gameTemplate = gameTemplate.id,
-                templateUrl = resolvedUrl,
-            )
-        val workspace =
-            WorkspaceConfig(
-                name = gameName,
-                version = "2",
-                projects = mapOf("game" to gameProject),
-            )
+        val previewWorkspace = previewWorkspace(gameName, gameTemplate, resolvedUrl)
 
         if (dryRun) {
             return GodotGameResult(
@@ -67,7 +57,7 @@ class GodotGameScaffolder(
                 gameTemplate = gameTemplate,
                 targetDir = targetDir,
                 templateUrl = resolvedUrl,
-                workspace = workspace,
+                workspace = previewWorkspace,
                 dryRun = true,
             )
         }
@@ -87,9 +77,10 @@ class GodotGameScaffolder(
             packageName = null,
         )
         rewriteGodotProjectName(targetDir, gameName)
+        stripEditorArtifacts(targetDir, logInfo)
+        mergeWorkspace(targetDir, gameName, gameTemplate, resolvedUrl)
 
-        workspaceConfigWriter.write(workspace, targetDir)
-
+        val finalWorkspace = workspaceConfigReader.read(targetDir)
         logger.info("Created Godot game '{}' ({}) at {}", gameName, gameTemplate.id, targetDir.absolutePath)
 
         return GodotGameResult(
@@ -97,9 +88,64 @@ class GodotGameScaffolder(
             gameTemplate = gameTemplate,
             targetDir = targetDir,
             templateUrl = resolvedUrl,
-            workspace = workspace,
+            workspace = finalWorkspace,
             dryRun = false,
         )
+    }
+
+    /** Workspace shown in `--dry-run` (minimal; the real one is merged from the cloned template). */
+    private fun previewWorkspace(
+        gameName: String,
+        gameTemplate: GameTemplate,
+        resolvedUrl: String,
+    ): WorkspaceConfig = WorkspaceConfig(
+        name = gameName,
+        version = "3",
+        projects =
+        mapOf(
+            "game" to
+                SubProjectConfig(
+                    platform = Platform.GODOT,
+                    path = ".",
+                    basePackage = "",
+                    engine = "godot",
+                    gameTemplate = gameTemplate.id,
+                    templateUrl = resolvedUrl,
+                ),
+        ),
+    )
+
+    /**
+     * Rewrite the cloned workspace's `game` entry, preserving `moduleStructure`/`baseClasses`.
+     * The cloned `.egs/generator.json` and `.egs/templates/` are left untouched.
+     */
+    private fun mergeWorkspace(
+        targetDir: File,
+        gameName: String,
+        gameTemplate: GameTemplate,
+        resolvedUrl: String,
+    ) {
+        val wsFile = targetDir.resolve(".egs/workspace.json")
+        val merged =
+            if (wsFile.exists()) {
+                val cloned = workspaceConfigReader.read(targetDir)
+                val game = cloned.projects["game"]
+                val updatedGame =
+                    (game ?: SubProjectConfig(Platform.GODOT, ".", "")).copy(
+                        platform = Platform.GODOT,
+                        engine = "godot",
+                        gameTemplate = gameTemplate.id,
+                        templateUrl = resolvedUrl,
+                    )
+                cloned.copy(
+                    name = gameName,
+                    version = "3",
+                    projects = cloned.projects + ("game" to updatedGame),
+                )
+            } else {
+                previewWorkspace(gameName, gameTemplate, resolvedUrl)
+            }
+        workspaceConfigWriter.write(merged, targetDir)
     }
 
     /** Patch `config/name="..."` in `project.godot`. Idempotent; no-op if file absent. */
@@ -113,6 +159,25 @@ class GodotGameScaffolder(
         val replaced = rewriteConfigName(text, gameName)
         if (text != replaced) {
             projectFile.writeText(replaced)
+        }
+    }
+
+    /** Remove editor caches / build artifacts that should never ship in a fresh project. */
+    private fun stripEditorArtifacts(projectRoot: File, logInfo: (String) -> Unit) {
+        val targets = mutableListOf<File>()
+        targets.add(projectRoot.resolve(".godot"))
+        targets.add(projectRoot.resolve(".idea"))
+        projectRoot.walkTopDown().onEnter { dir -> dir != projectRoot.resolve(".git") }.forEach { f ->
+            when {
+                f.isDirectory && f.name == "__pycache__" -> targets.add(f)
+                f.isFile && (f.extension == "import" || f.name == ".DS_Store") -> targets.add(f)
+            }
+        }
+        targets.distinct().forEach { f ->
+            if (f.exists()) {
+                f.deleteRecursively()
+                logInfo("Stripped editor artifact: ${projectRoot.relativeTo(projectRoot).path}${f.relativeTo(projectRoot)}")
+            }
         }
     }
 

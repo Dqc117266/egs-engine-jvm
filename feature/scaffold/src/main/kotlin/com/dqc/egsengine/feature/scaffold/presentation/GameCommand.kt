@@ -3,9 +3,10 @@ package com.dqc.egsengine.feature.scaffold.presentation
 import com.dqc.egsengine.feature.base.presentation.CliFormatter
 import com.dqc.egsengine.feature.base.presentation.EgsCliCommand
 import com.dqc.egsengine.feature.base.util.ProjectRootResolver
-import com.dqc.egsengine.feature.scaffold.domain.GodotEntityScaffolder
-import com.dqc.egsengine.feature.scaffold.domain.GodotScaffoldResult
-import com.dqc.egsengine.feature.scaffold.domain.model.GodotEntityKind
+import com.dqc.egsengine.feature.scaffold.data.generator.godot.GodotFileAction
+import com.dqc.egsengine.feature.scaffold.data.generator.godot.GodotFileMode
+import com.dqc.egsengine.feature.scaffold.data.generator.godot.GodotPlannedFile
+import com.dqc.egsengine.feature.scaffold.domain.GodotCodeScaffolder
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
@@ -16,9 +17,11 @@ import org.koin.core.component.inject
 /**
  * `egs game` — entry point for Godot game entity commands.
  *
- * Command tree: `egs game add {enemy,skill,room} <name>`.
+ * Command tree: `egs game add {enemy,skill,room,item,ui,module} <name>`.
+ * Each leaf is contract-driven: the entity kinds are fixed in the CLI, but every
+ * output path, template, and registry decision is read from `.egs/generator.json`.
  */
-class GameCommand : EgsCliCommand(name = "game", help = "Add entities (enemy/skill/room) to a Godot game project") {
+class GameCommand : EgsCliCommand(name = "game", help = "Add entities (enemy/skill/room/item/ui/module) to a Godot game project") {
     override fun runCommand() = Unit
 
     companion object {
@@ -29,66 +32,92 @@ class GameCommand : EgsCliCommand(name = "game", help = "Add entities (enemy/ski
 }
 
 /** `egs game add` — groups the per-kind entity add subcommands. */
-class GameAddGroupCommand : EgsCliCommand(name = "add", help = "Add an enemy, skill, or room entity to a Godot game") {
+class GameAddGroupCommand : EgsCliCommand(name = "add", help = "Add an enemy, skill, room, item, ui, or module to a Godot game") {
     override fun runCommand() = Unit
 
     companion object {
         fun withSubcommands(): GameAddGroupCommand = GameAddGroupCommand().subcommands(
-            GameAddEnemyCommand(),
-            GameAddSkillCommand(),
-            GameAddRoomCommand(),
+            GameAddEntityCommand("enemy"),
+            GameAddEntityCommand("skill"),
+            GameAddEntityCommand("room"),
+            GameAddEntityCommand("item"),
+            GameAddEntityCommand("ui"),
+            GameAddEntityCommand("module"),
         )
     }
 }
 
-/** Shared logic for `egs game add <kind> <name>`. */
-abstract class GameAddCommand(
-    name: String,
-    help: String,
-    private val kind: GodotEntityKind,
-) : EgsCliCommand(name = name, help = help) {
-    private val scaffolder: GodotEntityScaffolder by inject()
+/**
+ * One contract-driven add leaf. `egs game add <commandId> <name>` delegates entirely to
+ * [GodotCodeScaffolder], which resolves the contract entry for [commandId].
+ */
+class GameAddEntityCommand(
+    private val commandId: String,
+) : EgsCliCommand(
+    name = commandId,
+    help = helpFor(commandId),
+) {
+    private val scaffolder: GodotCodeScaffolder by inject()
 
-    protected val entityName by argument(help = "Entity name (letters, digits, underscore; starts with a letter)")
+    private val entityName by argument(help = "Entity name (letters, digits, underscore; starts with a letter)")
     private val projectPath by option("--project", "-p", help = "Godot game project root (default: current dir)")
         .default(".")
+    private val theme by option("--theme", help = "base | metroidvania (default: from workspace.json)")
+    private val force by option("--force", help = "Rebuild Generated files; never overwrites user stubs").flag()
     private val dryRun by option("--dry-run", help = "Preview files and registry change without writing").flag()
 
     override fun runCommand() {
         val dir = ProjectRootResolver.resolve(projectPath)
-        val result = scaffolder.scaffold(dir, kind, entityName, dryRun = dryRun)
+        val result = scaffolder.scaffold(dir, commandId, entityName, theme, force, dryRun)
 
-        if (result.dryRun) {
-            echo(CliFormatter.formatInfo("[dry-run] Would generate ${kind.id} '${result.className}' for game '${dir.name}' (template=${result.gameTemplate.id})"))
+        echo(CliFormatter.formatInfo("${if (dryRun) "[dry-run] " else ""}game add $commandId ${result.preview.pascal}"))
+        echo("  module: ${result.preview.module}")
+        echo("  theme: ${result.preview.theme}")
+        echo()
+        echo("Files:")
+        result.files.forEach { echo(formatFile(it, dryRun)) }
+
+        if (result.preview.registers) {
             echo()
-            echo("  Files:")
-            result.files.forEach { echo("    ${it.path}") }
-            echo()
-            echo("  Registry diff (${result.registryFile}):")
-            registryAddedLines(result).forEach { echo("    + $it") }
-        } else {
-            echo(CliFormatter.formatSuccess("Generated ${kind.id} '${result.className}' (template=${result.gameTemplate.id})"))
-            echo()
-            echo("  Files created:")
-            result.files.forEach { echo("    ${it.path}") }
-            echo()
-            echo("  Registered in ${result.registryFile}: EntityRegistry.${result.className}")
+            echo("Registry:")
+            echo("  ${result.preview.registryModuleRelPath}")
+            val added = result.registryDiff?.added
+            if (added != null) {
+                echo("    + $added")
+            } else {
+                echo("    (already registered — idempotent)")
+            }
         }
     }
 
-    /** Lines present in the registry `after` but not `before` (the added preload() const). */
-    private fun registryAddedLines(result: GodotScaffoldResult): List<String> {
-        val before = result.registryDiff.before.lineSequence().map { it.trim() }.toSet()
-        return result.registryDiff.after
-            .lineSequence()
-            .map { it.trim() }
-            .filter { it.startsWith("const ") && it !in before }
-            .toList()
+    private fun formatFile(
+        file: GodotPlannedFile,
+        dryRun: Boolean,
+    ): String = when (file.action) {
+        GodotFileAction.CREATE -> {
+            val tag = if (dryRun) "would create" else "created"
+            "  $tag ${labelFor(file)}: ${file.relPath}"
+        }
+        GodotFileAction.REBUILD -> "  rebuild ${labelFor(file)}: ${file.relPath}"
+        GodotFileAction.SKIP_USER -> "  skip user stub exists: ${file.relPath}"
+        GodotFileAction.BLOCKED -> "  blocked (exists, --force to rebuild): ${file.relPath}"
+    }
+
+    private fun labelFor(file: GodotPlannedFile): String = when (file.mode) {
+        GodotFileMode.USER_CREATE_ONCE -> "user stub"
+        GodotFileMode.SCENE_CREATE_ONCE -> "scene"
+        GodotFileMode.GENERATED_REBUILDABLE -> "generated"
+        GodotFileMode.RESOURCE_REBUILDABLE -> "resource"
+        GodotFileMode.STATIC_REBUILDABLE -> "static"
     }
 }
 
-class GameAddEnemyCommand : GameAddCommand(name = "enemy", help = "Add an enemy entity (.gd + .tscn)", kind = GodotEntityKind.ENEMY)
-
-class GameAddSkillCommand : GameAddCommand(name = "skill", help = "Add a skill entity (.gd + .tres)", kind = GodotEntityKind.SKILL)
-
-class GameAddRoomCommand : GameAddCommand(name = "room", help = "Add a room entity (.gd + .tscn)", kind = GodotEntityKind.ROOM)
+private fun helpFor(commandId: String): String = when (commandId) {
+    "enemy" -> "Add an enemy: Generated.gd + Stub.gd + scene (registered)"
+    "skill" -> "Add a skill: Generated.gd + Stub.gd + .tres (registered)"
+    "room" -> "Add a room: Generated.gd + Stub.gd + scene (registered)"
+    "item" -> "Add an item data resource (.tres, not registered)"
+    "ui" -> "Add a UI controller: Stub.gd + scene (not registered)"
+    "module" -> "Scaffold a new gameplay module (dirs + module.json + README)"
+    else -> "Add a $commandId entity"
+}

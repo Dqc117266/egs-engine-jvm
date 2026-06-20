@@ -45,7 +45,7 @@ class NewGameCommand : EgsCliCommand(name = "game", help = "Create a new Godot g
     private val githubUsername by option("--username", help = "GitHub username for token URL")
         .default("x-access-token")
     private val templateUrl by option(
-        "--game-template",
+        "--template-url",
         help = "Override the Godot base-template git URL (advanced)",
     )
 
