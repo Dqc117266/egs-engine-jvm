@@ -59,7 +59,4 @@ internal object GodotPathInterpolator {
             else -> match.value
         }
     }
-
-    /** Convert a `modules/...` relative path to its `res://` form. */
-    fun toResPath(relPath: String): String = "res://$relPath"
 }
