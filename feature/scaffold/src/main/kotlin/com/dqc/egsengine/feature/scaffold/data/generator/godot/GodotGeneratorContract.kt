@@ -69,4 +69,8 @@ data class GodotCommandSpec(
     val templateIds: List<String> = emptyList(),
     val registers: Boolean = false,
     val registryScriptPath: String? = null,
+    /** If set, template lookup falls back to this entity's templates when the
+     * command's own templates are absent (e.g. boss -> enemy, pickup -> enemy,
+     * ability-lock -> room). Mirrors the Python tool's templateFallback. */
+    val templateFallback: String? = null,
 )

@@ -45,9 +45,10 @@ class GodotCodeGenerator(
         val artifacts = GodotCommandSpecResolver.resolveArtifacts(spec, names)
 
         val ctx = buildContext(contract, spec, names, theme)
+        val fallback = spec.templateFallback
         val planned =
             artifacts.map { art ->
-                val content = renderArtifact(projectRoot, command, theme, art.templateId, ctx)
+                val content = renderArtifact(projectRoot, command, theme, art.templateId, ctx, fallback)
                 val target = projectRoot.resolve(art.relPath)
                 val action = computeAction(target, art.mode, force)
                 GodotPlannedFile(
@@ -122,14 +123,21 @@ class GodotCodeGenerator(
         theme: String,
         templateId: String,
         ctx: Map<String, Any>,
+        fallbackEntity: String? = null,
     ): String {
         // Theme overlay: theme dir first, then base fallback. Both the project's
-        // .egs/templates/ and the bundled classpath carry this layout.
+        // .egs/templates/ and the bundled classpath carry this layout. If a
+        // fallbackEntity is declared (e.g. boss -> enemy), also try its templates
+        // so new commands can reuse existing ones without bespoke templates.
         val candidates =
-            listOf(
+            mutableListOf(
                 "godot/$theme/$command/$templateId",
                 "godot/base/$command/$templateId",
             )
+        if (!fallbackEntity.isNullOrEmpty() && fallbackEntity != command) {
+            candidates += "godot/$theme/$fallbackEntity/$templateId"
+            candidates += "godot/base/$fallbackEntity/$templateId"
+        }
         return templateEngine.renderWithFallback(candidates, ctx, projectRoot)
     }
 

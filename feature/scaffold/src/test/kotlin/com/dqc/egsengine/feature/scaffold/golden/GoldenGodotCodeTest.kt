@@ -60,6 +60,21 @@ class GoldenGodotCodeTest {
         golden("godot/module-base", "module", "fishing", "base")
     }
 
+    @Test
+    fun `boss base golden`() {
+        golden("godot/boss-base", "boss", "false_knight", "base")
+    }
+
+    @Test
+    fun `pickup base golden`() {
+        golden("godot/pickup-base", "pickup", "mantis_claw", "base")
+    }
+
+    @Test
+    fun `ability-lock base golden`() {
+        golden("godot/ability-lock-base", "ability-lock", "mantis_gate", "base")
+    }
+
     private fun golden(
         caseName: String,
         command: String,

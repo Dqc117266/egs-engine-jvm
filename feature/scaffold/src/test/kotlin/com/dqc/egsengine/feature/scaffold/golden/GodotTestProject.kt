@@ -79,6 +79,41 @@ object GodotTestProject {
               "readmePath": "modules/{snake}/README.md",
               "templateIds": ["module.json.ftl", "readme.md.ftl"],
               "registers": false
+            },
+            "boss": {
+              "module": "combat",
+              "summary": "boss",
+              "generatedScriptPath": "modules/{module}/generated/entities/bosses/{snake}/{pascal}Generated.gd",
+              "userScriptPath": "modules/{module}/src/entities/bosses/{snake}/{pascal}.gd",
+              "scenePath": "modules/{module}/scenes/bosses/{snake}.tscn",
+              "generatedExtendsPath": "res://modules/{module}/api/Boss.gd",
+              "userExtendsPath": "res://modules/{module}/generated/entities/bosses/{snake}/{pascal}Generated.gd",
+              "templateIds": ["generated.gd.ftl", "stub.gd.ftl", "scene.tscn.ftl"],
+              "templateFallback": "enemy",
+              "registers": true,
+              "registryScriptPath": "modules/{module}/generated/entities/bosses/{snake}/{pascal}Generated.gd"
+            },
+            "pickup": {
+              "module": "progression",
+              "summary": "pickup",
+              "generatedScriptPath": "modules/{module}/generated/entities/pickups/{snake}/{pascal}Generated.gd",
+              "userScriptPath": "modules/{module}/src/entities/pickups/{snake}/{pascal}.gd",
+              "scenePath": "modules/{module}/scenes/pickups/{snake}.tscn",
+              "generatedExtendsPath": "res://modules/{module}/api/Pickup.gd",
+              "userExtendsPath": "res://modules/{module}/generated/entities/pickups/{snake}/{pascal}Generated.gd",
+              "templateIds": ["generated.gd.ftl", "stub.gd.ftl", "scene.tscn.ftl"],
+              "templateFallback": "enemy",
+              "registers": true,
+              "registryScriptPath": "modules/{module}/generated/entities/pickups/{snake}/{pascal}Generated.gd"
+            },
+            "ability-lock": {
+              "module": "progression",
+              "summary": "ability-lock",
+              "scenePath": "modules/{module}/scenes/ability_locks/{snake}.tscn",
+              "userExtendsPath": "res://modules/{module}/api/AbilityLock.gd",
+              "templateIds": ["scene.tscn.ftl"],
+              "templateFallback": "room",
+              "registers": false
             }
           }
         }

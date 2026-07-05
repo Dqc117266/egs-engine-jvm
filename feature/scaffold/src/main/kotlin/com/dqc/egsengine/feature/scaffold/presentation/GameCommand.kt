@@ -43,6 +43,9 @@ class GameAddGroupCommand : EgsCliCommand(name = "add", help = "Add an enemy, sk
             GameAddEntityCommand("item"),
             GameAddEntityCommand("ui"),
             GameAddEntityCommand("module"),
+            GameAddEntityCommand("boss"),
+            GameAddEntityCommand("pickup"),
+            GameAddEntityCommand("ability-lock"),
         )
     }
 }
@@ -119,5 +122,8 @@ private fun helpFor(commandId: String): String = when (commandId) {
     "item" -> "Add an item data resource (.tres, not registered)"
     "ui" -> "Add a UI controller: Stub.gd + scene (not registered)"
     "module" -> "Scaffold a new gameplay module (dirs + module.json + README)"
+    "boss" -> "Add a boss: Generated.gd + Stub.gd + scene (registered, extends Boss.gd)"
+    "pickup" -> "Add a pickup: Generated.gd + Stub.gd + scene (registered)"
+    "ability-lock" -> "Add an ability-lock scene (not registered)"
     else -> "Add a $commandId entity"
 }
