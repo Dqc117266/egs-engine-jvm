@@ -24,7 +24,10 @@ class NewCommand : EgsCliCommand(name = "new", help = "Create a new multi-platfo
     override fun runCommand() = Unit
 
     companion object {
-        fun withSubcommands(): NewCommand = NewCommand().subcommands(NewProjectCommand())
+        fun withSubcommands(): NewCommand = NewCommand().subcommands(
+            NewProjectCommand(),
+            NewGameCommand(),
+        )
     }
 }
 

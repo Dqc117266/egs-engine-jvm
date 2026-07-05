@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="Fireball" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/skills/src/entities/skills/fireball/Fireball.gd" id="1_stub"]
+
+[resource]
+script = ExtResource("1_stub")
+display_name = "Fireball"

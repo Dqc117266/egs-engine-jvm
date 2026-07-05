@@ -20,7 +20,23 @@ data class SubProjectConfig(
     val moduleStructure: ModuleStructure? = null,
     val baseClasses: List<BaseClassInfo> = emptyList(),
     val scaffoldOverrides: ScaffoldOverrides? = null,
-)
+    /**
+     * Godot-only: the engine that backs this project. Only present for [Platform.GODOT]
+     * projects (always `"godot"`). Null for every other platform.
+     */
+    val engine: String? = null,
+    /**
+     * Godot-only: the game template flavour selected at `egs new game` time
+     * (e.g. `"base"`, `"metroidvania"`). Drives per-entity field overlays in
+     * `egs game add`. Null for non-Godot projects.
+     */
+    val gameTemplate: String? = null,
+) {
+    /** Convenience: the game template resolved to the [GameTemplate] enum (defaults to BASE). */
+    fun gameTemplateEnum(): GameTemplate = gameTemplate
+        ?.let { raw -> GameTemplate.entries.firstOrNull { it.id.equals(raw, ignoreCase = true) } }
+        ?: GameTemplate.BASE
+}
 
 @Serializable
 data class SwaggerSyncConfig(

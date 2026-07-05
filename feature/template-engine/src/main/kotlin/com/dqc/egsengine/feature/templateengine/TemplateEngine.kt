@@ -5,6 +5,7 @@
  */
 package com.dqc.egsengine.feature.templateengine
 
+import freemarker.cache.TemplateLoader
 import freemarker.template.TemplateExceptionHandler
 import java.io.File
 import java.io.StringWriter
@@ -29,6 +30,30 @@ class TemplateEngine(
         template.process(model, writer)
         return writer.toString().trimEnd() + "\n"
     }
+
+    /**
+     * Render the first template in [candidateNames] that resolves against the loader chain,
+     * e.g. a theme overlay `godot/metroidvania/enemy/generated.gd.ftl` falling back to the
+     * base `godot/base/enemy/generated.gd.ftl`. Errors if none resolve.
+     */
+    fun renderWithFallback(
+        candidateNames: List<String>,
+        model: Any,
+        projectRoot: File? = null,
+    ): String {
+        require(candidateNames.isNotEmpty()) { "No candidate template names supplied." }
+        val cfg = registry.configuration(projectRoot)
+        cfg.templateExceptionHandler = TemplateExceptionHandler.RETHROW_HANDLER
+        val loader = cfg.templateLoader
+        val name = candidateNames.firstOrNull { loader.exists(it) }
+            ?: error("No template resolved; tried: $candidateNames")
+        val template = cfg.getTemplate(name)
+        val writer = StringWriter()
+        template.process(model, writer)
+        return writer.toString().trimEnd() + "\n"
+    }
+
+    private fun TemplateLoader.exists(name: String): Boolean = findTemplateSource(name) != null
 
     fun renderToFile(
         templateName: String,

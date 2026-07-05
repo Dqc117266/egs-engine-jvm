@@ -13,6 +13,7 @@ import com.dqc.egsengine.feature.scaffold.presentation.BackendCommand
 import com.dqc.egsengine.feature.scaffold.presentation.ClientCommand
 import com.dqc.egsengine.feature.scaffold.presentation.CreateCommand
 import com.dqc.egsengine.feature.scaffold.presentation.FlowCommand
+import com.dqc.egsengine.feature.scaffold.presentation.GameCommand
 import com.dqc.egsengine.feature.scaffold.presentation.LintCommand
 import com.dqc.egsengine.feature.scaffold.presentation.NewCommand
 import com.dqc.egsengine.feature.scaffold.presentation.TemplateCommand
@@ -31,12 +32,14 @@ class EgsEngineCli : CliktCommand(name = "egs-engine") {
     private val version by option("--version", "-v").flag()
 
     override fun commandHelp(context: com.github.ajalt.clikt.core.Context): String = "Multi-platform code scaffolding engine" +
-        " for Android, KMP, Spring Boot, and Vue3"
+        " for Android, KMP, Spring Boot, Vue3, and Godot"
 
     override fun commandHelpEpilog(context: com.github.ajalt.clikt.core.Context): String =
         """
         |Examples:
         |  egs-engine new project myapp --package com.example.myapp
+        |  egs-engine new game mygame --engine godot --template base
+        |  egs-engine game add enemy slime --project ./mygame
         |  egs-engine create module -m myfeature -p .
         |  egs-engine client gen database -m myfeature --ddl schema.sql -p .
         |  egs-engine analyze -p .
@@ -64,6 +67,7 @@ fun main(args: Array<String>) {
             CreateCommand.withSubcommands(),
             FlowCommand.withSubcommands(),
             NewCommand.withSubcommands(),
+            GameCommand.withSubcommands(),
             BackendCommand.withSubcommands(),
             ClientCommand.withSubcommands(),
             WebCommand.withSubcommands(),

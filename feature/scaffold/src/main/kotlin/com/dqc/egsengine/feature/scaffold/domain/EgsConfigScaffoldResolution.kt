@@ -102,6 +102,7 @@ fun SubProjectConfig.resolveScaffoldBaseClasses(includeRetrofitProvider: Boolean
             )
         Platform.SPRING_BOOT, Platform.KOTLIN_JVM -> BaseClassPackages()
         Platform.VUE3 -> BaseClassPackages()
+        Platform.GODOT -> BaseClassPackages()
     }
 }
 
